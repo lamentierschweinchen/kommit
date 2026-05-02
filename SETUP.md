@@ -29,20 +29,27 @@ location, then pin to the version this project targets.
 
 ```bash
 cargo install --git https://github.com/solana-foundation/anchor avm --force
-avm install 0.30.1
-avm use 0.30.1
-anchor --version  # should print "anchor-cli 0.30.1"
+avm install 0.31.1
+avm use 0.31.1
+anchor --version  # should print "anchor-cli 0.31.1"
 ```
 
-We pin to **0.30.1** intentionally for v1. Anchor 1.0.0 landed in early 2026
-with breaking changes (TS package rename `@coral-xyz/anchor` →
-`@anchor-lang/core`, stricter `#[derive(Accounts)]` enforcement, IDL upload
-default in `anchor deploy`, removal of legacy IDL instructions). Several
-mainstream Solana DeFi programs and their IDLs (Kamino, marginfi, Jupiter
-Lend) still publish against pre-1.0 Anchor as of this writing. Bumping is a
-v1.5 task post-adapter spike, not a hackathon-deadline task.
+We pin to **0.31.1** for v1. We were previously on 0.30.1 but bumped on
+2026-05-02 because 0.30.1's IDL builder is broken on modern rustc (anchor-syn
+calls `proc_macro::Span::source_file()`, removed in rustc ~1.84). 0.31.x stays
+pre-1.0, so adapter targets (Kamino, marginfi, Jupiter Lend) — which still
+publish IDLs against pre-1.0 Anchor — remain compatible. Verified by
+Codama-rendering Kamino's klend IDL cleanly in the 0.31.1 workspace. See
+`/Users/ls/Documents/Kommit/handoffs/02_anchor_idl_toolchain_unblock.md` for
+the full diagnosis and coordinator decision.
 
-If you already have a different Anchor version installed, the `avm use 0.30.1`
+Anchor 1.0.0 landed in early 2026 with breaking changes (TS package rename
+`@coral-xyz/anchor` → `@anchor-lang/core`, stricter `#[derive(Accounts)]`
+enforcement, IDL upload default in `anchor deploy`, removal of legacy IDL
+instructions). Bumping past 0.31.x is a v1.5 task post-adapter spike, not a
+hackathon-deadline task.
+
+If you already have a different Anchor version installed, the `avm use 0.31.1`
 line is the one that matters — it does the switch.
 
 ## 3. Build the program
