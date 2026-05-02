@@ -5,19 +5,16 @@
 // (capital × time, active + lifetime split). No platform token, ever.
 //
 // This file is the program entrypoint. State accounts and instructions
-// will be expanded out of this stub. See ../../../program_spec.md for
-// the full API design.
+// are defined in submodules. See ../../../program_spec.md for the full API.
 
 use anchor_lang::prelude::*;
 
-// Placeholder program ID. Replace with the keypair-derived ID after first
-// `anchor build` + `anchor keys list`. Update this `declare_id!` AND both
-// `[programs.*]` entries in `Anchor.toml` to keep them in sync.
 declare_id!("GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3");
 
-pub mod state;
 pub mod errors;
+pub mod events;
 pub mod instructions;
+pub mod state;
 
 use instructions::*;
 
@@ -28,5 +25,40 @@ pub mod kommit {
     /// One-time program initialization. Sets the admin pubkey.
     pub fn initialize_config(ctx: Context<InitializeConfig>) -> Result<()> {
         instructions::initialize_config::handler(ctx)
+    }
+
+    /// Admin-only. Curate a new project: yield will flow to `recipient_wallet`.
+    pub fn create_project(
+        ctx: Context<CreateProject>,
+        recipient_wallet: Pubkey,
+        metadata_uri_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::create_project::handler(ctx, recipient_wallet, metadata_uri_hash)
+    }
+
+    /// User commits USDC to a project. Principal sits in a per-project escrow PDA.
+    pub fn commit(ctx: Context<Commit>, amount: u64) -> Result<()> {
+        instructions::commit::handler(ctx, amount)
+    }
+
+    /// User withdraws principal. Always allowed (kill-switch invariant: not gated by pause).
+    /// `amount == u64::MAX` withdraws the full principal.
+    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
+        instructions::withdraw::handler(ctx, amount)
+    }
+
+    /// Permissionless crank. Brings a commitment's active + lifetime scores up to date.
+    pub fn accrue_points(ctx: Context<AccruePoints>) -> Result<()> {
+        instructions::accrue_points::handler(ctx)
+    }
+
+    /// Admin-only. Halts new commits; withdrawals remain allowed.
+    pub fn admin_pause(ctx: Context<AdminPause>) -> Result<()> {
+        instructions::admin_pause::pause(ctx)
+    }
+
+    /// Admin-only. Resumes commits.
+    pub fn admin_unpause(ctx: Context<AdminPause>) -> Result<()> {
+        instructions::admin_pause::unpause(ctx)
     }
 }

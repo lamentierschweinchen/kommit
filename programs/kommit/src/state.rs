@@ -5,6 +5,8 @@
 
 use anchor_lang::prelude::*;
 
+use crate::errors::KommitError;
+
 /// Singleton program config. PDA seeds: [b"config"].
 #[account]
 pub struct KommitConfig {
@@ -50,4 +52,28 @@ pub struct Commitment {
 impl Commitment {
     pub const SIZE: usize = 32 + 32 + 8 + 8 + 16 + 16 + 8 + 1;
     pub const SEED: &'static [u8] = b"commitment";
+    pub const ESCROW_SEED: &'static [u8] = b"escrow";
+
+    /// Accrue active + lifetime score from `last_accrual_ts` up to `now`.
+    /// Returns the delta added (callers may use it for event emission).
+    /// Idempotent: if `now <= last_accrual_ts`, delta is 0 and state is untouched.
+    pub fn accrue(&mut self, now: i64) -> Result<u128> {
+        let elapsed = now.saturating_sub(self.last_accrual_ts);
+        if elapsed <= 0 {
+            return Ok(0);
+        }
+        let delta = (self.principal as u128)
+            .checked_mul(elapsed as u128)
+            .ok_or(KommitError::MathOverflow)?;
+        self.active_score = self
+            .active_score
+            .checked_add(delta)
+            .ok_or(KommitError::MathOverflow)?;
+        self.lifetime_score = self
+            .lifetime_score
+            .checked_add(delta)
+            .ok_or(KommitError::MathOverflow)?;
+        self.last_accrual_ts = now;
+        Ok(delta)
+    }
 }

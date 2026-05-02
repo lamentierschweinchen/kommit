@@ -12,4 +12,6 @@ pub enum KommitError {
     Unauthorized,
     #[msg("Project not found")]
     ProjectNotFound,
+    #[msg("Amount must be greater than zero")]
+    InvalidAmount,
 }
