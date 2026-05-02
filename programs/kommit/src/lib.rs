@@ -13,7 +13,7 @@ use anchor_lang::prelude::*;
 // Placeholder program ID. Replace with the keypair-derived ID after first
 // `anchor build` + `anchor keys list`. Update this `declare_id!` AND both
 // `[programs.*]` entries in `Anchor.toml` to keep them in sync.
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3");
 
 pub mod state;
 pub mod errors;
