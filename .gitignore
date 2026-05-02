@@ -1,0 +1,32 @@
+# Anchor / Rust
+target/
+.anchor/
+test-ledger/
+.DS_Store
+
+# Node / Next.js
+node_modules/
+web/.next/
+web/out/
+web/build/
+.npm
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Solana keys (NEVER commit these)
+*.json.bak
+id.json
+keypair.json
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
