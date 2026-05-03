@@ -217,7 +217,7 @@ describe("kommit", () => {
         ? new anchor.BN("18446744073709551615") // u64::MAX
         : new anchor.BN(amount.toString());
     await program.methods
-      .withdraw(amt)
+      .withdraw(amt, new anchor.BN(0))
       .accounts({
         commitment: commitmentPda,
         project: projectPda,

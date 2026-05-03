@@ -44,8 +44,15 @@ pub mod kommit {
 
     /// User withdraws principal. Always allowed (kill-switch invariant: not gated by pause).
     /// `amount == u64::MAX` withdraws the full principal.
-    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        instructions::withdraw::handler(ctx, amount)
+    /// `redeem_collateral_amount` may be 0; if escrow has < amount, caller must
+    /// also pass the klend account graph via `remaining_accounts` (see
+    /// `Withdraw` doc-comment).
+    pub fn withdraw<'info>(
+        ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>,
+        amount: u64,
+        redeem_collateral_amount: u64,
+    ) -> Result<()> {
+        instructions::withdraw::handler(ctx, amount, redeem_collateral_amount)
     }
 
     /// Permissionless crank. Brings a commitment's active + lifetime scores up to date.
