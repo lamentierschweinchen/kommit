@@ -8,6 +8,9 @@ kommit = "GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3"
 [programs.devnet]
 kommit = "GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3"
 
+[programs.mainnet]
+kommit = "GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3"
+
 [registry]
 url = "https://api.apr.dev"
 
