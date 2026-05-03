@@ -14,4 +14,10 @@ pub enum KommitError {
     ProjectNotFound,
     #[msg("Amount must be greater than zero")]
     InvalidAmount,
+    #[msg("Unknown adapter id")]
+    UnknownAdapter,
+    #[msg("Adapter mismatch — lending_position adapter_id != requested")]
+    AdapterMismatch,
+    #[msg("Yield below dust threshold; harvest skipped")]
+    DustHarvest,
 }

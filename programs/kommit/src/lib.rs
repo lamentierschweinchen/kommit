@@ -11,6 +11,7 @@ use anchor_lang::prelude::*;
 
 declare_id!("GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3");
 
+pub mod adapters;
 pub mod errors;
 pub mod events;
 pub mod instructions;
@@ -60,5 +61,21 @@ pub mod kommit {
     /// Admin-only. Resumes commits.
     pub fn admin_unpause(ctx: Context<AdminPause>) -> Result<()> {
         instructions::admin_pause::unpause(ctx)
+    }
+
+    /// Permissionless. Supply USDC from the project escrow into the klend reserve.
+    /// Caller can pass `u64::MAX` to supply all available escrow.
+    pub fn supply_to_yield_source(ctx: Context<SupplyToYieldSource>, amount: u64) -> Result<()> {
+        instructions::supply_to_yield_source::handler(ctx, amount)
+    }
+
+    /// Permissionless. Redeem `collateral_amount` cTokens for USDC, route to recipient.
+    /// `min_yield` enforces a dust threshold — actual USDC routed must be ≥ min_yield.
+    pub fn harvest(
+        ctx: Context<Harvest>,
+        collateral_amount: u64,
+        min_yield: u64,
+    ) -> Result<()> {
+        instructions::harvest::handler(ctx, collateral_amount, min_yield)
     }
 }
