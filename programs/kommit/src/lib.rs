@@ -85,4 +85,13 @@ pub mod kommit {
     ) -> Result<()> {
         instructions::harvest::handler(ctx, collateral_amount, min_yield)
     }
+
+    /// Admin-only. Rotate the off-chain metadata pointer for a project.
+    /// Founders update pitch / image off-chain, admin commits the new IPFS hash on-chain.
+    pub fn admin_update_project_metadata(
+        ctx: Context<AdminUpdateProjectMetadata>,
+        metadata_uri_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::admin_update_project_metadata::handler(ctx, metadata_uri_hash)
+    }
 }

@@ -445,4 +445,282 @@ describe("kommit", () => {
       `back-to-back accrue delta should be ~0 (got ${deltaBetweenCalls}, principal=${onesSecondWorth})`
     );
   });
+
+  // -------------------------------------------------------------------------
+  // Multi-project tests — verify per-project escrow architecture (handoff 06
+  // chunk 2). No klend dependency: these exercise commit/withdraw/accrue
+  // independence across project + user boundaries.
+  // -------------------------------------------------------------------------
+
+  // Helper: fund a fresh user with USDC and create N projects, returning
+  // arrays of recipient + projectPda.
+  async function newProject(metadataFill: number) {
+    const recipient = anchor.web3.Keypair.generate().publicKey;
+    const projectPda = findProjectPda(recipient);
+    const metadataHash = new Uint8Array(32).fill(metadataFill);
+    await program.methods
+      .createProject(recipient, Array.from(metadataHash) as any)
+      .accounts({
+        project: projectPda,
+        admin,
+        config: findConfigPda(),
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    return { recipient, projectPda };
+  }
+
+  async function newUserWithUsdc(usdcAmount: bigint) {
+    const user = anchor.web3.Keypair.generate();
+    await airdrop(user.publicKey, 5);
+    const userAta = await createAssociatedTokenAccount(
+      connection,
+      wallet.payer,
+      usdcMint,
+      user.publicKey
+    );
+    await mintTo(connection, wallet.payer, usdcMint, userAta, admin, usdcAmount);
+    return { user, userAta };
+  }
+
+  it("multiproject_one_user_three_projects_independent_pdas", async () => {
+    const { user, userAta } = await newUserWithUsdc(20n * ONE_USDC);
+    const projects = await Promise.all([newProject(10), newProject(11), newProject(12)]);
+
+    const amounts = [1n, 2n, 3n].map((n) => n * ONE_USDC);
+    const commitmentPdas: anchor.web3.PublicKey[] = [];
+    for (let i = 0; i < 3; i++) {
+      const { commitmentPda, escrowPda } = await commit(
+        user,
+        userAta,
+        projects[i].projectPda,
+        amounts[i]
+      );
+      commitmentPdas.push(commitmentPda);
+      // Escrow PDA must be derived from the project (per-project, not shared).
+      const expectedEscrow = findEscrowPda(projects[i].projectPda);
+      assert.equal(
+        escrowPda.toBase58(),
+        expectedEscrow.toBase58(),
+        "escrow PDA must derive from project"
+      );
+    }
+
+    // Each Commitment PDA is distinct.
+    assert.notEqual(commitmentPdas[0].toBase58(), commitmentPdas[1].toBase58());
+    assert.notEqual(commitmentPdas[1].toBase58(), commitmentPdas[2].toBase58());
+
+    // Verify principals are independent across projects.
+    const cs = await Promise.all(
+      commitmentPdas.map((pda) => program.account.commitment.fetch(pda))
+    );
+    for (let i = 0; i < 3; i++) {
+      assert.equal(cs[i].principal.toString(), amounts[i].toString());
+      assert.equal(cs[i].project.toBase58(), projects[i].projectPda.toBase58());
+    }
+
+    // Sleep, then accrue all three. Each should accumulate principal × elapsed.
+    await sleep(2000);
+    for (let i = 0; i < 3; i++) {
+      await program.methods
+        .accruePoints()
+        .accounts({ commitment: commitmentPdas[i], project: projects[i].projectPda })
+        .rpc();
+    }
+    const cs2 = await Promise.all(
+      commitmentPdas.map((pda) => program.account.commitment.fetch(pda))
+    );
+    // Active score on the larger principal should be larger.
+    const a0 = BigInt(cs2[0].activeScore.toString());
+    const a2 = BigInt(cs2[2].activeScore.toString());
+    assert.isTrue(a2 > a0, `larger principal must accrue faster (got a0=${a0}, a2=${a2})`);
+    // Ratio should be approximately 3:1 (principal 3 USDC vs 1 USDC).
+    // Allow ~50% slop for inter-call timing jitter.
+    const ratio = Number(a2) / Number(a0);
+    assert.isAtLeast(ratio, 2.0, "expected ratio ~3, got " + ratio);
+    assert.isAtMost(ratio, 4.5, "expected ratio ~3, got " + ratio);
+  });
+
+  it("multiproject_three_users_one_project_shared_escrow_independent_commitments", async () => {
+    const { projectPda } = await newProject(20);
+    const escrowExpected = findEscrowPda(projectPda);
+
+    const users = await Promise.all([
+      newUserWithUsdc(10n * ONE_USDC),
+      newUserWithUsdc(10n * ONE_USDC),
+      newUserWithUsdc(10n * ONE_USDC),
+    ]);
+    const amounts = [1n, 2n, 4n].map((n) => n * ONE_USDC);
+
+    for (let i = 0; i < 3; i++) {
+      const { escrowPda } = await commit(users[i].user, users[i].userAta, projectPda, amounts[i]);
+      // All three commits hit the same escrow ATA (per-project shared across users).
+      assert.equal(escrowPda.toBase58(), escrowExpected.toBase58());
+    }
+
+    // Each user has their OWN Commitment PDA — verify by deriving + fetching.
+    const cs = await Promise.all(
+      users.map((u) =>
+        program.account.commitment.fetch(findCommitmentPda(u.user.publicKey, projectPda))
+      )
+    );
+    for (let i = 0; i < 3; i++) {
+      assert.equal(cs[i].user.toBase58(), users[i].user.publicKey.toBase58());
+      assert.equal(cs[i].principal.toString(), amounts[i].toString());
+    }
+
+    // Project's cumulative_principal == sum of all three.
+    const project = await program.account.project.fetch(projectPda);
+    const expectedTotal = amounts.reduce((a, b) => a + b, 0n);
+    assert.equal(project.cumulativePrincipal.toString(), expectedTotal.toString());
+
+    // Escrow holds the sum.
+    const esc = await getAccount(connection, escrowExpected);
+    assert.equal(esc.amount.toString(), expectedTotal.toString());
+
+    // User 0 withdraws partial — should not affect users 1, 2.
+    await withdraw(users[0].user, users[0].userAta, projectPda, amounts[0] / 2n);
+    const c0_after = await program.account.commitment.fetch(
+      findCommitmentPda(users[0].user.publicKey, projectPda)
+    );
+    const c1_after = await program.account.commitment.fetch(
+      findCommitmentPda(users[1].user.publicKey, projectPda)
+    );
+    assert.equal(c0_after.principal.toString(), (amounts[0] / 2n).toString());
+    assert.equal(
+      c1_after.principal.toString(),
+      amounts[1].toString(),
+      "user 1's principal must not be touched by user 0's withdraw"
+    );
+  });
+
+  it("multiproject_two_users_two_projects_mixed", async () => {
+    const projA = await newProject(30);
+    const projB = await newProject(31);
+    const u1 = await newUserWithUsdc(10n * ONE_USDC);
+    const u2 = await newUserWithUsdc(10n * ONE_USDC);
+
+    // u1 → A, u1 → B, u2 → A, u2 → B
+    const grid: { user: typeof u1; project: typeof projA; amount: bigint }[] = [
+      { user: u1, project: projA, amount: 1n * ONE_USDC },
+      { user: u1, project: projB, amount: 2n * ONE_USDC },
+      { user: u2, project: projA, amount: 3n * ONE_USDC },
+      { user: u2, project: projB, amount: 4n * ONE_USDC },
+    ];
+    for (const { user, project, amount } of grid) {
+      await commit(user.user, user.userAta, project.projectPda, amount);
+    }
+
+    // Per-project totals: A = 1 + 3 = 4 USDC; B = 2 + 4 = 6 USDC.
+    const projAState = await program.account.project.fetch(projA.projectPda);
+    const projBState = await program.account.project.fetch(projB.projectPda);
+    assert.equal(projAState.cumulativePrincipal.toString(), (4n * ONE_USDC).toString());
+    assert.equal(projBState.cumulativePrincipal.toString(), (6n * ONE_USDC).toString());
+
+    // Escrows are isolated per project.
+    const escA = await getAccount(connection, findEscrowPda(projA.projectPda));
+    const escB = await getAccount(connection, findEscrowPda(projB.projectPda));
+    assert.equal(escA.amount.toString(), (4n * ONE_USDC).toString());
+    assert.equal(escB.amount.toString(), (6n * ONE_USDC).toString());
+
+    // 4 distinct Commitment PDAs.
+    const allFour = new Set(
+      grid.map((g) => findCommitmentPda(g.user.user.publicKey, g.project.projectPda).toBase58())
+    );
+    assert.equal(allFour.size, 4, "expected 4 distinct commitment PDAs");
+  });
+
+  it("admin_update_project_metadata_succeeds_for_admin", async () => {
+    const recipient = anchor.web3.Keypair.generate().publicKey;
+    const projectPda = findProjectPda(recipient);
+    const initialHash = new Uint8Array(32).fill(50);
+    const newHash = new Uint8Array(32).fill(99);
+
+    await program.methods
+      .createProject(recipient, Array.from(initialHash) as any)
+      .accounts({
+        project: projectPda,
+        admin,
+        config: findConfigPda(),
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    await program.methods
+      .adminUpdateProjectMetadata(Array.from(newHash) as any)
+      .accounts({
+        project: projectPda,
+        admin,
+        config: findConfigPda(),
+      })
+      .rpc();
+
+    const proj = await program.account.project.fetch(projectPda);
+    assert.deepEqual(Array.from(proj.metadataUriHash), Array.from(newHash));
+  });
+
+  it("admin_update_project_metadata_rejects_non_admin", async () => {
+    const recipient = anchor.web3.Keypair.generate().publicKey;
+    const projectPda = findProjectPda(recipient);
+    const initialHash = new Uint8Array(32).fill(60);
+    const newHash = new Uint8Array(32).fill(77);
+    await program.methods
+      .createProject(recipient, Array.from(initialHash) as any)
+      .accounts({
+        project: projectPda,
+        admin,
+        config: findConfigPda(),
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    const imposter = anchor.web3.Keypair.generate();
+    await airdrop(imposter.publicKey, 1);
+
+    let threw = false;
+    try {
+      await program.methods
+        .adminUpdateProjectMetadata(Array.from(newHash) as any)
+        .accounts({
+          project: projectPda,
+          admin: imposter.publicKey,
+          config: findConfigPda(),
+        })
+        .signers([imposter])
+        .rpc();
+    } catch (e: any) {
+      threw = true;
+      assert.match(e.toString(), /Unauthorized/, `expected Unauthorized, got: ${e}`);
+    }
+    assert.isTrue(threw, "expected non-admin update to fail");
+
+    // Hash unchanged.
+    const proj = await program.account.project.fetch(projectPda);
+    assert.deepEqual(Array.from(proj.metadataUriHash), Array.from(initialHash));
+  });
+
+  it("multiproject_account_graph_stress_two_accrues_in_one_block_window", async () => {
+    // Account-graph stress: two accrue_points calls back-to-back across distinct
+    // projects fit comfortably under compute budget (each is < 5k CU). This is
+    // a sanity check on per-project independence at the validator level.
+    const { user, userAta } = await newUserWithUsdc(10n * ONE_USDC);
+    const projA = await newProject(40);
+    const projB = await newProject(41);
+    const { commitmentPda: cA } = await commit(user, userAta, projA.projectPda, 1n * ONE_USDC);
+    const { commitmentPda: cB } = await commit(user, userAta, projB.projectPda, 2n * ONE_USDC);
+    await sleep(1200);
+    // Fire both accrues; each succeeds independently.
+    await program.methods
+      .accruePoints()
+      .accounts({ commitment: cA, project: projA.projectPda })
+      .rpc();
+    await program.methods
+      .accruePoints()
+      .accounts({ commitment: cB, project: projB.projectPda })
+      .rpc();
+    const cAfetched = await program.account.commitment.fetch(cA);
+    const cBfetched = await program.account.commitment.fetch(cB);
+    assert.isTrue(BigInt(cAfetched.activeScore.toString()) > 0n);
+    assert.isTrue(BigInt(cBfetched.activeScore.toString()) > 0n);
+  });
 });

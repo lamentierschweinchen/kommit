@@ -21,3 +21,6 @@ pub use supply_to_yield_source::*;
 
 pub mod harvest;
 pub use harvest::*;
+
+pub mod admin_update_project_metadata;
+pub use admin_update_project_metadata::*;

@@ -42,3 +42,9 @@ pub struct YieldHarvested {
     pub amount: u64,
     pub ts: i64,
 }
+
+#[event]
+pub struct ProjectMetadataUpdated {
+    pub project: Pubkey,
+    pub new_hash: [u8; 32],
+}
