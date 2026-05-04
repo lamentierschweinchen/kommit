@@ -104,3 +104,48 @@ Open `http://localhost:3000`.
 Install the Helius Claude Code Plugin per https://www.helius.dev/blog/helius-for-agents — bundles Helius MCP, DFlow MCP, and the Solana skills (Build / Phantom / DFlow / SVM) for accelerated agent-paired Anchor + frontend development.
 
 Also useful: https://github.com/solana-foundation/solana-dev-skill (Anchor 0.30+ patterns, Codama IDL, Surfpool/LiteSVM testing).
+
+## 8. Off-chain stack — Helius webhook + Supabase indexer + IPFS pinning
+
+The off-chain data layer is in `app/web/src/app/api/webhook/helius/route.ts` (indexer), `app/migrations/supabase/0001_initial_schema.sql` (schema), `app/scripts/pin_project_metadata.ts` + `create_project.ts` (admin tools), and `app/web/src/lib/kommit.ts` (helper library shared by the frontend).
+
+### One-time wiring (Lukas)
+
+1. **Supabase project.** Create a free-tier project at https://supabase.com. Copy URL + anon key + service-role key into `.env.local`. Apply the schema:
+
+   ```bash
+   psql "$SUPABASE_DB_URL" -f migrations/supabase/0001_initial_schema.sql
+   ```
+
+   (Alternative: paste into the Supabase SQL editor.)
+
+2. **Pinata account.** Create at https://pinata.cloud, generate a JWT, paste into `PINATA_JWT` in `.env.local`.
+
+3. **Helius webhook.** Create one at https://helius.dev/dashboard/webhooks:
+   - Type: **Enhanced Transactions**
+   - Account/Program: `<NEXT_PUBLIC_KOMMIT_PROGRAM_ID>` (currently `GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3`)
+   - Webhook URL: `https://<your-vercel-domain>/api/webhook/helius` (or ngrok URL during local dev)
+   - Auth header: `Authorization: Bearer <HELIUS_WEBHOOK_SECRET>` — set this same value in `.env.local` as `HELIUS_WEBHOOK_SECRET`. Generate a random token (`openssl rand -hex 32`).
+
+4. **Local dev:** `cd web && npm run dev` then expose with ngrok: `ngrok http 3000`. Use the ngrok URL in the Helius webhook config until you have a real Vercel deployment.
+
+### Per-project workflow (admin)
+
+```bash
+# 1. Pin the project's metadata to IPFS.
+PINATA_JWT=... npx ts-node scripts/pin_project_metadata.ts ./caldera.json
+# → { ipfs_hash: "Qm...", metadata_uri_hash: "0x...", recipient_wallet: "..." }
+
+# 2. Submit the on-chain create_project with the hash.
+ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/create_project.ts \
+  --recipient 5x9... \
+  --metadata-uri-hash 0x...
+
+# 3. The Helius webhook fires. The indexer inserts into `projects` table
+#    and lazily fetches the IPFS content into `projects.metadata`.
+```
+
+### What's blocked on the off-chain stack going live
+
+- Frontend MVP can mock-render dashboards from static seed data, but live dashboards (per-user commitments, per-project supporters, yield receipts) need the indexer reading from Supabase.
+- Mainnet deploy is gated on this stack being live (per `handoffs/06_complete_onchain_v1.md` "After this handoff" note).

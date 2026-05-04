@@ -1,0 +1,1323 @@
+{
+  "address": "GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3",
+  "metadata": {
+    "name": "kommit",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Solana yield-routing primitive for early-stage validation"
+  },
+  "instructions": [
+    {
+      "name": "accrue_points",
+      "docs": [
+        "Permissionless crank. Brings a commitment's active + lifetime scores up to date."
+      ],
+      "discriminator": [
+        177,
+        159,
+        139,
+        58,
+        243,
+        35,
+        63,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "commitment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "commitment.user",
+                "account": "Commitment"
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "project",
+          "relations": [
+            "commitment"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "admin_pause",
+      "docs": [
+        "Admin-only. Halts new commits; withdrawals remain allowed."
+      ],
+      "discriminator": [
+        13,
+        109,
+        240,
+        129,
+        86,
+        245,
+        182,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "admin_unpause",
+      "docs": [
+        "Admin-only. Resumes commits."
+      ],
+      "discriminator": [
+        119,
+        151,
+        255,
+        104,
+        143,
+        119,
+        66,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "admin_update_project_metadata",
+      "docs": [
+        "Admin-only. Rotate the off-chain metadata pointer for a project.",
+        "Founders update pitch / image off-chain, admin commits the new IPFS hash on-chain."
+      ],
+      "discriminator": [
+        149,
+        64,
+        242,
+        59,
+        163,
+        235,
+        143,
+        112
+      ],
+      "accounts": [
+        {
+          "name": "project",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "metadata_uri_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "commit",
+      "docs": [
+        "User commits USDC to a project. Principal sits in a per-project escrow PDA."
+      ],
+      "discriminator": [
+        223,
+        140,
+        142,
+        165,
+        229,
+        208,
+        156,
+        74
+      ],
+      "accounts": [
+        {
+          "name": "commitment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "project",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_usdc_token_account",
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_project",
+      "docs": [
+        "Admin-only. Curate a new project: yield will flow to `recipient_wallet`."
+      ],
+      "discriminator": [
+        148,
+        219,
+        181,
+        42,
+        221,
+        114,
+        145,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "project",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  106,
+                  101,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "recipient_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "recipient_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "metadata_uri_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "harvest",
+      "docs": [
+        "Permissionless. Redeem `collateral_amount` cTokens for USDC, route to recipient.",
+        "`min_yield` enforces a dust threshold — actual USDC routed must be ≥ min_yield."
+      ],
+      "discriminator": [
+        228,
+        241,
+        31,
+        182,
+        53,
+        169,
+        59,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "project",
+          "writable": true
+        },
+        {
+          "name": "lending_position",
+          "writable": true
+        },
+        {
+          "name": "collateral_token_account",
+          "docs": [
+            "Collateral PDA holding cTokens. Signs as klend `owner` for redeem."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_token_account",
+          "docs": [
+            "Recipient's USDC ATA — where harvested USDC lands."
+          ],
+          "writable": true
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "klend_reserve",
+          "writable": true
+        },
+        {
+          "name": "klend_lending_market"
+        },
+        {
+          "name": "klend_lending_market_authority"
+        },
+        {
+          "name": "klend_reserve_liquidity_mint"
+        },
+        {
+          "name": "klend_reserve_liquidity_supply",
+          "writable": true
+        },
+        {
+          "name": "reserve_collateral_mint",
+          "writable": true
+        },
+        {
+          "name": "klend_program"
+        },
+        {
+          "name": "instruction_sysvar_account"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "collateral_amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_yield",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "docs": [
+        "One-time program initialization. Sets the admin pubkey."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "supply_to_yield_source",
+      "docs": [
+        "Permissionless. Supply USDC from the project escrow into the klend reserve.",
+        "Caller can pass `u64::MAX` to supply all available escrow."
+      ],
+      "discriminator": [
+        238,
+        133,
+        3,
+        249,
+        31,
+        83,
+        108,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "project"
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Per-project USDC escrow PDA. Holds committed liquidity. Signs as klend `owner`."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_token_account",
+          "docs": [
+            "Per-project cToken (klend reserve_collateral) PDA. Receives the cTokens.",
+            "Mint is the reserve's collateral mint, determined by which klend reserve."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lending_position",
+          "docs": [
+            "Per-(project, adapter) lending position. Tracks supplied amount + which reserve."
+          ],
+          "writable": true
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "klend_reserve",
+          "writable": true
+        },
+        {
+          "name": "klend_lending_market"
+        },
+        {
+          "name": "klend_lending_market_authority"
+        },
+        {
+          "name": "klend_reserve_liquidity_mint"
+        },
+        {
+          "name": "klend_reserve_liquidity_supply",
+          "writable": true
+        },
+        {
+          "name": "reserve_collateral_mint",
+          "writable": true
+        },
+        {
+          "name": "klend_program"
+        },
+        {
+          "name": "instruction_sysvar_account"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "User withdraws principal. Always allowed (kill-switch invariant: not gated by pause).",
+        "`amount == u64::MAX` withdraws the full principal.",
+        "`redeem_collateral_amount` may be 0; if escrow has < amount, caller must",
+        "also pass the klend account graph via `remaining_accounts` (see",
+        "`Withdraw` doc-comment)."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "commitment",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "project",
+          "relations": [
+            "commitment"
+          ]
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "commitment"
+          ]
+        },
+        {
+          "name": "user_usdc_token_account",
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "redeem_collateral_amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Commitment",
+      "discriminator": [
+        61,
+        112,
+        129,
+        128,
+        24,
+        147,
+        77,
+        87
+      ]
+    },
+    {
+      "name": "KommitConfig",
+      "discriminator": [
+        122,
+        241,
+        244,
+        143,
+        232,
+        168,
+        14,
+        102
+      ]
+    },
+    {
+      "name": "LendingPosition",
+      "discriminator": [
+        47,
+        255,
+        252,
+        35,
+        20,
+        245,
+        157,
+        243
+      ]
+    },
+    {
+      "name": "Project",
+      "discriminator": [
+        205,
+        168,
+        189,
+        202,
+        181,
+        247,
+        142,
+        19
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Committed",
+      "discriminator": [
+        70,
+        158,
+        162,
+        86,
+        29,
+        111,
+        143,
+        226
+      ]
+    },
+    {
+      "name": "PointsAccrued",
+      "discriminator": [
+        57,
+        216,
+        47,
+        18,
+        162,
+        247,
+        253,
+        75
+      ]
+    },
+    {
+      "name": "ProjectCreated",
+      "discriminator": [
+        192,
+        10,
+        163,
+        29,
+        185,
+        31,
+        67,
+        168
+      ]
+    },
+    {
+      "name": "ProjectMetadataUpdated",
+      "discriminator": [
+        116,
+        68,
+        187,
+        63,
+        126,
+        197,
+        102,
+        134
+      ]
+    },
+    {
+      "name": "SupplyExecuted",
+      "discriminator": [
+        222,
+        82,
+        177,
+        9,
+        184,
+        227,
+        11,
+        16
+      ]
+    },
+    {
+      "name": "Withdrawn",
+      "discriminator": [
+        20,
+        89,
+        223,
+        198,
+        194,
+        124,
+        219,
+        13
+      ]
+    },
+    {
+      "name": "YieldHarvested",
+      "discriminator": [
+        49,
+        197,
+        226,
+        232,
+        154,
+        211,
+        249,
+        222
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Paused",
+      "msg": "Program is paused"
+    },
+    {
+      "code": 6001,
+      "name": "InsufficientPrincipal",
+      "msg": "Insufficient principal to withdraw"
+    },
+    {
+      "code": 6002,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6004,
+      "name": "ProjectNotFound",
+      "msg": "Project not found"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6006,
+      "name": "UnknownAdapter",
+      "msg": "Unknown adapter id"
+    },
+    {
+      "code": 6007,
+      "name": "AdapterMismatch",
+      "msg": "Adapter mismatch — lending_position adapter_id != requested"
+    },
+    {
+      "code": 6008,
+      "name": "DustHarvest",
+      "msg": "Yield below dust threshold; harvest skipped"
+    }
+  ],
+  "types": [
+    {
+      "name": "Commitment",
+      "docs": [
+        "One per (user, project) pair. PDA seeds: [b\"commitment\", user.as_ref(), project.as_ref()]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "principal",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_ts",
+            "type": "i64"
+          },
+          {
+            "name": "active_score",
+            "type": "u128"
+          },
+          {
+            "name": "lifetime_score",
+            "type": "u128"
+          },
+          {
+            "name": "last_accrual_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Committed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "KommitConfig",
+      "docs": [
+        "Singleton program config. PDA seeds: [b\"config\"]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LendingPosition",
+      "docs": [
+        "One per (project, adapter). Tracks the funds we've routed into a yield source",
+        "and the cumulative `vault_handle` (the underlying reserve / market account).",
+        "PDA seeds: [b\"lending\", project.as_ref(), &[adapter_id]]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_id",
+            "type": "u8"
+          },
+          {
+            "name": "vault_handle",
+            "type": "pubkey"
+          },
+          {
+            "name": "supplied",
+            "type": "u64"
+          },
+          {
+            "name": "last_harvest_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PointsAccrued",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "active_delta",
+            "type": "u128"
+          },
+          {
+            "name": "lifetime_total",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Project",
+      "docs": [
+        "One per founder/team. PDA seeds: [b\"project\", recipient_wallet.as_ref()]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "recipient_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "metadata_uri_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "cumulative_principal",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_yield_routed",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProjectCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProjectMetadataUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SupplyExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Withdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldHarvested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "project",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}
