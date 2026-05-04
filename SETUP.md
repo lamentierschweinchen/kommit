@@ -149,3 +149,58 @@ ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/create_project.ts 
 
 - Frontend MVP can mock-render dashboards from static seed data, but live dashboards (per-user commitments, per-project supporters, yield receipts) need the indexer reading from Supabase.
 - Mainnet deploy is gated on this stack being live (per `handoffs/06_complete_onchain_v1.md` "After this handoff" note).
+
+## 9. Mainnet deploy (gated — coordinator + Lukas trigger)
+
+Deploy artifacts:
+
+- `scripts/deploy_mainnet.sh` — `anchor build` + ID consistency check + `anchor deploy --provider.cluster mainnet` + `anchor idl init/upgrade`. Idempotent: prompts before upgrading an existing on-chain program at the same ID.
+- `scripts/bootstrap_mainnet.ts` — calls `initialize_config` once. Idempotent: no-op if config already initialized.
+- `scripts/smoke_mainnet.ts <PROJECT_PDA>` — small-amount end-to-end smoke once a project is created.
+
+Required env:
+
+```bash
+export ANCHOR_WALLET=~/.config/solana/mainnet-deployer.json
+export ANCHOR_PROVIDER_URL="https://mainnet.helius-rpc.com/?api-key=$HELIUS_API_KEY"
+```
+
+Run order:
+
+```bash
+./scripts/deploy_mainnet.sh
+ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/bootstrap_mainnet.ts
+# (admin creates seed projects via the frontend or a small CLI helper)
+ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/smoke_mainnet.ts <PROJECT_PDA>
+```
+
+### Upgrade authority — v1 single-sig (deferred decision)
+
+The deploy script ships the program with whoever `ANCHOR_WALLET` points
+at as the upgrade authority. v1 fallback is **single-sig** (the deploy
+keypair, typically Lukas's hardware wallet for the initial private-beta
+cohort).
+
+This is the **only v1 risk that lets a key compromise drain user funds**
+(see [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) item 14.3): a malicious
+program upgrade can rewrite `withdraw` to transfer to the attacker.
+Mitigation in v1: do not announce the program ID publicly until upgrade
+authority is multisig'd.
+
+**v1.5 plan**: rotate upgrade authority to a Squads multisig (3-of-5 or
+similar). Coordinator's call when Lukas is back from his trip and Sean's
+Squads-integration response is in. The `deploy_mainnet.sh` script
+intentionally does NOT rotate the upgrade authority — this is a manual
+post-deploy step:
+
+```bash
+solana program set-upgrade-authority \
+  --program-id <PROGRAM_ID> \
+  --new-upgrade-authority <SQUADS_MULTISIG_ADDRESS> \
+  --upgrade-authority $ANCHOR_WALLET \
+  --url $ANCHOR_PROVIDER_URL
+```
+
+Rotate `config.admin` to the same Squads multisig at the same time
+(item 14.2 in SECURITY_REVIEW.md). The admin can pause / curate /
+rotate metadata but cannot move funds.

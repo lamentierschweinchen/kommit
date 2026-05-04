@@ -28,3 +28,23 @@ pub struct PointsAccrued {
     pub active_delta: u128,
     pub lifetime_total: u128,
 }
+
+#[event]
+pub struct SupplyExecuted {
+    pub project: Pubkey,
+    pub amount: u64,
+    pub ts: i64,
+}
+
+#[event]
+pub struct YieldHarvested {
+    pub project: Pubkey,
+    pub amount: u64,
+    pub ts: i64,
+}
+
+#[event]
+pub struct ProjectMetadataUpdated {
+    pub project: Pubkey,
+    pub new_hash: [u8; 32],
+}

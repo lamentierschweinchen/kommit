@@ -34,7 +34,7 @@ See `../build_order.md` (build sequence + cut order), `../program_spec.md` (Anch
 
 ## Develop
 
-See `SETUP.md` for first-time install. Then:
+See [`SETUP.md`](SETUP.md) for first-time install. Then:
 
 ```bash
 # Anchor program
@@ -45,6 +45,21 @@ anchor test
 cd web
 npm run dev
 ```
+
+## Deploy
+
+Mainnet deploy artifacts under [`scripts/`](scripts/):
+
+- [`scripts/deploy_mainnet.sh`](scripts/deploy_mainnet.sh) — one-shot mainnet deploy (program + IDL upload).
+- [`scripts/bootstrap_mainnet.ts`](scripts/bootstrap_mainnet.ts) — calls `initialize_config` post-deploy.
+- [`scripts/smoke_mainnet.ts`](scripts/smoke_mainnet.ts) — small-amount end-to-end smoke once a project is live.
+- [`scripts/smoke_klend_devnet.ts`](scripts/smoke_klend_devnet.ts) — devnet round-trip against the live klend USDC market.
+
+Required env vars are documented in [`.env.example`](.env.example).
+
+## Security
+
+[`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) — self-audit pass against the Anchor security checklist (14 items + verdict). Hackathon-private-beta-grade. Re-run before mainnet deploy.
 
 ## License
 
