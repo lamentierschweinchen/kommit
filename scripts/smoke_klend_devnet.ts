@@ -201,6 +201,7 @@ async function main() {
       project: projectPda,
       lendingPosition: lendingPositionPda,
       collateralTokenAccount: collateralPda,
+      escrowTokenAccount: escrowPda,
       recipientTokenAccount: recipientAta.address,
       usdcMint: USDC_MINT,
       klendReserve: KLEND_USDC_RESERVE,
