@@ -1,29 +1,44 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CommitterList } from "@/components/kommit/committer-list";
-import {
-  getSupportersForProject,
-  getYieldReceiptsForProject,
-  type Project,
-} from "@/lib/mock-data";
+import type { Project, Supporter, YieldReceipt } from "@/lib/mock-data";
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function FounderClient({ project }: { project: Project }) {
+export function FounderClient({
+  project,
+  supporters,
+  receipts,
+}: {
+  project: Project;
+  supporters: Supporter[];
+  receipts: YieldReceipt[];
+}) {
   const [updateText, setUpdateText] = useState("");
   const [pivot, setPivot] = useState(false);
-  const supporters = getSupportersForProject();
-  const receipts = getYieldReceiptsForProject();
 
   // Mock — real values from program.account.project.fetch + harvest event log.
+  // The total-received shape is in `project.cumulative_yield_routed` once we
+  // pipe that through queries.ts; v1.5.
   const monthReceived = 42.18;
   const totalReceived = 187.34;
+
+  function handlePost() {
+    toast("Update posted", {
+      description: pivot
+        ? "Tagged as pivot. Persistence wires when the indexer lands."
+        : "Persistence wires when the indexer lands.",
+    });
+    setUpdateText("");
+    setPivot(false);
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14 space-y-12">
@@ -71,7 +86,9 @@ export function FounderClient({ project }: { project: Project }) {
                 />
                 Tag as pivot
               </Label>
-              <Button disabled={updateText.trim().length === 0}>Post update</Button>
+              <Button onClick={handlePost} disabled={updateText.trim().length === 0}>
+                Post update
+              </Button>
             </div>
           </CardContent>
         </Card>

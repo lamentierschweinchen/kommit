@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/kommit/project-card";
 import { HeroRotatingWord } from "@/components/kommit/hero-rotating-word";
-import { getAllProjects } from "@/lib/mock-data";
+import { getAllProjects } from "@/lib/queries";
 
 const FAQ = [
   {
@@ -29,8 +29,8 @@ const FAQ = [
   },
 ];
 
-export default function Page() {
-  const projects = getAllProjects();
+export default async function Page() {
+  const projects = await getAllProjects();
   const featured = projects.slice(0, 3);
 
   return (

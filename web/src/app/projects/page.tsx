@@ -1,13 +1,15 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/kommit/project-card";
-import { getAllProjects } from "@/lib/mock-data";
+import { getAllProjects } from "@/lib/queries";
 
 export const metadata = {
   title: "Projects — Kommit",
   description: "Teams accepting commitments on Kommit.",
 };
 
-export default function ProjectsPage() {
-  const projects = getAllProjects();
+export default async function ProjectsPage() {
+  const projects = await getAllProjects();
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
@@ -22,8 +24,11 @@ export default function ProjectsPage() {
       </header>
 
       {projects.length === 0 ? (
-        <div className="text-center py-20 border border-dashed rounded-lg text-muted-foreground">
-          No projects yet.
+        <div className="text-center py-20 border border-dashed rounded-lg space-y-3">
+          <p className="text-muted-foreground">No projects yet.</p>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/">Back to landing</Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

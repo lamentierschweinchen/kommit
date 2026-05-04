@@ -11,21 +11,27 @@ import { CommitModal } from "@/components/kommit/commit-modal";
 import { WithdrawModal } from "@/components/kommit/withdraw-modal";
 import { YieldRoutedDisplay } from "@/components/kommit/yield-routed-display";
 import { PointsDisplay } from "@/components/kommit/points-display";
-import { getActivityForProject, type Project } from "@/lib/mock-data";
+import type { Project, Activity } from "@/lib/mock-data";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
-// Mock — until indexer lands, the user's commitment for a given project comes
-// from program.account.commitment.fetch(commitmentPda) using deriveCommitmentPda().
-// Hard-code a representative commitment for the demo.
+// Mock — until per-user reads run client-side via useKommitProgram(),
+// the user's commitment for this project is a placeholder. The on-chain
+// fetch happens via program.account.commitment.fetch(commitmentPda) +
+// findCommitmentPda(user, project). v1.5: wire that here.
 const MOCK_USER_COMMITMENT_DOLLARS = 50;
 const MOCK_USER_LIFETIME_POINTS = 47891;
 const MOCK_USER_ACTIVE_POINTS = 12430;
 
-export function ProjectDetailClient({ project }: { project: Project }) {
+export function ProjectDetailClient({
+  project,
+  activity,
+}: {
+  project: Project;
+  activity: Activity[];
+}) {
   const [commitOpen, setCommitOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const activity = getActivityForProject();
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
@@ -95,14 +101,18 @@ export function ProjectDetailClient({ project }: { project: Project }) {
             <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3">
               Recent supporters
             </h2>
-            <ul className="space-y-2 text-sm font-mono">
-              {activity.map((a, i) => (
-                <li key={i} className="flex items-baseline gap-4">
-                  <span className="text-muted-foreground w-20 shrink-0">{a.when}</span>
-                  <span>{a.text}</span>
-                </li>
-              ))}
-            </ul>
+            {activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No supporter activity yet.</p>
+            ) : (
+              <ul className="space-y-2 text-sm font-mono">
+                {activity.map((a, i) => (
+                  <li key={i} className="flex items-baseline gap-4">
+                    <span className="text-muted-foreground w-20 shrink-0">{a.when}</span>
+                    <span>{a.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
 
