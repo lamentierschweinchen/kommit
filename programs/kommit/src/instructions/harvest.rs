@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::adapters::kamino::{redeem_reserve_collateral, RedeemReserveCollateralAccounts};
@@ -9,13 +10,16 @@ use crate::state::{AdapterId, Commitment, LendingPosition, Project};
 /// Harvest accrued yield: redeem cTokens for USDC, route to recipient.
 /// Permissionless crank.
 ///
-/// **Routing:** klend's redeem CPI lands USDC in the project's escrow PDA
-/// (intermediate hop, signed by the collateral PDA). Then escrow forwards the
-/// observed USDC delta to the recipient ATA via a second SPL transfer signed
-/// by the escrow PDA. Two hops because klend on devnet rejects redeems whose
-/// `user_destination_liquidity` isn't authority-aligned with the redeem signer
-/// (`ConstraintTokenOwner`); routing through the project-owned escrow PDA
-/// dodges that and keeps the recipient ATA off the redeem critical path.
+/// **Routing:** klend's `redeem_reserve_collateral` enforces a token-owner
+/// constraint that the destination liquidity account's authority equals the
+/// redeem signer. Our redeem signer is the collateral PDA (it owns the
+/// cTokens being burned). So the redeem destination must also be a token
+/// account whose authority is the collateral PDA.
+///
+/// We use a dedicated landing ATA — `harvest_landing_usdc`, derived as
+/// `ATA(collateral_token_account, usdc_mint)` — for that hop. After the
+/// klend redeem lands USDC there, we forward the observed delta to the
+/// recipient ATA via a second SPL transfer signed by the collateral PDA.
 ///
 /// v1 takes `collateral_amount` and `min_yield` from the caller; the off-chain
 /// crank decides how much cToken to redeem based on klend's current exchange
@@ -27,7 +31,7 @@ use crate::state::{AdapterId, Commitment, LendingPosition, Project};
 #[derive(Accounts)]
 pub struct Harvest<'info> {
     #[account(mut)]
-    pub project: Account<'info, Project>,
+    pub project: Box<Account<'info, Project>>,
 
     #[account(
         mut,
@@ -35,9 +39,11 @@ pub struct Harvest<'info> {
         bump = lending_position.bump,
         constraint = lending_position.project == project.key() @ KommitError::AdapterMismatch,
     )]
-    pub lending_position: Account<'info, LendingPosition>,
+    pub lending_position: Box<Account<'info, LendingPosition>>,
 
-    /// Collateral PDA holding cTokens. Signs as klend `owner` for redeem.
+    /// Collateral PDA holding cTokens. Signs as klend `owner` for redeem AND
+    /// as the authority of `harvest_landing_usdc` (the redeem destination)
+    /// AND of the second-hop forward to recipient.
     #[account(
         mut,
         seeds = [Commitment::COLLATERAL_SEED, project.key().as_ref()],
@@ -45,19 +51,18 @@ pub struct Harvest<'info> {
         token::mint = reserve_collateral_mint,
         token::authority = collateral_token_account,
     )]
-    pub collateral_token_account: Account<'info, TokenAccount>,
+    pub collateral_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// Project escrow USDC PDA. Klend redeems here first; we then forward
-    /// the delta to recipient. Authority is the escrow PDA itself (signs
-    /// the second-hop transfer).
+    /// Per-project USDC landing account owned by the collateral PDA. Klend
+    /// redeems INTO this; harvest then forwards from here to recipient. ATA
+    /// so the address is canonical and idempotent across calls.
     #[account(
-        mut,
-        seeds = [Commitment::ESCROW_SEED, project.key().as_ref()],
-        bump,
-        token::mint = usdc_mint,
-        token::authority = escrow_token_account,
+        init_if_needed,
+        payer = payer,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = collateral_token_account,
     )]
-    pub escrow_token_account: Account<'info, TokenAccount>,
+    pub harvest_landing_usdc: Box<Account<'info, TokenAccount>>,
 
     /// Recipient's USDC ATA — final destination.
     #[account(
@@ -65,9 +70,9 @@ pub struct Harvest<'info> {
         token::mint = usdc_mint,
         token::authority = project.recipient_wallet,
     )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
-    pub usdc_mint: Account<'info, Mint>,
+    pub usdc_mint: Box<Account<'info, Mint>>,
 
     // --- klend account graph (same as supply, for redeem). ---
     /// CHECK: klend reserve.
@@ -90,18 +95,21 @@ pub struct Harvest<'info> {
     /// CHECK: instructions sysvar.
     pub instruction_sysvar_account: AccountInfo<'info>,
 
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<Harvest>, collateral_amount: u64, min_yield: u64) -> Result<()> {
     require!(collateral_amount > 0, KommitError::InvalidAmount);
 
-    let escrow_balance_before = ctx.accounts.escrow_token_account.amount;
+    let landing_balance_before = ctx.accounts.harvest_landing_usdc.amount;
     let recipient_balance_before = ctx.accounts.recipient_token_account.amount;
 
     let project_key = ctx.accounts.project.key();
-
-    // 1. Klend redeem signed by collateral PDA, USDC into escrow.
     let collateral_bump = ctx.bumps.collateral_token_account;
     let collateral_seeds: &[&[u8]] = &[
         Commitment::COLLATERAL_SEED,
@@ -110,6 +118,7 @@ pub fn handler(ctx: Context<Harvest>, collateral_amount: u64, min_yield: u64) ->
     ];
     let signer_seeds: &[&[&[u8]]] = &[collateral_seeds];
 
+    // 1. Klend redeem — collateral PDA signs, USDC lands in harvest_landing_usdc.
     let cpi_accounts = RedeemReserveCollateralAccounts {
         owner: ctx.accounts.collateral_token_account.to_account_info(),
         lending_market: ctx.accounts.klend_lending_market.to_account_info(),
@@ -119,36 +128,28 @@ pub fn handler(ctx: Context<Harvest>, collateral_amount: u64, min_yield: u64) ->
         reserve_collateral_mint: ctx.accounts.reserve_collateral_mint.to_account_info(),
         reserve_liquidity_supply: ctx.accounts.klend_reserve_liquidity_supply.to_account_info(),
         user_source_collateral: ctx.accounts.collateral_token_account.to_account_info(),
-        user_destination_liquidity: ctx.accounts.escrow_token_account.to_account_info(),
+        user_destination_liquidity: ctx.accounts.harvest_landing_usdc.to_account_info(),
         collateral_token_program: ctx.accounts.token_program.to_account_info(),
         liquidity_token_program: ctx.accounts.token_program.to_account_info(),
         instruction_sysvar_account: ctx.accounts.instruction_sysvar_account.to_account_info(),
     };
     redeem_reserve_collateral(cpi_accounts, collateral_amount, signer_seeds)?;
 
-    // Reload escrow to read post-CPI balance — that's the redeemed USDC.
-    ctx.accounts.escrow_token_account.reload()?;
-    let escrow_balance_after = ctx.accounts.escrow_token_account.amount;
-    let redeemed = escrow_balance_after.saturating_sub(escrow_balance_before);
+    // Reload to read post-CPI balance — that's the redeemed USDC.
+    ctx.accounts.harvest_landing_usdc.reload()?;
+    let landing_balance_after = ctx.accounts.harvest_landing_usdc.amount;
+    let redeemed = landing_balance_after.saturating_sub(landing_balance_before);
 
-    // 2. Forward redeemed USDC from escrow → recipient, signed by escrow PDA.
-    let escrow_bump = ctx.bumps.escrow_token_account;
-    let escrow_seeds: &[&[u8]] = &[
-        Commitment::ESCROW_SEED,
-        project_key.as_ref(),
-        &[escrow_bump],
-    ];
-    let escrow_signer_seeds: &[&[&[u8]]] = &[escrow_seeds];
-
+    // 2. Forward redeemed USDC from landing → recipient, signed by collateral PDA.
     let xfer_accounts = Transfer {
-        from: ctx.accounts.escrow_token_account.to_account_info(),
+        from: ctx.accounts.harvest_landing_usdc.to_account_info(),
         to: ctx.accounts.recipient_token_account.to_account_info(),
-        authority: ctx.accounts.escrow_token_account.to_account_info(),
+        authority: ctx.accounts.collateral_token_account.to_account_info(),
     };
     let xfer_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(),
         xfer_accounts,
-        escrow_signer_seeds,
+        signer_seeds,
     );
     token::transfer(xfer_ctx, redeemed)?;
 

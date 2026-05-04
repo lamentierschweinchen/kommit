@@ -195,13 +195,21 @@ async function main() {
   const REDEEM_CTOKENS = new anchor.BN(50_000); // arbitrary small amount
   const MIN_YIELD = new anchor.BN(1); // accept any non-zero routing as success
 
+  // Landing ATA owned by the collateral PDA; klend redeems into this.
+  // allowOwnerOffCurve=true because the collateral PDA isn't a regular wallet.
+  const harvestLandingUsdc = await getAssociatedTokenAddress(
+    USDC_MINT,
+    collateralPda,
+    true
+  );
+
   const sigHarvest = await program.methods
     .harvest(REDEEM_CTOKENS, MIN_YIELD)
     .accounts({
       project: projectPda,
       lendingPosition: lendingPositionPda,
       collateralTokenAccount: collateralPda,
-      escrowTokenAccount: escrowPda,
+      harvestLandingUsdc,
       recipientTokenAccount: recipientAta.address,
       usdcMint: USDC_MINT,
       klendReserve: KLEND_USDC_RESERVE,
@@ -212,7 +220,10 @@ async function main() {
       reserveCollateralMint: KLEND_RESERVE_COLLATERAL_MINT,
       klendProgram: KLEND_PROGRAM_ID,
       instructionSysvarAccount: SYSVAR_INSTRUCTIONS_PUBKEY,
+      payer: wallet.publicKey,
       tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
   console.log(`[4/5] harvest                tx=${sigHarvest}`);
