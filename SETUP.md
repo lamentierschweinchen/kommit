@@ -61,25 +61,21 @@ anchor build
 
 First build is slow (compiles dependencies). Subsequent builds are fast.
 
-## 4. Get the real program ID
+## 4. Confirm the program ID
 
-After the first `anchor build`, get the keypair-derived program ID:
-
-```bash
-anchor keys list
-```
-
-Replace the placeholder ID (`Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS` —
-syntactically valid placeholder, not the real key) in both places:
-
-- `Anchor.toml` (under `[programs.localnet]` and `[programs.devnet]`)
-- `programs/kommit/src/lib.rs` (in `declare_id!(...)`)
-
-Then rebuild:
+The real program ID is already committed throughout the repo
+(`GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3`) — both `declare_id!` in
+`programs/kommit/src/lib.rs` and every `[programs.*]` entry in
+`Anchor.toml`. New contributors do **not** need to swap a placeholder. To
+confirm `anchor build` derived the same key from the local keypair:
 
 ```bash
-anchor build
+anchor keys list   # should print: kommit: GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3
 ```
+
+If `anchor keys list` returns a different ID, the program keypair on this
+machine doesn't match the committed `declare_id!`. That's a fresh-machine
+fixup — flag to Lukas before deploying anywhere.
 
 ## 5. Test
 
@@ -141,8 +137,10 @@ ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/create_project.ts 
   --recipient 5x9... \
   --metadata-uri-hash 0x...
 
-# 3. The Helius webhook fires. The indexer inserts into `projects` table
-#    and lazily fetches the IPFS content into `projects.metadata`.
+# 3. The Helius webhook fires. The indexer inserts the project row using
+#    the metadata_uri_hash carried on the ProjectCreated event payload
+#    (QA H1, 2026-05-05). A separate sweeper pulls the IPFS blob into
+#    `projects.metadata` on demand.
 ```
 
 ### What's blocked on the off-chain stack going live

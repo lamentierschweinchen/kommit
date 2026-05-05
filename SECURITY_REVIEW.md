@@ -150,15 +150,24 @@ There is **no admin instruction that takes any token account as `mut` other than
 
 The admin's only on-chain power is curation (which projects exist, which can rotate metadata) plus the pause kill-switch. No spend authority.
 
-## 8. Yield only flows to `recipient_wallet`
+## 8. Yield (only the yield) flows to `recipient_wallet`
 
-**Status:** PASS.
+**Status:** PASS — after the QA C1 fix on `fix/qa-criticals`.
 
-`harvest` redeems cTokens for USDC into `recipient_token_account`, which is constrained at [`harvest.rs:41-44`](programs/kommit/src/instructions/harvest.rs:41) to be the SPL token account whose `authority` is `project.recipient_wallet`. Anchor enforces the constraint at validation; the destination cannot be substituted by the caller.
+`harvest` redeems cTokens for USDC into `harvest_landing_usdc` (a token account owned by the collateral PDA), then forwards the observed delta to `recipient_token_account` (constrained at [`harvest.rs`](programs/kommit/src/instructions/harvest.rs) to have `authority = project.recipient_wallet`). The destination cannot be substituted by the caller.
+
+**Critical update (QA 2026-05-05):** the prior harvest design accepted a caller-supplied `collateral_amount` and forwarded the entire redeem delta — meaning a caller could redeem the project's principal and route it to the recipient. The redesign **computes the yield amount on-chain** by reading klend's reserve account state:
+
+1. `redeemable_value = collateral_token_balance × klend_total_liquidity / klend_collateral_total_supply`
+2. `yield_amount = redeemable_value − lending_position.supplied`  (saturating)
+3. Caller passes `min_yield`; if `yield_amount < min_yield` → `DustHarvest` (no CPI fired)
+4. Compute `ctokens_to_redeem` for `yield_amount` only; CPI redeem; transfer
+5. Re-validate `routed >= min_yield` against the actual delta (defence against klend rate changes)
+6. **Do NOT decrement `lending_position.supplied`** — principal stays continuously supplied
 
 `project.recipient_wallet` itself is set at `create_project` time by the admin (the recipient is whoever the admin specifies for the founding team) and is **not modifiable** in v1. (Recipient rotation is a deferred v1.5 instruction, `admin_update_project_recipient`, intentionally omitted from this handoff per `program_spec.md` "open implementation questions".)
 
-The `withdraw` klend-redeem path destinations USDC into `escrow_token_account` (line 167), then immediately transfers `amount` to the user (line 198-209). The redeemed-but-not-withdrawn-yet remainder stays in the escrow — never goes to the recipient implicitly via `withdraw`. (Yield routing to recipient is `harvest`'s job.)
+The `withdraw` klend-redeem path lands USDC in the project's escrow PDA, then immediately transfers `amount` to the user. The redeemed-but-not-withdrawn-yet remainder stays in the escrow — never goes to the recipient implicitly via `withdraw`. (Yield routing to recipient is `harvest`'s job.)
 
 ## 9. Withdrawal pause invariant
 
@@ -229,7 +238,9 @@ These are **intentional v1 simplifications**, not security gaps. Each has a plan
 
 **Security posture: hackathon-private-beta-grade.** Suitable for the documented v1 scope (whitelisted committers, single-sig admin + upgrade authority, $1k self-test → 5–15 hand-curated projects).
 
-The program contains no known unintended fund-movement paths. Admin powers are bounded to curation + pause, neither of which can move user funds. The kill-switch invariant (withdrawals always allowed) is verified by test. The math is in `u128` with `checked_*` everywhere it matters. The CPI signer paths are correctly seeded.
+**Post-QA (2026-05-05):** the original report claimed "no known unintended fund-movement paths." That was wrong — the QA pass found `harvest` could be called by anyone with arbitrary `collateral_amount` and would route the project's principal to the project recipient (C1), and `supply_to_yield_source` could bind project principal to any klend reserve graph (C2). Both are fixed on `fix/qa-criticals`: harvest now computes the yield amount on-chain and never decrements `lending_position.supplied`; supply now requires key-equality against a `KaminoAdapterConfig` PDA before any CPI. The webhook indexer's idempotency was also redesigned (C3, C4): per-event identity `(tx_hash, instruction_index, event_index)` replaces the prior `(tx_hash, event_name)` key, and a single `process_event` SQL function wraps event-record + materialize in one Postgres transaction.
+
+After the fixes, the program contains no known unintended fund-movement paths. Admin powers are bounded to curation + pause + adapter-config init, none of which can move user funds. The kill-switch invariant (withdrawals always allowed) is verified by test. The math is in `u128` with `checked_*` everywhere it matters. The CPI signer paths are correctly seeded. The klend reserve graph is allowlisted per-key.
 
 **Pre-scaling-beyond-private-beta upgrade items:**
 - Rotate program upgrade authority from single-sig to Squads multisig (item 14.3) — critical, as this is the only v1 risk that lets a key compromise drain funds.

@@ -82,7 +82,17 @@ pub fn handler(ctx: Context<Commit>, amount: u64) -> Result<()> {
     } else {
         // Top-up. Accrue first so scores reflect the period before the new deposit,
         // then recompute weighted-average deposit_ts and increment principal.
-        commitment.accrue(now)?;
+        let delta = commitment.accrue(now)?;
+        // QA M1: emit PointsAccrued so the indexer materializes lifetime_score
+        // exactly (instead of approximating between explicit accrue calls).
+        if delta > 0 {
+            emit!(crate::events::PointsAccrued {
+                user: commitment.user,
+                project: commitment.project,
+                active_delta: delta,
+                lifetime_total: commitment.lifetime_score,
+            });
+        }
 
         let old_principal = commitment.principal as u128;
         let new_amount = amount as u128;

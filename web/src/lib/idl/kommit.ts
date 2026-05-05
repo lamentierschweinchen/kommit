@@ -421,8 +421,10 @@ export type Kommit = {
     {
       "name": "harvest",
       "docs": [
-        "Permissionless. Redeem `collateral_amount` cTokens for USDC, route to recipient.",
-        "`min_yield` enforces a dust threshold — actual USDC routed must be ≥ min_yield."
+        "Permissionless. Computes accrued yield on-chain from klend reserve state,",
+        "redeems just that amount, routes to recipient. Principal stays supplied.",
+        "`min_yield` enforces a dust threshold — actual USDC routed must be ≥ min_yield.",
+        "(QA C1 redesign 2026-05-05.)"
       ],
       "discriminator": [
         228,
@@ -440,6 +442,39 @@ export type Kommit = {
           "writable": true
         },
         {
+          "name": "adapterConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  97,
+                  109,
+                  105,
+                  110,
+                  111,
+                  95,
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "lendingPosition",
           "writable": true
         },
@@ -447,8 +482,8 @@ export type Kommit = {
           "name": "collateralTokenAccount",
           "docs": [
             "Collateral PDA holding cTokens. Signs as klend `owner` for redeem AND",
-            "as the authority of `harvest_landing_usdc` (the redeem destination)",
-            "AND of the second-hop forward to recipient."
+            "as the authority of `harvest_landing_usdc` AND of the second-hop",
+            "forward to recipient."
           ],
           "writable": true,
           "pda": {
@@ -479,8 +514,7 @@ export type Kommit = {
           "name": "harvestLandingUsdc",
           "docs": [
             "Per-project USDC landing account owned by the collateral PDA. Klend",
-            "redeems INTO this; harvest then forwards from here to recipient. ATA",
-            "so the address is canonical and idempotent across calls."
+            "redeems INTO this; harvest then forwards from here to recipient."
           ],
           "writable": true,
           "pda": {
@@ -627,10 +661,6 @@ export type Kommit = {
       ],
       "args": [
         {
-          "name": "collateralAmount",
-          "type": "u64"
-        },
-        {
           "name": "minYield",
           "type": "u64"
         }
@@ -684,6 +714,116 @@ export type Kommit = {
       "args": []
     },
     {
+      "name": "initializeKaminoAdapterConfig",
+      "docs": [
+        "Admin-only, one-time. Populates the Kamino klend adapter allowlist",
+        "(QA C2). supply / harvest CPIs require key-equality against this PDA."
+      ],
+      "discriminator": [
+        65,
+        255,
+        154,
+        5,
+        187,
+        45,
+        165,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "adapterConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  97,
+                  109,
+                  105,
+                  110,
+                  111,
+                  95,
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "klendProgram",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcReserve",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcLendingMarket",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcMarketAuthority",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcLiquiditySupply",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcCollateralMint",
+          "type": "pubkey"
+        },
+        {
+          "name": "usdcLiquidityMint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "supplyToYieldSource",
       "docs": [
         "Permissionless. Supply USDC from the project escrow into the klend reserve.",
@@ -710,6 +850,39 @@ export type Kommit = {
               {
                 "kind": "const",
                 "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "adapterConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  97,
+                  109,
+                  105,
+                  110,
+                  111,
+                  95,
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
                   99,
                   111,
                   110,
@@ -967,6 +1140,19 @@ export type Kommit = {
       ]
     },
     {
+      "name": "kaminoAdapterConfig",
+      "discriminator": [
+        84,
+        166,
+        127,
+        110,
+        150,
+        26,
+        136,
+        224
+      ]
+    },
+    {
       "name": "kommitConfig",
       "discriminator": [
         122,
@@ -1122,26 +1308,21 @@ export type Kommit = {
     },
     {
       "code": 6004,
-      "name": "projectNotFound",
-      "msg": "Project not found"
-    },
-    {
-      "code": 6005,
       "name": "invalidAmount",
       "msg": "Amount must be greater than zero"
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "unknownAdapter",
       "msg": "Unknown adapter id"
     },
     {
-      "code": 6007,
+      "code": 6006,
       "name": "adapterMismatch",
       "msg": "Adapter mismatch — lending_position adapter_id != requested"
     },
     {
-      "code": 6008,
+      "code": 6007,
       "name": "dustHarvest",
       "msg": "Yield below dust threshold; harvest skipped"
     }
@@ -1210,6 +1391,58 @@ export type Kommit = {
           {
             "name": "ts",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "kaminoAdapterConfig",
+      "docs": [
+        "Singleton allowlist for the Kamino klend adapter — admin curates which",
+        "klend program + USDC reserve graph the project escrow PDAs are allowed to",
+        "supply into. Without this, supply_to_yield_source's permissionless caller",
+        "could bind project principal to any klend reserve (QA C2).",
+        "",
+        "PDA seeds: [b\"kamino_adapter_config\"]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "klendProgram",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcReserve",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcLendingMarket",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcMarketAuthority",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcLiquiditySupply",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcCollateralMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdcLiquidityMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -1350,6 +1583,19 @@ export type Kommit = {
           {
             "name": "recipientWallet",
             "type": "pubkey"
+          },
+          {
+            "name": "metadataUriHash",
+            "docs": [
+              "QA H1: indexer needs the metadata hash at create time so it can",
+              "resolve the IPFS pin without a follow-up account fetch."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }

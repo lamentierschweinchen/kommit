@@ -10,8 +10,6 @@ pub enum KommitError {
     MathOverflow,
     #[msg("Unauthorized")]
     Unauthorized,
-    #[msg("Project not found")]
-    ProjectNotFound,
     #[msg("Amount must be greater than zero")]
     InvalidAmount,
     #[msg("Unknown adapter id")]

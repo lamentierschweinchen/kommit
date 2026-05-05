@@ -41,7 +41,7 @@ Backer withdraws anytime:
 ```mermaid
 flowchart LR
     subgraph User["User (browser)"]
-        Frontend["Next.js 14<br/>+ shadcn/ui<br/>+ Privy embedded wallet"]
+        Frontend["Next.js 16.2.4<br/>+ shadcn/ui<br/>+ Privy embedded wallet"]
     end
 
     subgraph OnChain["Solana program (on-chain)"]
@@ -106,7 +106,7 @@ app/
 ├── scripts/                     # Mainnet deploy + devnet smoke + IPFS pin + create_project
 ├── migrations/
 │   └── supabase/                # Indexer schema migrations
-├── web/                         # Next.js 14 frontend (TypeScript + Tailwind + shadcn/ui + Privy)
+├── web/                         # Next.js 16.2.4 frontend (TypeScript + Tailwind + shadcn/ui + Privy)
 │   └── src/
 │       ├── lib/kommit.ts        # PDA derivation + program client + Supabase clients
 │       ├── lib/idl/             # Bundled IDL JSON + TS types

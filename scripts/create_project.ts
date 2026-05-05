@@ -12,8 +12,10 @@
 //      `metadata_uri_hash` from its output.
 //   2. Run this script with that hash. Wallet must equal config.admin.
 //   3. The indexer (app/web/src/app/api/webhook/helius/route.ts) catches
-//      the ProjectCreated event, lazily fetches the IPFS content via
-//      Pinata gateway, populates projects.metadata.
+//      the ProjectCreated event — the on-chain event payload now carries
+//      `metadata_uri_hash` directly (QA H1, 2026-05-05) so the indexer
+//      writes it into `projects.metadata_uri_hash` on insert. A separate
+//      sweeper pulls the IPFS blob into `projects.metadata` on demand.
 
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
@@ -86,7 +88,18 @@ async function main() {
     .rpc();
 
   console.log(`\ncreate_project tx: ${sig}`);
-  console.log(`View: https://solscan.io/tx/${sig}?cluster=devnet`);
+  // QA L2: print a cluster-neutral Solscan link based on ANCHOR_PROVIDER_URL
+  // (was hardcoded `?cluster=devnet`). Falls back to no suffix if we can't
+  // reasonably infer the cluster.
+  const rpc = process.env.ANCHOR_PROVIDER_URL ?? "";
+  const clusterSuffix = rpc.includes("mainnet")
+    ? ""
+    : rpc.includes("devnet")
+    ? "?cluster=devnet"
+    : rpc.includes("testnet")
+    ? "?cluster=testnet"
+    : "";
+  console.log(`View: https://solscan.io/tx/${sig}${clusterSuffix}`);
 }
 
 main().catch((e) => {
