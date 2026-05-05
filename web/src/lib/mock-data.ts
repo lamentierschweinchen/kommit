@@ -43,7 +43,8 @@ export type Commitment = {
   amount: number;
   daysActive: number;
   since: string;
-  activePoints: number;
+  /** Active reputation score — stored as bigint (u128 on-chain) for exact display past 2^53. */
+  activePoints: bigint;
   weeklyYield: number;
 };
 
@@ -51,7 +52,8 @@ export type Supporter = {
   wallet: string;
   amount: number;
   since: string;
-  points: number;
+  /** Lifetime reputation score — bigint for exact display past 2^53. */
+  points: bigint;
 };
 
 export type YieldReceipt = {
@@ -250,7 +252,7 @@ export const MOCK_COMMITMENTS: Commitment[] = [
     amount: 200,
     daysActive: 51,
     since: "Mar 12",
-    activePoints: 3240,
+    activePoints: 3240n,
     weeklyYield: 0.42,
   },
   {
@@ -259,7 +261,7 @@ export const MOCK_COMMITMENTS: Commitment[] = [
     amount: 100,
     daysActive: 100,
     since: "Jan 22",
-    activePoints: 9860,
+    activePoints: 9860n,
     weeklyYield: 0.21,
   },
   {
@@ -268,19 +270,19 @@ export const MOCK_COMMITMENTS: Commitment[] = [
     amount: 50,
     daysActive: 28,
     since: "Apr 04",
-    activePoints: 720,
+    activePoints: 720n,
     weeklyYield: 0.1,
   },
 ];
 
 export const MOCK_SUPPORTERS: Supporter[] = [
-  { wallet: "Hf3k…d4f9", amount: 200, since: "Mar 12", points: 3240 },
-  { wallet: "Q9aB…c811", amount: 500, since: "Mar 14", points: 7820 },
-  { wallet: "Lp2v…e004", amount: 50, since: "Mar 28", points: 540 },
-  { wallet: "Mn7d…a1c3", amount: 1000, since: "Apr 01", points: 13200 },
-  { wallet: "Tx5k…f902", amount: 25, since: "Apr 09", points: 210 },
-  { wallet: "Vb6r…8aa2", amount: 100, since: "Apr 17", points: 870 },
-  { wallet: "Yq1n…dd55", amount: 300, since: "Apr 21", points: 1980 },
+  { wallet: "Hf3k…d4f9", amount: 200, since: "Mar 12", points: 3240n },
+  { wallet: "Q9aB…c811", amount: 500, since: "Mar 14", points: 7820n },
+  { wallet: "Lp2v…e004", amount: 50, since: "Mar 28", points: 540n },
+  { wallet: "Mn7d…a1c3", amount: 1000, since: "Apr 01", points: 13200n },
+  { wallet: "Tx5k…f902", amount: 25, since: "Apr 09", points: 210n },
+  { wallet: "Vb6r…8aa2", amount: 100, since: "Apr 17", points: 870n },
+  { wallet: "Yq1n…dd55", amount: 300, since: "Apr 21", points: 1980n },
 ];
 
 export const MOCK_YIELD_RECEIPTS: YieldReceipt[] = [

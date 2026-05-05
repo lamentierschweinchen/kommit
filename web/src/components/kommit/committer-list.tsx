@@ -1,8 +1,12 @@
 /**
  * Founder-dashboard list of supporters per design.md wireframe.
  * Sortable by recency / amount / points (sort UI deferred to v1.5).
+ *
+ * Points are u128 from Anchor / Supabase — formatted via lib/money.formatScore
+ * for exact display past 2^53.
  */
 
+import { formatScore } from "@/lib/money";
 import type { Supporter } from "@/lib/mock-data";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -35,7 +39,7 @@ export function CommitterList({ supporters }: { supporters: Supporter[] }) {
             <div className="col-span-5 font-mono text-xs sm:text-sm truncate">{s.wallet}</div>
             <div className="col-span-2">${fmt(s.amount)}</div>
             <div className="col-span-3 text-muted-foreground">{s.since}</div>
-            <div className="col-span-2 text-right">{fmt(s.points)}</div>
+            <div className="col-span-2 text-right">{formatScore(s.points)}</div>
           </li>
         ))}
       </ul>

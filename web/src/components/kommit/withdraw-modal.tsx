@@ -17,10 +17,15 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useKommitProgram } from "@/lib/anchor-client";
 import { withdrawFromProject } from "@/lib/tx";
+import {
+  parseTokenAmount,
+  formatTokenAmountFixed,
+  formatPoints,
+  validateAmount,
+} from "@/lib/money";
 import type { Project } from "@/lib/mock-data";
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const USDC_DECIMALS = 6;
 
 export function WithdrawModal({
   project,
@@ -30,8 +35,10 @@ export function WithdrawModal({
   onOpenChange,
 }: {
   project: Project;
-  currentlyCommittedDollars: number;
-  lifetimePoints: number;
+  /** Display-side cap on withdraw — accepts a number (mock) or bigint (live u64 base units). */
+  currentlyCommittedDollars: number | bigint;
+  /** Lifetime score — number (mock) or bigint (live u128). */
+  lifetimePoints: number | bigint;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -39,13 +46,40 @@ export function WithdrawModal({
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const numeric = Number(amount) || 0;
-  const isFull = numeric >= currentlyCommittedDollars;
-  const canSubmit = !busy && numeric > 0 && numeric <= currentlyCommittedDollars && !!client;
+  // Cap normalization. If currentlyCommittedDollars is a bigint, treat as
+  // base units. If a number, parse `String(n)` → base units. Number values
+  // at private-beta scales are exact; bigint is exact at any scale.
+  const capBaseUnits: bigint = (() => {
+    if (typeof currentlyCommittedDollars === "bigint") return currentlyCommittedDollars;
+    try {
+      return parseTokenAmount(String(currentlyCommittedDollars), USDC_DECIMALS);
+    } catch {
+      return 0n;
+    }
+  })();
+  const capDisplay = formatTokenAmountFixed(capBaseUnits, USDC_DECIMALS, 2, 2);
+
+  const validationError = validateAmount(amount, USDC_DECIMALS, capBaseUnits);
+
+  // Determine "is full withdrawal" via bigint comparison — exact past 2^53.
+  const isFull = (() => {
+    if (validationError || amount.trim().length === 0) return false;
+    try {
+      return parseTokenAmount(amount, USDC_DECIMALS) >= capBaseUnits;
+    } catch {
+      return false;
+    }
+  })();
+
+  const canSubmit = !busy && !validationError && !!client;
 
   async function handleWithdraw() {
     if (!client) {
       toast.error("Wallet not connected");
+      return;
+    }
+    if (validationError) {
+      toast.error("Invalid amount", { description: validationError });
       return;
     }
     setBusy(true);
@@ -53,9 +87,9 @@ export function WithdrawModal({
       const res = await withdrawFromProject(
         client,
         new PublicKey(project.recipientWallet),
-        numeric
+        amount.trim()
       );
-      toast.success(`Withdrew $${fmt(numeric)} from ${project.team}`, {
+      toast.success(`Withdrew $${amount.trim()} from ${project.team}`, {
         description: res.signature.slice(0, 16) + "…",
       });
       onOpenChange(false);
@@ -74,9 +108,7 @@ export function WithdrawModal({
           <DialogTitle>Withdraw from {project.team}</DialogTitle>
           <DialogDescription>
             Currently committed:{" "}
-            <span className="font-medium text-foreground tabular-nums">
-              ${fmt(currentlyCommittedDollars)}
-            </span>
+            <span className="font-medium text-foreground tabular-nums">${capDisplay}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -93,17 +125,26 @@ export function WithdrawModal({
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-                  className="pl-7 text-lg tabular-nums"
+                  className={`pl-7 text-lg tabular-nums ${
+                    validationError ? "border-destructive focus-visible:ring-destructive/30" : ""
+                  }`}
                   placeholder="0.00"
+                  aria-invalid={!!validationError}
+                  aria-describedby={validationError ? "withdraw-amount-error" : undefined}
                 />
               </div>
               <Button
                 variant="outline"
-                onClick={() => setAmount(String(currentlyCommittedDollars))}
+                onClick={() => setAmount(formatTokenAmountFixed(capBaseUnits, USDC_DECIMALS, 2, USDC_DECIMALS))}
               >
                 Full
               </Button>
             </div>
+            {validationError && (
+              <p id="withdraw-amount-error" className="text-xs text-destructive">
+                {validationError}
+              </p>
+            )}
           </div>
 
           <Separator />
@@ -112,7 +153,7 @@ export function WithdrawModal({
             <p>
               Your lifetime score is preserved (
               <span className="font-medium text-foreground tabular-nums">
-                {lifetimePoints.toLocaleString("en-US")} pts
+                {formatPoints(lifetimePoints)} pts
               </span>
               ). Active points {isFull ? "reset to 0" : "scale with the remaining commitment"}.
             </p>
@@ -125,7 +166,7 @@ export function WithdrawModal({
             Cancel
           </Button>
           <Button onClick={handleWithdraw} disabled={!canSubmit}>
-            {busy ? "Withdrawing…" : `Withdraw $${amount || "0"}`}
+            {busy ? "Withdrawing…" : `Withdraw $${amount.trim() || "0"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

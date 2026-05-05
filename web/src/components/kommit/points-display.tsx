@@ -1,9 +1,13 @@
 /**
  * A quiet number with a label. Per design.md form-serves-function:
  * "points feel earned, not gamified" — no badges, no trophies, no sparkle.
+ *
+ * Accepts bigint (u128 from Anchor / Supabase) or number (mock constant)
+ * and formats both safely via lib/money.formatPoints — no precision loss
+ * on the bigint path past 2^53.
  */
 
-const fmt = (n: number) => n.toLocaleString("en-US");
+import { formatPoints } from "@/lib/money";
 
 export function PointsDisplay({
   value,
@@ -11,7 +15,7 @@ export function PointsDisplay({
   size = "md",
   className = "",
 }: {
-  value: number;
+  value: bigint | number;
   label?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -23,7 +27,7 @@ export function PointsDisplay({
   };
   return (
     <span className={`tabular-nums ${sizes[size]} ${className}`}>
-      <span className="font-medium">{fmt(value)}</span>{" "}
+      <span className="font-medium">{formatPoints(value)}</span>{" "}
       <span className="text-muted-foreground font-normal">{label} points</span>
     </span>
   );

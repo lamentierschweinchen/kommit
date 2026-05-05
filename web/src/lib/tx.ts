@@ -2,6 +2,11 @@
  * On-chain commit + withdraw helpers. Build txs via Anchor's typed methods
  * builder; sign + send via the Privy-wallet-backed AnchorProvider.
  *
+ * Money math goes through `lib/money.ts` — `parseTokenAmount` for
+ * decimal-string → u64 base units, exact and overflow-safe. Anchor's BN
+ * accepts a bigint via `BN(value.toString())`. No floating-point arithmetic
+ * on token amounts. Per QA report finding M3.
+ *
  * Withdraw v1 caveat: only handles the escrow-only path (when escrow has
  * enough liquid USDC to cover the requested amount). When `supply_to_yield_source`
  * has moved funds into klend, withdraws need the klend account graph passed
@@ -11,10 +16,7 @@
  */
 
 import { BN } from "@coral-xyz/anchor";
-import {
-  PublicKey,
-  SystemProgram,
-} from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -27,17 +29,25 @@ import {
   findProjectPda,
 } from "@/lib/kommit";
 import { USDC_MINT_DEVNET, type KommitClient } from "@/lib/anchor-client";
+import { parseTokenAmount, formatTokenAmount } from "@/lib/money";
 
 /** USDC has 6 decimals on Solana. */
 export const USDC_DECIMALS = 6;
 
-export function dollarsToBaseUnits(amount: number): BN {
-  return new BN(Math.round(amount * 10 ** USDC_DECIMALS));
+/**
+ * Convert a decimal user-input string (e.g. "100.5") into an Anchor BN
+ * over u64 base units. Throws on malformed / negative / overflow inputs;
+ * caller is expected to pre-validate via `validateAmount` and surface
+ * inline errors before invoking the tx helper.
+ */
+export function parseAmountToBn(amount: string): BN {
+  const baseUnits = parseTokenAmount(amount, USDC_DECIMALS);
+  return new BN(baseUnits.toString());
 }
 
-export function baseUnitsToDollars(amount: BN | bigint | number): number {
-  const n = typeof amount === "number" ? amount : Number(amount);
-  return n / 10 ** USDC_DECIMALS;
+/** Format u64 base units (bigint) as a USDC decimal string for display. */
+export function formatBaseUnits(baseUnits: bigint): string {
+  return formatTokenAmount(baseUnits, USDC_DECIMALS);
 }
 
 export type TxResult = { signature: string };
@@ -45,7 +55,7 @@ export type TxResult = { signature: string };
 export async function commitToProject(
   client: KommitClient,
   recipientWallet: PublicKey,
-  amountDollars: number,
+  amount: string,
   usdcMint: PublicKey = USDC_MINT_DEVNET
 ): Promise<TxResult> {
   const user = client.provider.wallet.publicKey;
@@ -56,7 +66,7 @@ export async function commitToProject(
   const userUsdcAta = getAssociatedTokenAddressSync(usdcMint, user, false);
 
   const sig = await client.program.methods
-    .commit(dollarsToBaseUnits(amountDollars))
+    .commit(parseAmountToBn(amount))
     .accountsPartial({
       commitment,
       project,
@@ -77,7 +87,7 @@ export async function commitToProject(
 export async function withdrawFromProject(
   client: KommitClient,
   recipientWallet: PublicKey,
-  amountDollars: number,
+  amount: string,
   usdcMint: PublicKey = USDC_MINT_DEVNET
 ): Promise<TxResult> {
   const user = client.provider.wallet.publicKey;
@@ -87,7 +97,7 @@ export async function withdrawFromProject(
   const userUsdcAta = getAssociatedTokenAddressSync(usdcMint, user, false);
 
   const sig = await client.program.methods
-    .withdraw(dollarsToBaseUnits(amountDollars), new BN(0))
+    .withdraw(parseAmountToBn(amount), new BN(0))
     .accountsPartial({
       commitment,
       project,
