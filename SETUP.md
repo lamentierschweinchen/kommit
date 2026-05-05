@@ -111,9 +111,12 @@ The off-chain data layer is in `app/web/src/app/api/webhook/helius/route.ts` (in
 
    ```bash
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0001_initial_schema.sql
+   psql "$SUPABASE_DB_URL" -f migrations/supabase/0002_event_identity.sql
    ```
 
-   (Alternative: paste into the Supabase SQL editor.)
+   0002 adds per-event identity columns (`instruction_index`, `event_index`) and the transactional `process_event` SQL function — required for the QA-fixed indexer (C3 + C4) to work; without it the webhook hits a missing function and returns 500 for every delivery.
+
+   (Alternative: paste into the Supabase SQL editor in order.)
 
 2. **Pinata account.** Create at https://pinata.cloud, generate a JWT, paste into `PINATA_JWT` in `.env.local`.
 

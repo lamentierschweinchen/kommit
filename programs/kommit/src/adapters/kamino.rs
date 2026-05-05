@@ -25,45 +25,74 @@ pub const KLEND_PROGRAM_ID: Pubkey =
 const DEPOSIT_RESERVE_LIQUIDITY_DISCRIMINATOR: [u8; 8] = [169, 201, 30, 126, 6, 205, 102, 68];
 const REDEEM_RESERVE_COLLATERAL_DISCRIMINATOR: [u8; 8] = [234, 117, 181, 125, 185, 142, 220, 29];
 
-// --- Reserve account read for harvest yield computation (QA C1) -----------
+// --- Reserve account read for harvest yield computation (QA C1 + C1 v2) ---
 //
 // Layout traced against klend's deployed devnet binary 2026-05-03 (program
-// `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD`). Field offsets within
-// `Reserve`:
-//   8  discriminator
-//   8  version (u64)
-//   16 LastUpdate { slot u64, stale u8, price_status u8, padding [u8; 6] }
-//   32 lending_market
-//   32 farm_collateral
-//   32 farm_debt
+// `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD`) and re-verified against
+// idls/kamino_lending.json (ReserveLiquidity field order). Field offsets
+// within `Reserve`:
+//   8   discriminator
+//   8   version (u64)
+//   16  LastUpdate { slot u64, stale u8, price_status u8, padding [u8; 6] }
+//   32  lending_market
+//   32  farm_collateral
+//   32  farm_debt
 //   ── 128 — start of `liquidity: ReserveLiquidity` ──
-//   32 mint_pubkey
-//   32 supply_vault
-//   32 fee_vault
-//   8  total_available_amount   (offset 224)
-//   16 borrowed_amount_sf       (offset 232; klend's "scaled fraction": value × 2^60)
+//   32  mint_pubkey                       (rel +0,   abs 128)
+//   32  supply_vault                      (rel +32,  abs 160)
+//   32  fee_vault                         (rel +64,  abs 192)
+//   8   total_available_amount            (rel +96,  abs 224)
+//   16  borrowed_amount_sf                (rel +104, abs 232)
+//   16  market_price_sf                   (rel +120, abs 248)
+//   8   market_price_last_updated_ts      (rel +136, abs 264)
+//   8   mint_decimals                     (rel +144, abs 272)
+//   8   deposit_limit_crossed_timestamp   (rel +152, abs 280)
+//   8   borrow_limit_crossed_timestamp    (rel +160, abs 288)
+//   48  cumulative_borrow_rate_bsf (BigFractionBytes = 6×u64)  (rel +168, abs 296)
+//   16  accumulated_protocol_fees_sf      (rel +216, abs 344)  ← QA C1 v2
+//   16  accumulated_referrer_fees_sf      (rel +232, abs 360)  ← QA C1 v2
+//   16  pending_referrer_fees_sf          (rel +248, abs 376)  ← QA C1 v2
 //   ...
 //   ── 1360 = 128 + 1232 (ReserveLiquidity) — start of 1200-byte padding ──
 //   ── 2560 = 1360 + 1200 — start of `collateral: ReserveCollateral` ──
-//   32 mint_pubkey               (offset 2560)
-//   8  mint_total_supply         (offset 2592 — cToken total supply)
+//   32  mint_pubkey                       (offset 2560)
+//   8   mint_total_supply                 (offset 2592 — cToken total supply)
+//
+// **QA C1 v2 (2026-05-05):** klend's `Reserve::total_supply()` /
+// `getTotalSupply()` subtracts the three fee_sf fields when computing
+// depositor supply (klend-sdk source `klend-sdk/src/classes/reserve.ts`
+// circa Kamino-Finance/klend-sdk@HEAD). Without subtracting them here,
+// `total_liquidity()` overestimates redeemable value and a permissionless
+// caller with low `min_yield` can route principal as "yield" — same C1
+// exploitation class through a new code path. Added the three fee fields
+// + `total_liquidity()` subtraction; the 6th + 7th unit tests cover it.
 //
 // If klend ships a layout change the harvest computation breaks safely:
-// either the reads return stale values (yield computed off old totals →
-// either DustHarvest or a tiny mistransfer that the routed >= min_yield
-// gate catches in our handler) OR an out-of-bounds read panics.
+// either reads return stale values (yield computed off old totals → either
+// DustHarvest or a tiny mistransfer that the routed >= min_yield gate
+// catches in our handler) OR an out-of-bounds read returns None and
+// harvest aborts.
 
 const RESERVE_TOTAL_AVAILABLE_OFFSET: usize = 224;
 const RESERVE_BORROWED_SF_OFFSET: usize = 232;
+const RESERVE_ACCUMULATED_PROTOCOL_FEES_SF_OFFSET: usize = 344;
+const RESERVE_ACCUMULATED_REFERRER_FEES_SF_OFFSET: usize = 360;
+const RESERVE_PENDING_REFERRER_FEES_SF_OFFSET: usize = 376;
 const RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET: usize = 2592;
 const RESERVE_MIN_LEN: usize = RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET + 8;
 
-/// Snapshot of the fields we read from a klend Reserve account.
+/// Snapshot of the klend Reserve fields we need to compute redeemable value
+/// for harvest yield accounting. The three `*_fees_sf` fields were added in
+/// QA C1 v2 (2026-05-05) — without them `total_liquidity()` overestimates
+/// depositor supply and a permissionless harvester can route principal.
 #[derive(Copy, Clone, Debug)]
 pub struct ReserveSnapshot {
     pub total_available_amount: u64,
     pub borrowed_amount_sf: u128,
     pub mint_total_supply: u64,
+    pub accumulated_protocol_fees_sf: u128,
+    pub accumulated_referrer_fees_sf: u128,
+    pub pending_referrer_fees_sf: u128,
 }
 
 impl ReserveSnapshot {
@@ -73,36 +102,39 @@ impl ReserveSnapshot {
         if data.len() < RESERVE_MIN_LEN {
             return None;
         }
-        let total_available_amount = u64::from_le_bytes(
-            data[RESERVE_TOTAL_AVAILABLE_OFFSET..RESERVE_TOTAL_AVAILABLE_OFFSET + 8]
-                .try_into()
-                .ok()?,
-        );
-        let borrowed_amount_sf = u128::from_le_bytes(
-            data[RESERVE_BORROWED_SF_OFFSET..RESERVE_BORROWED_SF_OFFSET + 16]
-                .try_into()
-                .ok()?,
-        );
-        let mint_total_supply = u64::from_le_bytes(
-            data[RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET
-                ..RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET + 8]
-                .try_into()
-                .ok()?,
-        );
+        let read_u64 = |off: usize| -> Option<u64> {
+            data.get(off..off + 8)?.try_into().ok().map(u64::from_le_bytes)
+        };
+        let read_u128 = |off: usize| -> Option<u128> {
+            data.get(off..off + 16)?.try_into().ok().map(u128::from_le_bytes)
+        };
         Some(Self {
-            total_available_amount,
-            borrowed_amount_sf,
-            mint_total_supply,
+            total_available_amount: read_u64(RESERVE_TOTAL_AVAILABLE_OFFSET)?,
+            borrowed_amount_sf: read_u128(RESERVE_BORROWED_SF_OFFSET)?,
+            mint_total_supply: read_u64(RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET)?,
+            accumulated_protocol_fees_sf: read_u128(RESERVE_ACCUMULATED_PROTOCOL_FEES_SF_OFFSET)?,
+            accumulated_referrer_fees_sf: read_u128(RESERVE_ACCUMULATED_REFERRER_FEES_SF_OFFSET)?,
+            pending_referrer_fees_sf: read_u128(RESERVE_PENDING_REFERRER_FEES_SF_OFFSET)?,
         })
     }
 
-    /// Total liquidity (USDC base units) currently in the reserve.
-    /// Equals `total_available + (borrowed_amount_sf >> 60)`.
-    /// Loses the sub-base-unit precision of borrowed_amount_sf — fine for our
-    /// scope since we round redemptions down anyway.
+    /// Total **depositor** liquidity (USDC base units) — the value that
+    /// belongs to cToken holders, with klend's accumulated/pending fees
+    /// subtracted out. Matches klend-sdk's `getTotalSupply()` semantics.
+    ///
+    /// Saturating throughout. If fees claim more than borrowed+available
+    /// (pathological reserve state), returns 0 — harvest then computes a
+    /// zero `redeemable_value` and surfaces `DustHarvest` cleanly rather
+    /// than mistransferring principal.
     pub fn total_liquidity(&self) -> u128 {
-        (self.total_available_amount as u128)
-            .saturating_add(self.borrowed_amount_sf >> 60)
+        let with_borrowed = (self.total_available_amount as u128)
+            .saturating_add(self.borrowed_amount_sf >> 60);
+        let fees_sf_total = self
+            .accumulated_protocol_fees_sf
+            .saturating_add(self.accumulated_referrer_fees_sf)
+            .saturating_add(self.pending_referrer_fees_sf);
+        let fees_whole = fees_sf_total >> 60;
+        with_borrowed.saturating_sub(fees_whole)
     }
 
     /// USDC value (base units) of `ctoken_amount` cTokens at this reserve's
@@ -141,17 +173,37 @@ impl ReserveSnapshot {
 mod tests {
     use super::*;
 
-    /// Build a synthetic reserve buffer with the three fields we read.
-    fn fake_reserve(total_avail: u64, borrowed_sf: u128, mint_total_supply: u64) -> Vec<u8> {
+    /// Build a synthetic reserve buffer with the six fields we read.
+    /// Original-style helper (zero fees) preserved for the existing 5 tests.
+    fn fake_reserve_with_fees(
+        total_avail: u64,
+        borrowed_sf: u128,
+        mint_total_supply: u64,
+        accumulated_protocol_fees_sf: u128,
+        accumulated_referrer_fees_sf: u128,
+        pending_referrer_fees_sf: u128,
+    ) -> Vec<u8> {
         let mut v = vec![0u8; RESERVE_MIN_LEN];
         v[RESERVE_TOTAL_AVAILABLE_OFFSET..RESERVE_TOTAL_AVAILABLE_OFFSET + 8]
             .copy_from_slice(&total_avail.to_le_bytes());
         v[RESERVE_BORROWED_SF_OFFSET..RESERVE_BORROWED_SF_OFFSET + 16]
             .copy_from_slice(&borrowed_sf.to_le_bytes());
+        v[RESERVE_ACCUMULATED_PROTOCOL_FEES_SF_OFFSET
+            ..RESERVE_ACCUMULATED_PROTOCOL_FEES_SF_OFFSET + 16]
+            .copy_from_slice(&accumulated_protocol_fees_sf.to_le_bytes());
+        v[RESERVE_ACCUMULATED_REFERRER_FEES_SF_OFFSET
+            ..RESERVE_ACCUMULATED_REFERRER_FEES_SF_OFFSET + 16]
+            .copy_from_slice(&accumulated_referrer_fees_sf.to_le_bytes());
+        v[RESERVE_PENDING_REFERRER_FEES_SF_OFFSET..RESERVE_PENDING_REFERRER_FEES_SF_OFFSET + 16]
+            .copy_from_slice(&pending_referrer_fees_sf.to_le_bytes());
         v[RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET
             ..RESERVE_COLLATERAL_MINT_TOTAL_SUPPLY_OFFSET + 8]
             .copy_from_slice(&mint_total_supply.to_le_bytes());
         v
+    }
+
+    fn fake_reserve(total_avail: u64, borrowed_sf: u128, mint_total_supply: u64) -> Vec<u8> {
+        fake_reserve_with_fees(total_avail, borrowed_sf, mint_total_supply, 0, 0, 0)
     }
 
     #[test]
@@ -161,6 +213,10 @@ mod tests {
         assert_eq!(s.total_available_amount, 1_000_000);
         assert_eq!(s.borrowed_amount_sf, 500_000u128 << 60);
         assert_eq!(s.mint_total_supply, 1_500_000);
+        // QA C1 v2: zero fees in the helper default → no subtraction.
+        assert_eq!(s.accumulated_protocol_fees_sf, 0);
+        assert_eq!(s.accumulated_referrer_fees_sf, 0);
+        assert_eq!(s.pending_referrer_fees_sf, 0);
         assert_eq!(s.total_liquidity(), 1_500_000);
     }
 
@@ -197,6 +253,51 @@ mod tests {
     fn short_data_returns_none() {
         let data = vec![0u8; 100];
         assert!(ReserveSnapshot::read(&data).is_none());
+    }
+
+    /// QA C1 v2 — fee-field path. With non-zero accumulated/pending fees
+    /// total_liquidity() must subtract them so depositor supply matches
+    /// klend-sdk's getTotalSupply() semantics. Without this subtraction
+    /// a permissionless harvester could route principal as "yield".
+    #[test]
+    fn total_liquidity_subtracts_klend_fees() {
+        // available = 1_000, no borrowed, mint_total_supply = 1_000.
+        // Three fee fields each = 0.5 USDC in scaled-fraction form (2^59).
+        // Total fees = 3 × 0.5 USDC = 1.5 USDC, which `>> 60` rounds down to 1.
+        let half_usdc_sf: u128 = 1u128 << 59; // 0.5 × 2^60
+        let data = fake_reserve_with_fees(
+            1_000,
+            0,
+            1_000,
+            half_usdc_sf, // accumulated_protocol_fees_sf
+            half_usdc_sf, // accumulated_referrer_fees_sf
+            half_usdc_sf, // pending_referrer_fees_sf
+        );
+        let s = ReserveSnapshot::read(&data).unwrap();
+        assert_eq!(s.accumulated_protocol_fees_sf, half_usdc_sf);
+        assert_eq!(s.accumulated_referrer_fees_sf, half_usdc_sf);
+        assert_eq!(s.pending_referrer_fees_sf, half_usdc_sf);
+        // available + borrowed - fees(whole) = 1_000 + 0 - 1 = 999.
+        assert_eq!(s.total_liquidity(), 999);
+        // 100 cTokens × 999 / 1_000 = 99 USDC redeemable. (Pre-C1-v2 this
+        // would have returned 100 — the extra 1 USDC was protocol fees.)
+        assert_eq!(s.redeemable_value(100), 99);
+        // Inverse: 99 USDC × 1_000 / 999 = 99 cTokens (rounding down).
+        assert_eq!(s.ctokens_for_usdc(99), 99);
+    }
+
+    /// QA C1 v2 — pathological reserve where fees claim more than the
+    /// borrowed+available pool. Saturating subtraction must return 0;
+    /// harvest then computes zero redeemable value and surfaces
+    /// DustHarvest cleanly rather than mistransferring principal.
+    #[test]
+    fn total_liquidity_underflow_returns_zero_safely() {
+        let huge_fees_sf: u128 = (10_000u128) << 60; // 10,000 USDC of fees
+        let data = fake_reserve_with_fees(1_000, 0, 1_000, huge_fees_sf, 0, 0);
+        let s = ReserveSnapshot::read(&data).unwrap();
+        assert_eq!(s.total_liquidity(), 0);
+        assert_eq!(s.redeemable_value(100), 0);
+        assert_eq!(s.ctokens_for_usdc(100), 0);
     }
 }
 
