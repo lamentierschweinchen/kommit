@@ -2,12 +2,23 @@
 # Mainnet deploy for the Kommit program. Idempotent where possible.
 #
 # Required env (export before running):
-#   ANCHOR_WALLET           — path to mainnet deployer keypair (e.g. hardware-wallet keypair file)
-#   ANCHOR_PROVIDER_URL     — mainnet RPC endpoint (Helius mainnet recommended:
-#                             https://mainnet.helius-rpc.com/?api-key=$HELIUS_API_KEY)
+#   ANCHOR_WALLET           — path to deployer keypair (mainnet: hardware-wallet
+#                             keypair file; devnet dry-run: any funded keypair).
+#   ANCHOR_PROVIDER_URL     — RPC endpoint matching CLUSTER. Helius recommended:
+#                             https://mainnet.helius-rpc.com/?api-key=$HELIUS_API_KEY
+#                             https://devnet.helius-rpc.com/?api-key=$HELIUS_API_KEY
 #
-# DO NOT RUN unilaterally. Coordinator + Lukas gate this — must be paired with
-# frontend MVP demo-able + off-chain indexer live + IPFS pinning ready.
+# Optional env:
+#   CLUSTER                 — anchor cluster alias (default: mainnet). Set to
+#                             "devnet" for dry-runs against the devnet program.
+#                             The script reads `[programs.<CLUSTER>]` from
+#                             Anchor.toml for the ID consistency check.
+#                             (Added 2026-05-05 to support dry-run on devnet
+#                             before the real mainnet attempt.)
+#
+# DO NOT RUN against mainnet unilaterally. Coordinator + Lukas gate the real
+# deploy — must be paired with frontend MVP demo-able + off-chain indexer live
+# + IPFS pinning ready.
 #
 # After this script: run scripts/bootstrap_mainnet.ts to call initialize_config,
 # then create_project for each seed founder via the frontend or a CLI helper,
@@ -23,6 +34,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+CLUSTER="${CLUSTER:-mainnet}"
+case "$CLUSTER" in
+  mainnet|devnet|testnet|localnet) ;;
+  *) echo "ERROR: CLUSTER must be one of mainnet|devnet|testnet|localnet (got: $CLUSTER)"; exit 1 ;;
+esac
+
 # --- Preflight -------------------------------------------------------------
 
 [ -n "${ANCHOR_WALLET:-}" ] || { echo "ERROR: ANCHOR_WALLET unset"; exit 1; }
@@ -33,6 +50,7 @@ if ! command -v anchor >/dev/null; then echo "ERROR: anchor CLI not on PATH"; ex
 if ! command -v solana >/dev/null; then echo "ERROR: solana CLI not on PATH"; exit 1; fi
 
 DEPLOYER=$(solana address --keypair "$ANCHOR_WALLET")
+echo "Cluster          : $CLUSTER"
 echo "Deployer wallet  : $DEPLOYER"
 echo "Provider URL     : $ANCHOR_PROVIDER_URL"
 
@@ -52,19 +70,23 @@ anchor build
 # --- ID consistency check --------------------------------------------------
 
 DECLARE_ID=$(grep -oE 'declare_id!\("[^"]+"' programs/kommit/src/lib.rs | sed -E 's/declare_id!\("(.+)"/\1/')
-ANCHOR_TOML_MAINNET_ID=$(awk '/^\[programs.mainnet\]/{flag=1;next} /^\[/{flag=0} flag && /kommit/' Anchor.toml | grep -oE '"[^"]+"' | tr -d '"')
+ANCHOR_TOML_CLUSTER_ID=$(awk -v section="[programs.$CLUSTER]" '$0 == section {flag=1;next} /^\[/{flag=0} flag && /kommit/' Anchor.toml | grep -oE '"[^"]+"' | tr -d '"')
 
-if [ "$DECLARE_ID" != "$ANCHOR_TOML_MAINNET_ID" ]; then
-  echo "ERROR: declare_id! ($DECLARE_ID) != Anchor.toml [programs.mainnet] ($ANCHOR_TOML_MAINNET_ID)"
+if [ -z "$ANCHOR_TOML_CLUSTER_ID" ]; then
+  echo "ERROR: no [programs.$CLUSTER] section in Anchor.toml"
   exit 1
 fi
-echo "Program ID       : $DECLARE_ID  (matches Anchor.toml [programs.mainnet])"
+if [ "$DECLARE_ID" != "$ANCHOR_TOML_CLUSTER_ID" ]; then
+  echo "ERROR: declare_id! ($DECLARE_ID) != Anchor.toml [programs.$CLUSTER] ($ANCHOR_TOML_CLUSTER_ID)"
+  exit 1
+fi
+echo "Program ID       : $DECLARE_ID  (matches Anchor.toml [programs.$CLUSTER])"
 
 # --- Idempotency: skip deploy if program is already on-chain at this ID ----
 
 if solana program show "$DECLARE_ID" --url "$ANCHOR_PROVIDER_URL" >/dev/null 2>&1; then
   echo
-  echo "Program $DECLARE_ID already exists on mainnet."
+  echo "Program $DECLARE_ID already exists on $CLUSTER."
   read -r -p "Upgrade in place? [y/N] " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     echo "Aborted by user."
@@ -75,23 +97,23 @@ fi
 # --- Deploy ----------------------------------------------------------------
 
 echo
-echo "=== anchor deploy --provider.cluster mainnet ==="
-anchor deploy --provider.cluster mainnet
+echo "=== anchor deploy --provider.cluster $CLUSTER ==="
+anchor deploy --provider.cluster "$CLUSTER"
 
 # --- IDL upload ------------------------------------------------------------
 
 echo
 echo "=== anchor idl init / upgrade ==="
-if anchor idl fetch --provider.cluster mainnet "$DECLARE_ID" >/dev/null 2>&1; then
+if anchor idl fetch --provider.cluster "$CLUSTER" "$DECLARE_ID" >/dev/null 2>&1; then
   echo "On-chain IDL already exists; upgrading."
   anchor idl upgrade \
-    --provider.cluster mainnet \
+    --provider.cluster "$CLUSTER" \
     --filepath target/idl/kommit.json \
     "$DECLARE_ID"
 else
   echo "No on-chain IDL; initializing."
   anchor idl init \
-    --provider.cluster mainnet \
+    --provider.cluster "$CLUSTER" \
     --filepath target/idl/kommit.json \
     "$DECLARE_ID"
 fi

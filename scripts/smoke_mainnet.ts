@@ -84,7 +84,7 @@ async function main() {
   console.log('\n[1/3] commit $10 USDC...');
   const sigCommit = await program.methods
     .commit(new anchor.BN(COMMIT_AMOUNT.toString()))
-    .accounts({
+    .accountsPartial({
       commitment: commitmentPda,
       project: projectPda,
       user: wallet.publicKey,
@@ -106,7 +106,7 @@ async function main() {
   console.log('[2/3] accrue_points...');
   const sigAccrue = await program.methods
     .accruePoints()
-    .accounts({ commitment: commitmentPda, project: projectPda })
+    .accountsPartial({ commitment: commitmentPda, project: projectPda })
     .rpc();
   console.log(`     tx: ${sigAccrue}`);
 
@@ -114,7 +114,7 @@ async function main() {
   console.log('[3/3] withdraw full...');
   const sigWithdraw = await program.methods
     .withdraw(new anchor.BN('18446744073709551615'), new anchor.BN(0))
-    .accounts({
+    .accountsPartial({
       commitment: commitmentPda,
       project: projectPda,
       user: wallet.publicKey,

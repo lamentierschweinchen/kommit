@@ -174,6 +174,33 @@ ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/bootstrap_mainnet.
 ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... npx ts-node scripts/smoke_mainnet.ts <PROJECT_PDA>
 ```
 
+### Dry-run on devnet first
+
+Before the actual mainnet attempt, run the same scripts against devnet to
+catch script bugs early:
+
+```bash
+CLUSTER=devnet \
+  ANCHOR_WALLET=$HOME/.config/solana/id.json \
+  ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+  ./scripts/deploy_mainnet.sh
+
+ANCHOR_WALLET=$HOME/.config/solana/id.json \
+  ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+  npx ts-node --transpile-only scripts/bootstrap_mainnet.ts
+```
+
+The `CLUSTER=devnet` env override flips the deploy script's
+`--provider.cluster` flag and ID-consistency check to use
+`[programs.devnet]` from `Anchor.toml` (added 2026-05-05). Both scripts
+are idempotent — if the program is already deployed and config
+initialized on devnet (which they are, post-handoff-06 spike merge),
+the scripts detect that and exit cleanly without re-spending SOL.
+
+Use `--transpile-only` on `ts-node` to skip Anchor 0.31's strict-types
+account-resolution checks; the runtime path still validates everything
+on-chain.
+
 ### Upgrade authority — v1 single-sig (deferred decision)
 
 The deploy script ships the program with whoever `ANCHOR_WALLET` points
@@ -204,3 +231,70 @@ solana program set-upgrade-authority \
 Rotate `config.admin` to the same Squads multisig at the same time
 (item 14.2 in SECURITY_REVIEW.md). The admin can pause / curate /
 rotate metadata but cannot move funds.
+
+## 10. Dependency audit (pre-mainnet, 2026-05-05)
+
+Walk-through of the workspace's pinning + known-issue posture. Run before
+each mainnet attempt; doc this section if anything shifts. **No changes
+applied to dep versions in this audit pass — recommendations only,
+locked-decision territory needs coordinator review.**
+
+### Locked + working
+
+- **Anchor 0.31.1.** `programs/kommit/Cargo.toml` exact-pinned. `web/package.json`
+  exact-pinned. `app/package.json` is `^0.31.1` (caret allows 0.31.x patches).
+  Confirmed working on rustc 1.93 + cargo 1.93. The earlier 0.30.1 IDL-build
+  break is fully resolved.
+- **proc-macro2 1.0.106.** Was the source of the earlier `Span::source_file`
+  fail under anchor 0.30.1; harmless under 0.31.x.
+- **solana-program 2.3.0** transitive via anchor-spl. Aligned with the
+  Solana CLI 3.1.14 we deploy with.
+- **@solana/web3.js 1.98.4.** Legacy Solana JS SDK. Compatible with
+  `@coral-xyz/anchor 0.31.x`. The newer `@solana/kit` is NOT used (frontend +
+  indexer + scripts all on web3.js v1; consistent).
+- **@privy-io/react-auth 3.23.1, @supabase/supabase-js 2.105.1, next 16.2.4,
+  react 19.2.4, eslint-config-next 16.2.4** — all exact-pinned in
+  `web/package.json`. Good hygiene.
+
+### Recommendations (not applied — surface to coordinator)
+
+- **`app/package.json` `@coral-xyz/anchor: "^0.31.1"` → exact `0.31.1`.**
+  Asymmetric with `web/package.json` and `programs/kommit/Cargo.toml`. Caret
+  here means `yarn install` could pull a patch we haven't tested. Tightening
+  to exact prevents drift across re-installs.
+- **`web/package.json` `tailwindcss: "^4"` and `@tailwindcss/postcss: "^4"`.**
+  Tailwind v4 is still relatively young; broad caret can pull breaking changes.
+  Pin to a specific 4.x patch.
+- **`shadcn: "4.6.0"` in `web/package.json` `dependencies`.** `shadcn` is
+  normally consumed via CLI (`npx shadcn add ...`), not as a runtime dep —
+  verify whether the frontend actually imports anything from it; if not, move
+  to `devDependencies` or drop.
+
+### Known harmless warnings
+
+- **`#[program]` macro emits a `realloc` deprecation warning.** Anchor 0.31.1's
+  internal codegen still uses `AccountInfo::realloc` (deprecated in favor of
+  `AccountInfo::resize`). Will be resolved when Anchor 1.0+ lands; deferred to
+  v1.5 per the build_order.md lock.
+- **17 `unexpected cfg` warnings** about `custom-heap`, `custom-panic`,
+  `anchor-debug`. Anchor's macros reference cfg flags that the compiler doesn't
+  know about. Cosmetic; no fix needed.
+
+### Init-if-needed safety note
+
+`programs/kommit/Cargo.toml` enables anchor-lang's `init-if-needed` feature.
+Re-init attacks are a real risk with this feature when the seeds are
+attacker-controllable AND the handler doesn't validate existing state.
+**Verified safe in our usage** — every `init_if_needed` PDA's seeds include
+either the user's pubkey (Commitment) or program-deterministic constants
+(escrow, collateral, lending_position, harvest_landing). The `commit` handler
+explicitly distinguishes "fresh" vs "existing" via `commitment.principal == 0
+&& commitment.user == Pubkey::default()` before treating as new (see
+`programs/kommit/src/instructions/commit.rs:71-75`).
+
+### Cargo.lock multi-version notes
+
+Three concurrent versions of `block-buffer` (0.9.0, 0.10.4, 0.12.0), `digest`
+(0.9.0, 0.10.7, 0.11.2), `borsh` (0.10.4, 1.6.1) — all transitive. Normal for
+the Solana SDK transitive graph, not actionable. Don't try to dedupe; doing so
+would force-update something downstream.

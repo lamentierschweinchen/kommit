@@ -64,7 +64,10 @@ async function main() {
   console.log("Project  :", projectPda.toBase58());
 
   // Sanity: confirm wallet == config.admin before submitting.
-  const cfg = await (program.account as never)["kommitConfig"].fetch(configPda);
+  // (We use `as any` rather than the typed Program<Kommit> to keep this script
+  // independent of `target/types/kommit` — the IDL JSON bundled at the top is
+  // sufficient at runtime. tsc-clean and runtime-correct.)
+  const cfg = await (program.account as any)["kommitConfig"].fetch(configPda);
   if (cfg.admin.toBase58() !== wallet.publicKey.toBase58()) {
     console.error(
       `ERROR: wallet ${wallet.publicKey.toBase58()} is not config.admin (${cfg.admin.toBase58()})`
@@ -72,9 +75,9 @@ async function main() {
     process.exit(1);
   }
 
-  const sig = await (program.methods as never)
+  const sig = await (program.methods as any)
     .createProject(recipient, metadataUriHash)
-    .accounts({
+    .accountsPartial({
       project: projectPda,
       admin: wallet.publicKey,
       config: configPda,

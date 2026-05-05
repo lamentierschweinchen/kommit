@@ -28,12 +28,19 @@ async function main() {
   const wallet = provider.wallet as anchor.Wallet;
   const conn = provider.connection;
 
-  const cluster = (await conn.getGenesisHash()).slice(0, 8);
+  // Genesis hash identifies the network (mainnet/devnet/testnet/local). Cluster
+  // detection is loose — we print the prefix so a human can sanity-check at a
+  // glance. (Mainnet genesis starts `5eykt4Us...`; devnet `EtWTRABZ...`.)
+  const genesis = (await conn.getGenesisHash()).slice(0, 8);
+  let clusterHint = '';
+  if (genesis.startsWith('5eykt4Us')) clusterHint = ' (looks like MAINNET — confirm)';
+  else if (genesis.startsWith('EtWTRABZ')) clusterHint = ' (devnet)';
+  else if (genesis.startsWith('4uhcVJyU')) clusterHint = ' (testnet)';
   console.log('Program  :', program.programId.toBase58());
   console.log('RPC      :', (provider.connection as any)._rpcEndpoint ?? '(unknown)');
   console.log('Wallet   :', wallet.publicKey.toBase58());
   console.log('SOL bal  :', (await conn.getBalance(wallet.publicKey)) / anchor.web3.LAMPORTS_PER_SOL);
-  console.log('Genesis  :', cluster, '(this should be mainnet)');
+  console.log(`Genesis  : ${genesis}${clusterHint}`);
 
   const [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
@@ -55,9 +62,14 @@ async function main() {
   }
 
   console.log('\nCalling initialize_config...');
+  // Anchor 0.31's typed `.accounts()` excludes PDA-derivable fields like
+  // `config` (it auto-derives from the IDL's seeds). `accountsPartial` accepts
+  // explicit overrides for any account, which matters when ts-node runs
+  // against the bundled IDL JSON directly. (Verified during devnet dry-run
+  // 2026-05-05.)
   const sig = await program.methods
     .initializeConfig()
-    .accounts({
+    .accountsPartial({
       config: configPda,
       admin: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
