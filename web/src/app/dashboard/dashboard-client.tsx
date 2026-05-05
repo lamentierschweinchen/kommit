@@ -90,7 +90,8 @@ export function DashboardClient() {
   }
 
   const activeTotal = commitments.reduce((s, c) => s + c.amount, 0);
-  const activePoints = commitments.reduce((s, c) => s + c.activePoints, 0);
+  // Sum of u128 scores stays bigint — formatPoints handles display.
+  const activePoints = commitments.reduce((s, c) => s + c.activePoints, 0n);
   const teamCount = commitments.length;
 
   return (

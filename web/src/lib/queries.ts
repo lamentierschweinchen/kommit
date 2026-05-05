@@ -37,6 +37,7 @@ import {
   type YieldReceipt,
   type Activity,
 } from "@/lib/mock-data";
+import { formatTokenAmount, toBigInt } from "@/lib/money";
 
 // ---------------------------------------------------------------------------
 // Source selection
@@ -104,10 +105,27 @@ const SEED_BY_PROJECT_PDA: Record<string, Project> = Object.fromEntries(
 // ---------------------------------------------------------------------------
 
 const USDC_DECIMALS = 6;
-const USDC_BASE_PER_DOLLAR = 10 ** USDC_DECIMALS;
 
-function baseUnitsToDollars(n: number | bigint | string): number {
-  return Number(n) / USDC_BASE_PER_DOLLAR;
+/**
+ * Decode a u64 base-units field (Anchor BN string, Supabase bigint-as-string,
+ * or already-bigint) into a number of dollars for display. Goes through
+ * `formatTokenAmount` first — exact decimal semantics, then `parseFloat`
+ * accepts the precision loss only at the display boundary. For private-beta
+ * scales (max 10^10 USDC) this is well within Number's safe range.
+ */
+function baseUnitsToDollars(value: bigint | string | number): number {
+  const big = toBigInt(value);
+  return parseFloat(formatTokenAmount(big, USDC_DECIMALS));
+}
+
+/** Decode a u64 base-units field into an exact bigint. Use for tx and totals. */
+function baseUnitsToBigInt(value: bigint | string | number): bigint {
+  return toBigInt(value);
+}
+
+/** Decode a u128 score field into bigint (no precision loss). */
+function scoreToBigInt(value: bigint | string | number): bigint {
+  return toBigInt(value);
 }
 
 function truncateAddr(addr: string): string {
@@ -131,14 +149,6 @@ function relativeTime(d: Date): string {
   if (h < 24) return `${h}h ago`;
   const days = Math.floor(h / 24);
   return `${days}d ago`;
-}
-
-// u128 stored as numeric(40,0) in Postgres returns as string; on-chain BN
-// converts to bigint via `.toString()`. Number() is unsafe past 2^53 but for
-// private-beta scales (principal × time × seconds ≪ 2^53) it's fine. Display
-// only — never use in tx construction.
-function pointsScalar(raw: string | number | bigint): number {
-  return Number(raw);
 }
 
 // ---------------------------------------------------------------------------
@@ -291,7 +301,7 @@ export async function getSupportersForProject(slug: string): Promise<Supporter[]
       wallet: truncateAddr((row as { user_wallet: string }).user_wallet),
       amount: baseUnitsToDollars((row as { principal: number | string }).principal),
       since: shortDate(new Date((row as { deposit_ts: string }).deposit_ts)),
-      points: pointsScalar((row as { lifetime_score: string }).lifetime_score),
+      points: scoreToBigInt((row as { lifetime_score: string }).lifetime_score),
     }));
   }
 
@@ -302,9 +312,9 @@ export async function getSupportersForProject(slug: string): Promise<Supporter[]
   ]);
   return accounts.map((c) => ({
     wallet: truncateAddr(c.account.user.toBase58()),
-    amount: baseUnitsToDollars(BigInt(c.account.principal.toString())),
+    amount: baseUnitsToDollars(c.account.principal.toString()),
     since: shortDate(new Date(Number(c.account.depositTs) * 1000)),
-    points: pointsScalar(c.account.lifetimeScore.toString()),
+    points: scoreToBigInt(c.account.lifetimeScore.toString()),
   }));
 }
 
@@ -454,7 +464,7 @@ function indexerRowToCommitment(row: IndexerCommitmentRow): Commitment | null {
     amount: baseUnitsToDollars(row.principal),
     daysActive: daysSince(deposit),
     since: shortDate(deposit),
-    activePoints: pointsScalar(row.active_score),
+    activePoints: scoreToBigInt(row.active_score),
     weeklyYield: baseUnitsToDollars(row.estimated_yield_share) / 4 || 0,
   };
 }
@@ -475,7 +485,7 @@ function onchainCommitmentToCommitment(c: {
     amount: baseUnitsToDollars(c.principal),
     daysActive: daysSince(deposit),
     since: shortDate(deposit),
-    activePoints: pointsScalar(c.activeScore),
+    activePoints: scoreToBigInt(c.activeScore),
     // anchor reads can't derive weekly yield without harvest event history.
     weeklyYield: 0,
   };
@@ -484,5 +494,7 @@ function onchainCommitmentToCommitment(c: {
 // Re-export the types so screens import everything from one place.
 export type { Project, Commitment, Supporter, YieldReceipt, Activity };
 
-// Silence unused-import lint when KOMMIT_PROGRAM_ID isn't directly referenced.
+// Silence unused-import lint when these aren't directly referenced in this
+// file (kept around for future use + to anchor module-level invariants).
 void KOMMIT_PROGRAM_ID;
+void baseUnitsToBigInt;
