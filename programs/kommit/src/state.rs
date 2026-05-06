@@ -117,3 +117,27 @@ impl LendingPosition {
     pub const SIZE: usize = 32 + 1 + 32 + 8 + 8 + 1;
     pub const SEED: &'static [u8] = b"lending";
 }
+
+/// Singleton allowlist for the Kamino klend adapter — admin curates which
+/// klend program + USDC reserve graph the project escrow PDAs are allowed to
+/// supply into. Without this, supply_to_yield_source's permissionless caller
+/// could bind project principal to any klend reserve (QA C2).
+///
+/// PDA seeds: [b"kamino_adapter_config"].
+#[account]
+pub struct KaminoAdapterConfig {
+    pub admin: Pubkey,
+    pub klend_program: Pubkey,
+    pub usdc_reserve: Pubkey,
+    pub usdc_lending_market: Pubkey,
+    pub usdc_market_authority: Pubkey,
+    pub usdc_liquidity_supply: Pubkey,
+    pub usdc_collateral_mint: Pubkey,
+    pub usdc_liquidity_mint: Pubkey,
+    pub bump: u8,
+}
+
+impl KaminoAdapterConfig {
+    pub const SIZE: usize = 32 * 8 + 1; // 8 Pubkeys + bump
+    pub const SEED: &'static [u8] = b"kamino_adapter_config";
+}

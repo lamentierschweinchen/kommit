@@ -5,16 +5,23 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 use crate::adapters::kamino::{deposit_reserve_liquidity, DepositReserveLiquidityAccounts};
 use crate::errors::KommitError;
 use crate::events::SupplyExecuted;
-use crate::state::{AdapterId, Commitment, KommitConfig, LendingPosition, Project};
+use crate::state::{AdapterId, Commitment, KaminoAdapterConfig, KommitConfig, LendingPosition, Project};
 
 /// Supply USDC from a project's escrow PDA into the klend reserve.
 /// Permissionless crank. Escrow PDA signs as klend's `owner` via PDA seeds.
+///
+/// **C2 fix (QA 2026-05-05):** the klend account graph is now key-equality
+/// validated against `KaminoAdapterConfig` BEFORE any CPI. Without this an
+/// arbitrary caller could bind project principal to any klend reserve.
 #[derive(Accounts)]
 pub struct SupplyToYieldSource<'info> {
     pub project: Account<'info, Project>,
 
     #[account(seeds = [KommitConfig::SEED], bump = config.bump)]
     pub config: Account<'info, KommitConfig>,
+
+    #[account(seeds = [KaminoAdapterConfig::SEED], bump = adapter_config.bump)]
+    pub adapter_config: Account<'info, KaminoAdapterConfig>,
 
     /// Per-project USDC escrow PDA. Holds committed liquidity. Signs as klend `owner`.
     #[account(
@@ -24,7 +31,7 @@ pub struct SupplyToYieldSource<'info> {
         token::mint = usdc_mint,
         token::authority = escrow_token_account,
     )]
-    pub escrow_token_account: Account<'info, TokenAccount>,
+    pub escrow_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Per-project cToken (klend reserve_collateral) PDA. Receives the cTokens.
     /// Mint is the reserve's collateral mint, determined by which klend reserve.
@@ -36,7 +43,7 @@ pub struct SupplyToYieldSource<'info> {
         token::mint = reserve_collateral_mint,
         token::authority = collateral_token_account,
     )]
-    pub collateral_token_account: Account<'info, TokenAccount>,
+    pub collateral_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Per-(project, adapter) lending position. Tracks supplied amount + which reserve.
     #[account(
@@ -46,28 +53,28 @@ pub struct SupplyToYieldSource<'info> {
         seeds = [LendingPosition::SEED, project.key().as_ref(), &[AdapterId::Kamino as u8]],
         bump,
     )]
-    pub lending_position: Account<'info, LendingPosition>,
+    pub lending_position: Box<Account<'info, LendingPosition>>,
 
-    pub usdc_mint: Account<'info, Mint>,
+    pub usdc_mint: Box<Account<'info, Mint>>,
 
-    // --- klend account graph (untyped — CPI target). Order doesn't matter here;
-    //     ordering happens in the Instruction account meta list inside the adapter. ---
-    /// CHECK: klend reserve account; mut required by deposit_reserve_liquidity.
+    // --- klend account graph (untyped — CPI target). Each is key-equality
+    //     validated against `adapter_config` in the handler before CPI.
+    /// CHECK: validated against adapter_config.usdc_reserve in handler.
     #[account(mut)]
     pub klend_reserve: AccountInfo<'info>,
-    /// CHECK: klend lending market.
+    /// CHECK: validated against adapter_config.usdc_lending_market in handler.
     pub klend_lending_market: AccountInfo<'info>,
-    /// CHECK: klend lending market authority PDA (owned by klend).
+    /// CHECK: validated against adapter_config.usdc_market_authority in handler.
     pub klend_lending_market_authority: AccountInfo<'info>,
-    /// CHECK: klend reserve's liquidity mint — must equal usdc_mint at runtime.
+    /// CHECK: validated against adapter_config.usdc_liquidity_mint in handler.
     pub klend_reserve_liquidity_mint: AccountInfo<'info>,
-    /// CHECK: klend reserve's liquidity supply token account; mut.
+    /// CHECK: validated against adapter_config.usdc_liquidity_supply in handler.
     #[account(mut)]
     pub klend_reserve_liquidity_supply: AccountInfo<'info>,
-    /// CHECK: klend reserve's collateral (cToken) mint; mut (will be minted into).
+    /// CHECK: validated against adapter_config.usdc_collateral_mint in handler.
     #[account(mut)]
     pub reserve_collateral_mint: AccountInfo<'info>,
-    /// CHECK: klend program.
+    /// CHECK: validated against adapter_config.klend_program in handler.
     pub klend_program: AccountInfo<'info>,
     /// CHECK: instructions sysvar.
     pub instruction_sysvar_account: AccountInfo<'info>,
@@ -84,6 +91,19 @@ pub fn handler(ctx: Context<SupplyToYieldSource>, amount: u64) -> Result<()> {
     require!(!ctx.accounts.config.paused, KommitError::Paused);
     require!(amount > 0, KommitError::InvalidAmount);
 
+    // C2 fix: enforce the approved klend reserve graph BEFORE any CPI. Without
+    // these checks a caller could bind project principal to an unapproved
+    // reserve (the original `lp.vault_handle == klend_reserve` check only
+    // pinned the FIRST caller's choice and accepted any reserve).
+    let cfg = &ctx.accounts.adapter_config;
+    require_keys_eq!(ctx.accounts.klend_reserve.key(), cfg.usdc_reserve, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.klend_lending_market.key(), cfg.usdc_lending_market, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.klend_lending_market_authority.key(), cfg.usdc_market_authority, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.klend_reserve_liquidity_mint.key(), cfg.usdc_liquidity_mint, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.klend_reserve_liquidity_supply.key(), cfg.usdc_liquidity_supply, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.reserve_collateral_mint.key(), cfg.usdc_collateral_mint, KommitError::AdapterMismatch);
+    require_keys_eq!(ctx.accounts.klend_program.key(), cfg.klend_program, KommitError::AdapterMismatch);
+
     // Cap amount at escrow balance — caller can pass u64::MAX for "all available".
     let escrow_balance = ctx.accounts.escrow_token_account.amount;
     let supply_amount = amount.min(escrow_balance);
@@ -99,7 +119,8 @@ pub fn handler(ctx: Context<SupplyToYieldSource>, amount: u64) -> Result<()> {
         lp.last_harvest_ts = 0;
         lp.bump = ctx.bumps.lending_position;
     } else {
-        // Same lending position — reserve handle must match.
+        // Same lending position — reserve handle must match (defence-in-depth;
+        // the adapter_config check above already pins this).
         require_keys_eq!(
             lp.vault_handle,
             ctx.accounts.klend_reserve.key(),

@@ -4,6 +4,9 @@ use anchor_lang::prelude::*;
 pub struct ProjectCreated {
     pub project: Pubkey,
     pub recipient_wallet: Pubkey,
+    /// QA H1: indexer needs the metadata hash at create time so it can
+    /// resolve the IPFS pin without a follow-up account fetch.
+    pub metadata_uri_hash: [u8; 32],
 }
 
 #[event]

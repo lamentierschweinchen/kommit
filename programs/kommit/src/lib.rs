@@ -76,14 +76,12 @@ pub mod kommit {
         instructions::supply_to_yield_source::handler(ctx, amount)
     }
 
-    /// Permissionless. Redeem `collateral_amount` cTokens for USDC, route to recipient.
+    /// Permissionless. Computes accrued yield on-chain from klend reserve state,
+    /// redeems just that amount, routes to recipient. Principal stays supplied.
     /// `min_yield` enforces a dust threshold — actual USDC routed must be ≥ min_yield.
-    pub fn harvest(
-        ctx: Context<Harvest>,
-        collateral_amount: u64,
-        min_yield: u64,
-    ) -> Result<()> {
-        instructions::harvest::handler(ctx, collateral_amount, min_yield)
+    /// (QA C1 redesign 2026-05-05.)
+    pub fn harvest(ctx: Context<Harvest>, min_yield: u64) -> Result<()> {
+        instructions::harvest::handler(ctx, min_yield)
     }
 
     /// Admin-only. Rotate the off-chain metadata pointer for a project.
@@ -93,5 +91,29 @@ pub mod kommit {
         metadata_uri_hash: [u8; 32],
     ) -> Result<()> {
         instructions::admin_update_project_metadata::handler(ctx, metadata_uri_hash)
+    }
+
+    /// Admin-only, one-time. Populates the Kamino klend adapter allowlist
+    /// (QA C2). supply / harvest CPIs require key-equality against this PDA.
+    pub fn initialize_kamino_adapter_config(
+        ctx: Context<InitializeKaminoAdapterConfig>,
+        klend_program: Pubkey,
+        usdc_reserve: Pubkey,
+        usdc_lending_market: Pubkey,
+        usdc_market_authority: Pubkey,
+        usdc_liquidity_supply: Pubkey,
+        usdc_collateral_mint: Pubkey,
+        usdc_liquidity_mint: Pubkey,
+    ) -> Result<()> {
+        instructions::initialize_kamino_adapter_config::handler(
+            ctx,
+            klend_program,
+            usdc_reserve,
+            usdc_lending_market,
+            usdc_market_authority,
+            usdc_liquidity_supply,
+            usdc_collateral_mint,
+            usdc_liquidity_mint,
+        )
     }
 }

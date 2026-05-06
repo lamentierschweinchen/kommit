@@ -152,11 +152,19 @@ async function main() {
     program.programId
   );
 
+  // QA C2: supply / harvest now require the KaminoAdapterConfig PDA. Caller
+  // (admin) must have already initialized it via initialize_kamino_adapter_config.
+  const [adapterConfigPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from('kamino_adapter_config')],
+    program.programId
+  );
+
   const sigSupply = await program.methods
     .supplyToYieldSource(new anchor.BN(COMMIT_AMOUNT.toString()))
-    .accounts({
+    .accountsPartial({
       project: projectPda,
       config: configPda,
+      adapterConfig: adapterConfigPda,
       escrowTokenAccount: escrowPda,
       collateralTokenAccount: collateralPda,
       lendingPosition: lendingPositionPda,
@@ -189,11 +197,14 @@ async function main() {
     recipient
   );
 
-  // Redeem a small amount of cTokens. The off-chain crank should compute
-  // the right amount from the current exchange rate; for the smoke we just
-  // pick a token amount and verify the recipient gets some USDC.
-  const REDEEM_CTOKENS = new anchor.BN(50_000); // arbitrary small amount
-  const MIN_YIELD = new anchor.BN(1); // accept any non-zero routing as success
+  // QA C1 redesign: harvest takes only `min_yield` now. The program reads
+  // klend's reserve state on-chain, computes accrued yield = redeemable
+  // value of the project's cTokens minus principal-supplied, and redeems
+  // ONLY that yield amount. Principal stays continuously supplied. This
+  // smoke uses min_yield = 1 (accept any non-zero yield); on a 30-second
+  // commit the actual yield is dust, so DustHarvest is the expected error
+  // path (the smoke verifies principal is still withdrawable after).
+  const MIN_YIELD = new anchor.BN(1);
 
   // Landing ATA owned by the collateral PDA; klend redeems into this.
   // allowOwnerOffCurve=true because the collateral PDA isn't a regular wallet.
@@ -203,30 +214,44 @@ async function main() {
     true
   );
 
-  const sigHarvest = await program.methods
-    .harvest(REDEEM_CTOKENS, MIN_YIELD)
-    .accounts({
-      project: projectPda,
-      lendingPosition: lendingPositionPda,
-      collateralTokenAccount: collateralPda,
-      harvestLandingUsdc,
-      recipientTokenAccount: recipientAta.address,
-      usdcMint: USDC_MINT,
-      klendReserve: KLEND_USDC_RESERVE,
-      klendLendingMarket: KLEND_LENDING_MARKET,
-      klendLendingMarketAuthority: KLEND_LENDING_MARKET_AUTHORITY,
-      klendReserveLiquidityMint: USDC_MINT,
-      klendReserveLiquiditySupply: KLEND_RESERVE_LIQUIDITY_SUPPLY,
-      reserveCollateralMint: KLEND_RESERVE_COLLATERAL_MINT,
-      klendProgram: KLEND_PROGRAM_ID,
-      instructionSysvarAccount: SYSVAR_INSTRUCTIONS_PUBKEY,
-      payer: wallet.publicKey,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .rpc();
-  console.log(`[4/5] harvest                tx=${sigHarvest}`);
+  let sigHarvest: string;
+  let harvestErrName: string | null = null;
+  try {
+    sigHarvest = await program.methods
+      .harvest(MIN_YIELD)
+      .accountsPartial({
+        project: projectPda,
+        adapterConfig: adapterConfigPda,
+        lendingPosition: lendingPositionPda,
+        collateralTokenAccount: collateralPda,
+        harvestLandingUsdc,
+        recipientTokenAccount: recipientAta.address,
+        usdcMint: USDC_MINT,
+        klendReserve: KLEND_USDC_RESERVE,
+        klendLendingMarket: KLEND_LENDING_MARKET,
+        klendLendingMarketAuthority: KLEND_LENDING_MARKET_AUTHORITY,
+        klendReserveLiquidityMint: USDC_MINT,
+        klendReserveLiquiditySupply: KLEND_RESERVE_LIQUIDITY_SUPPLY,
+        reserveCollateralMint: KLEND_RESERVE_COLLATERAL_MINT,
+        klendProgram: KLEND_PROGRAM_ID,
+        instructionSysvarAccount: SYSVAR_INSTRUCTIONS_PUBKEY,
+        payer: wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    console.log(`[4/5] harvest                tx=${sigHarvest}`);
+  } catch (e) {
+    sigHarvest = '';
+    const msg = (e as Error).message ?? String(e);
+    if (msg.includes('DustHarvest')) {
+      harvestErrName = 'DustHarvest';
+      console.log(`[4/5] harvest                DustHarvest (expected on a brief commit — yield below threshold)`);
+    } else {
+      throw e;
+    }
+  }
 
   // Step 5: confirm recipient received USDC.
   const recipientBalance = await getAccount(conn, recipientAta.address);

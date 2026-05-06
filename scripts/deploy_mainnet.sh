@@ -87,11 +87,16 @@ echo "Program ID       : $DECLARE_ID  (matches Anchor.toml [programs.$CLUSTER])"
 if solana program show "$DECLARE_ID" --url "$ANCHOR_PROVIDER_URL" >/dev/null 2>&1; then
   echo
   echo "Program $DECLARE_ID already exists on $CLUSTER."
-  read -r -p "Upgrade in place? [y/N] " confirm
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    echo "Aborted by user."
-    exit 0
+  # QA H3: replaced the interactive `read -p` prompt with an explicit env
+  # flag so non-interactive runs (CI, agent-driven deploys) don't hang at
+  # the riskiest step. Default = abort. Set ALLOW_UPGRADE=true to proceed.
+  if [ "${ALLOW_UPGRADE:-false}" != "true" ]; then
+    echo
+    echo "Aborting. To upgrade in place, re-run with ALLOW_UPGRADE=true:"
+    echo "  ALLOW_UPGRADE=true CLUSTER=$CLUSTER ANCHOR_WALLET=... ANCHOR_PROVIDER_URL=... ./scripts/deploy_mainnet.sh"
+    exit 1
   fi
+  echo "ALLOW_UPGRADE=true — proceeding with in-place upgrade."
 fi
 
 # --- Deploy ----------------------------------------------------------------

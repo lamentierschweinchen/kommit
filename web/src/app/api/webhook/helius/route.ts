@@ -1,5 +1,6 @@
-// Helius webhook handler — receives raw transaction notifications,
-// parses Anchor events from tx logs, materializes state in Supabase.
+// Helius webhook handler — receives raw transaction notifications, parses
+// Anchor events from tx logs, calls process_event(...) per event for
+// transactional record + materialize.
 //
 // Helius webhook config:
 //   Type: Enhanced Transactions
@@ -7,10 +8,19 @@
 //   Webhook URL: https://<your-domain>/api/webhook/helius
 //   Auth header: Authorization: Bearer <HELIUS_WEBHOOK_SECRET>
 //
-// The handler is idempotent on (tx_hash, event_name) — Helius can replay
-// events; we just upsert into the events table and short-circuit on dupes.
-// Materialized-state updates check `last_seen_slot` to avoid backwards writes.
+// **Idempotency (QA C3):** per-event identity is `(tx_hash,
+// instruction_index, event_index)`. instruction_index counts our program's
+// inner-CPI invokes within the transaction; event_index counts Anchor
+// events emitted *within that instruction*. Two `Committed` events in one
+// tx, or two same-name events in same slot across separate txs, are both
+// preserved.
+//
+// **Durability (QA C4):** every event is recorded + materialized inside
+// one Postgres transaction via the `process_event` SQL function. If
+// materialization throws, the events row is rolled back and Helius retry
+// runs the full sequence again. Any failed event in a batch → HTTP 500.
 
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -19,7 +29,6 @@ import {
   KOMMIT_PROGRAM_ID,
   findCommitmentPda,
   findLendingPositionPda,
-  findProjectPda,
   getSupabaseAdminClient,
 } from "@/lib/kommit";
 import idl from "@/lib/idl/kommit.json";
@@ -41,11 +50,13 @@ type HeliusTx = {
 type DecodedEvent = {
   name: string;
   data: Record<string, unknown>;
+  instructionIndex: number;
+  eventIndex: number;
 };
 
 // ---------------------------------------------------------------------------
 // Auth — Helius signs deliveries with a static bearer token configured in
-// the dashboard.
+// the dashboard. Constant-time compare (QA L1).
 // ---------------------------------------------------------------------------
 
 function authorize(req: Request): boolean {
@@ -55,11 +66,20 @@ function authorize(req: Request): boolean {
     return false;
   }
   const got = req.headers.get("authorization");
-  return got === `Bearer ${secret}`;
+  if (!got) return false;
+  const expected = `Bearer ${secret}`;
+  if (got.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Anchor event parser from tx logs.
+// Anchor event parser from tx logs. Tracks instruction_index by counting
+// `Program <kommit-id> invoke [N]` markers (where N == 1 means a top-level
+// invocation; N > 1 is an inner CPI nested under our program).
 // ---------------------------------------------------------------------------
 
 const eventParser = new anchor.EventParser(
@@ -67,226 +87,118 @@ const eventParser = new anchor.EventParser(
   new anchor.BorshCoder(idl as anchor.Idl)
 );
 
+const KOMMIT_PROGRAM_STR = KOMMIT_PROGRAM_ID.toBase58();
+const INVOKE_RE = new RegExp(
+  `^Program ${KOMMIT_PROGRAM_STR} invoke \\[(\\d+)\\]`
+);
+const SUCCESS_RE = new RegExp(`^Program ${KOMMIT_PROGRAM_STR} success`);
+
 function parseEvents(logs: string[]): DecodedEvent[] {
   const out: DecodedEvent[] = [];
-  for (const evt of eventParser.parseLogs(logs)) {
-    out.push({ name: evt.name, data: evt.data as Record<string, unknown> });
+  let kommitInstructionIndex = -1;     // -1 = none yet seen
+  let depth = 0;                       // nesting depth inside our program
+  let eventIndexInInstruction = 0;
+
+  // We walk logs ourselves so we can attribute each event to a
+  // (instruction_index, event_index) pair. Anchor's EventParser is then
+  // applied to the per-instruction sub-window.
+  let windowStart: number | null = null;
+  for (let i = 0; i < logs.length; i++) {
+    const line = logs[i];
+    const invMatch = line.match(INVOKE_RE);
+    if (invMatch && invMatch[1] === "1") {
+      // top-level invocation of the kommit program
+      kommitInstructionIndex++;
+      depth = 1;
+      eventIndexInInstruction = 0;
+      windowStart = i;
+      continue;
+    }
+    if (line.match(INVOKE_RE)) {
+      depth++; // nested kommit→kommit (rare, but bookkeep for symmetry)
+      continue;
+    }
+    if (line.match(SUCCESS_RE) && depth > 0) {
+      depth--;
+      if (depth === 0 && windowStart !== null) {
+        const window = logs.slice(windowStart, i + 1);
+        for (const evt of eventParser.parseLogs(window)) {
+          out.push({
+            name: evt.name,
+            data: evt.data as Record<string, unknown>,
+            instructionIndex: kommitInstructionIndex,
+            eventIndex: eventIndexInInstruction++,
+          });
+        }
+        windowStart = null;
+      }
+    }
   }
   return out;
 }
 
 // ---------------------------------------------------------------------------
-// Per-event handlers. All idempotent. All check last_seen_slot.
+// Per-event PDA derivation (passed into process_event so SQL doesn't have to
+// reproduce Solana PDA math).
 // ---------------------------------------------------------------------------
 
-type Sb = ReturnType<typeof getSupabaseAdminClient>;
-
-async function recordEvent(
-  sb: Sb,
-  tx: HeliusTx,
-  event: DecodedEvent
-): Promise<{ duplicate: boolean }> {
-  const { error } = await sb.from("events").insert({
-    tx_hash: tx.signature,
-    slot: tx.slot,
-    block_time: new Date(tx.timestamp * 1000).toISOString(),
-    event_name: event.name,
-    payload: event.data,
-  });
-  // unique violation = idempotent replay; fine.
-  if (error && error.code !== "23505") {
-    console.error("events insert error:", error);
-    throw error;
+function pdasFor(evt: DecodedEvent): {
+  commitmentPda: string | null;
+  lendingPda: string | null;
+  adapterId: number;
+} {
+  switch (evt.name) {
+    case "Committed":
+    case "Withdrawn":
+    case "PointsAccrued": {
+      const user = new PublicKey(String(evt.data.user));
+      const project = new PublicKey(String(evt.data.project));
+      return {
+        commitmentPda: findCommitmentPda(user, project).toBase58(),
+        lendingPda: null,
+        adapterId: 0,
+      };
+    }
+    case "SupplyExecuted":
+    case "YieldHarvested": {
+      const project = new PublicKey(String(evt.data.project));
+      const adapterId = ADAPTER.Kamino as 0;
+      return {
+        commitmentPda: null,
+        lendingPda: findLendingPositionPda(project, adapterId).toBase58(),
+        adapterId,
+      };
+    }
+    default:
+      return { commitmentPda: null, lendingPda: null, adapterId: 0 };
   }
-  return { duplicate: error?.code === "23505" };
 }
 
-async function upsertProject(sb: Sb, slot: number, blockTime: Date, e: DecodedEvent) {
-  const project = (e.data.project as string) ?? "";
-  const recipient = (e.data.recipientWallet as string) ?? "";
-  await sb.from("projects").upsert(
-    {
-      pda: project,
-      recipient_wallet: recipient,
-      metadata_uri_hash: Buffer.alloc(32),       // backfilled when metadata refreshes
-      cumulative_principal: 0,
-      cumulative_yield_routed: 0,
-      created_at: blockTime.toISOString(),
-      last_seen_slot: slot,
-    },
-    { onConflict: "pda" }
-  );
-}
-
-async function applyCommit(sb: Sb, slot: number, blockTime: Date, e: DecodedEvent) {
-  const userStr = e.data.user as string;
-  const projectStr = e.data.project as string;
-  const amount = BigInt(String(e.data.amount));
-  const ts = new Date(Number(e.data.ts) * 1000);
-
-  const user = new PublicKey(userStr);
-  const project = new PublicKey(projectStr);
-  const commitmentPda = findCommitmentPda(user, project).toBase58();
-
-  // Skip if a newer event already updated this commitment.
-  const { data: existing } = await sb
-    .from("commitments")
-    .select("principal, last_seen_slot")
-    .eq("pda", commitmentPda)
-    .maybeSingle();
-
-  if (existing && existing.last_seen_slot >= slot) return;
-
-  const newPrincipal = (existing ? BigInt(existing.principal) : BigInt(0)) + amount;
-  await sb.from("commitments").upsert(
-    {
-      pda: commitmentPda,
-      user_wallet: userStr,
-      project_pda: projectStr,
-      principal: newPrincipal.toString(),
-      deposit_ts: ts.toISOString(),
-      last_accrual_ts: ts.toISOString(),
-      last_seen_slot: slot,
-    },
-    { onConflict: "pda" }
-  );
-
-  // Bump the project's cumulative_principal — but only if the slot is newer.
-  await sb.rpc("bump_project_cumulative_principal", {
-    p_pda: projectStr,
-    p_amount: amount.toString(),
-    p_slot: slot,
-  });
-}
-
-async function applyWithdraw(sb: Sb, slot: number, _blockTime: Date, e: DecodedEvent) {
-  const userStr = e.data.user as string;
-  const projectStr = e.data.project as string;
-  const amount = BigInt(String(e.data.amount));
-
-  const user = new PublicKey(userStr);
-  const project = new PublicKey(projectStr);
-  const commitmentPda = findCommitmentPda(user, project).toBase58();
-
-  const { data: existing } = await sb
-    .from("commitments")
-    .select("principal, active_score, last_seen_slot")
-    .eq("pda", commitmentPda)
-    .maybeSingle();
-
-  if (!existing || existing.last_seen_slot >= slot) return;
-
-  const newPrincipal = BigInt(existing.principal) - amount;
-  // active_score scaling is computed on-chain; we'd need to poll the
-  // commitment account for the exact post-withdraw value. PointsAccrued
-  // events fill the gap on subsequent accrue calls.
-  await sb
-    .from("commitments")
-    .update({
-      principal: newPrincipal.toString(),
-      active_score: newPrincipal === BigInt(0) ? "0" : existing.active_score, // approximate
-      last_seen_slot: slot,
-    })
-    .eq("pda", commitmentPda);
-}
-
-async function applyPointsAccrued(sb: Sb, slot: number, blockTime: Date, e: DecodedEvent) {
-  const userStr = e.data.user as string;
-  const projectStr = e.data.project as string;
-  const lifetimeTotal = String(e.data.lifetimeTotal);
-
-  const user = new PublicKey(userStr);
-  const project = new PublicKey(projectStr);
-  const commitmentPda = findCommitmentPda(user, project).toBase58();
-
-  await sb
-    .from("commitments")
-    .update({
-      lifetime_score: lifetimeTotal,
-      last_accrual_ts: blockTime.toISOString(),
-      last_seen_slot: slot,
-    })
-    .eq("pda", commitmentPda)
-    .lt("last_seen_slot", slot);
-}
-
-async function applySupplyExecuted(sb: Sb, slot: number, blockTime: Date, e: DecodedEvent) {
-  const projectStr = e.data.project as string;
-  const amount = BigInt(String(e.data.amount));
-  const adapterId = ADAPTER.Kamino;
-
-  const lendingPda = findLendingPositionPda(
-    new PublicKey(projectStr),
-    adapterId as 0
-  ).toBase58();
-
-  const { data: existing } = await sb
-    .from("lending_positions")
-    .select("supplied, last_seen_slot")
-    .eq("pda", lendingPda)
-    .maybeSingle();
-
-  if (existing && existing.last_seen_slot >= slot) return;
-
-  const newSupplied = (existing ? BigInt(existing.supplied) : BigInt(0)) + amount;
-  await sb.from("lending_positions").upsert(
-    {
-      pda: lendingPda,
-      project_pda: projectStr,
-      adapter_id: adapterId,
-      vault_handle: "", // backfilled by reading the on-chain account
-      supplied: newSupplied.toString(),
-      last_harvest_ts: existing ? undefined : null,
-      last_seen_slot: slot,
-    },
-    { onConflict: "pda" }
-  );
-  void blockTime;
-}
-
-async function applyYieldHarvested(sb: Sb, slot: number, blockTime: Date, e: DecodedEvent) {
-  const projectStr = e.data.project as string;
-  const amount = BigInt(String(e.data.amount));
-
-  // Bump project.cumulative_yield_routed.
-  await sb.rpc("bump_project_cumulative_yield", {
-    p_pda: projectStr,
-    p_amount: amount.toString(),
-    p_slot: slot,
-  });
-
-  // Bump LendingPosition.last_harvest_ts.
-  const lendingPda = findLendingPositionPda(
-    new PublicKey(projectStr),
-    ADAPTER.Kamino as 0
-  ).toBase58();
-  await sb
-    .from("lending_positions")
-    .update({
-      last_harvest_ts: blockTime.toISOString(),
-      last_seen_slot: slot,
-    })
-    .eq("pda", lendingPda)
-    .lt("last_seen_slot", slot);
-}
-
-async function applyProjectMetadataUpdated(
-  sb: Sb,
-  slot: number,
-  _blockTime: Date,
-  e: DecodedEvent
-) {
-  const projectStr = e.data.project as string;
-  const newHash = e.data.newHash as number[]; // [u8; 32]
-  await sb
-    .from("projects")
-    .update({
-      metadata_uri_hash: Buffer.from(newHash),
-      metadata: null, // forces lazy refetch from IPFS
-      last_seen_slot: slot,
-    })
-    .eq("pda", projectStr)
-    .lt("last_seen_slot", slot);
+// Anchor's BorshCoder hands us BN / number[] / PublicKey / etc. Normalize
+// to JSON-safe primitives before sending to Postgres. Pubkeys → base58
+// strings, BN → decimal strings, [u8;32] → hex string + raw array.
+function normalizePayload(evt: DecodedEvent): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(evt.data)) {
+    if (v && typeof v === "object" && "toBase58" in v && typeof (v as { toBase58: unknown }).toBase58 === "function") {
+      out[k] = (v as PublicKey).toBase58();
+    } else if (v && typeof v === "object" && "toString" in v && typeof (v as { toString: unknown }).toString === "function" && (v as object).constructor?.name === "BN") {
+      out[k] = (v as { toString: () => string }).toString();
+    } else if (Array.isArray(v) && v.every((x) => typeof x === "number")) {
+      // number[] — likely a [u8; N] array. Keep the array AND surface a hex form.
+      out[k] = v;
+      const hex = (v as number[])
+        .map((n) => n.toString(16).padStart(2, "0"))
+        .join("");
+      // Convention: <field>Hex sibling so the SQL function can `decode(..., 'hex')`.
+      out[`${k}Hex`] = hex;
+    } else if (typeof v === "bigint") {
+      out[k] = v.toString();
+    } else {
+      out[k] = v as unknown;
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -304,8 +216,10 @@ export async function POST(req: Request) {
   }
 
   const sb = getSupabaseAdminClient();
+  const failures: Array<{ tx: string; event: string; error: string }> = [];
   let txCount = 0;
   let eventCount = 0;
+  let appliedCount = 0;
 
   for (const tx of body) {
     const logs = tx.meta?.logMessages ?? [];
@@ -316,50 +230,56 @@ export async function POST(req: Request) {
       parsed = parseEvents(logs);
     } catch (e) {
       console.warn(`event parse failed for ${tx.signature}:`, e);
+      failures.push({ tx: tx.signature, event: "<parse>", error: String(e) });
       continue;
     }
+    if (parsed.length === 0) continue;
 
     txCount++;
-    const blockTime = new Date(tx.timestamp * 1000);
-    for (const evt of parsed) {
-      try {
-        const { duplicate } = await recordEvent(sb, tx, evt);
-        if (duplicate) continue;
-        eventCount++;
+    const blockTime = new Date(tx.timestamp * 1000).toISOString();
 
-        switch (evt.name) {
-          case "ProjectCreated":
-            await upsertProject(sb, tx.slot, blockTime, evt);
-            break;
-          case "Committed":
-            await applyCommit(sb, tx.slot, blockTime, evt);
-            break;
-          case "Withdrawn":
-            await applyWithdraw(sb, tx.slot, blockTime, evt);
-            break;
-          case "PointsAccrued":
-            await applyPointsAccrued(sb, tx.slot, blockTime, evt);
-            break;
-          case "SupplyExecuted":
-            await applySupplyExecuted(sb, tx.slot, blockTime, evt);
-            break;
-          case "YieldHarvested":
-            await applyYieldHarvested(sb, tx.slot, blockTime, evt);
-            break;
-          case "ProjectMetadataUpdated":
-            await applyProjectMetadataUpdated(sb, tx.slot, blockTime, evt);
-            break;
-          default:
-            console.warn(`unhandled event: ${evt.name}`);
+    for (const evt of parsed) {
+      eventCount++;
+      const { commitmentPda, lendingPda, adapterId } = pdasFor(evt);
+      const payload = normalizePayload(evt);
+      try {
+        const { data, error } = await sb.rpc("process_event", {
+          p_tx_hash: tx.signature,
+          p_instruction_index: evt.instructionIndex,
+          p_event_index: evt.eventIndex,
+          p_event_name: evt.name,
+          p_payload: payload,
+          p_slot: tx.slot,
+          p_block_time: blockTime,
+          p_commitment_pda: commitmentPda,
+          p_lending_pda: lendingPda,
+          p_adapter_id: adapterId,
+        });
+        if (error) {
+          // Materialize threw. The events row was rolled back. Surface to
+          // Helius via 500 so it retries the whole batch.
+          throw error;
         }
+        // process_event returns true if newly applied, false if duplicate.
+        if (data === true) appliedCount++;
       } catch (e) {
-        console.error(`handler error for ${evt.name} in ${tx.signature}:`, e);
-        // Don't fail the whole batch; Helius will retry the tx.
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error(
+          `process_event failed for ${tx.signature} ${evt.name} ${evt.instructionIndex}.${evt.eventIndex}:`,
+          errMsg
+        );
+        failures.push({ tx: tx.signature, event: evt.name, error: errMsg });
       }
     }
   }
 
-  return NextResponse.json({ ok: true, txCount, eventCount });
+  if (failures.length > 0) {
+    return NextResponse.json(
+      { ok: false, txCount, eventCount, appliedCount, failures },
+      { status: 500 }
+    );
+  }
+  return NextResponse.json({ ok: true, txCount, eventCount, appliedCount });
 }
 
 // Acknowledge config/health pings.

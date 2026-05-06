@@ -24,3 +24,6 @@ pub use harvest::*;
 
 pub mod admin_update_project_metadata;
 pub use admin_update_project_metadata::*;
+
+pub mod initialize_kamino_adapter_config;
+pub use initialize_kamino_adapter_config::*;

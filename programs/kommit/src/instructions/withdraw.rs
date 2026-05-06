@@ -90,8 +90,18 @@ pub fn handler<'info>(
     require!(amount > 0, KommitError::InvalidAmount);
     require!(amount <= old_principal, KommitError::InsufficientPrincipal);
 
-    commitment.accrue(now)?;
+    let accrue_delta = commitment.accrue(now)?;
     let old_active = commitment.active_score;
+    // QA M1: emit PointsAccrued so the indexer materializes lifetime_score
+    // exactly (instead of approximating between explicit accrue calls).
+    if accrue_delta > 0 {
+        emit!(crate::events::PointsAccrued {
+            user: commitment.user,
+            project: commitment.project,
+            active_delta: accrue_delta,
+            lifetime_total: commitment.lifetime_score,
+        });
+    }
 
     // If escrow doesn't have enough USDC, redeem from klend first.
     let escrow_balance = ctx.accounts.escrow_token_account.amount;

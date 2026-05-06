@@ -44,6 +44,7 @@ pub fn handler(
     emit!(ProjectCreated {
         project: project.key(),
         recipient_wallet,
+        metadata_uri_hash,
     });
 
     Ok(())

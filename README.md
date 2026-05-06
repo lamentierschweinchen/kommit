@@ -23,7 +23,7 @@ Backer commits 100 USDC to project X.
   → Backer accrues 100 USDC × seconds_elapsed of points (u128, on-chain)
 
 Each week (~$0.10 of yield at 5% APY on $100):
-  → Off-chain crank calls harvest(collateral_amount, min_yield)
+  → Off-chain crank calls harvest(min_yield)         // QA C1 (2026-05-05): collateral redemption is computed onchain
   → Klend redeems cTokens at the current exchange rate
   → ~$0.10 USDC routed to project X's recipient wallet
   → ProjectX's cumulative_yield_routed bumps by $0.10
@@ -41,7 +41,7 @@ Backer withdraws anytime:
 ```mermaid
 flowchart LR
     subgraph User["User (browser)"]
-        Frontend["Next.js 14<br/>+ shadcn/ui<br/>+ Privy embedded wallet"]
+        Frontend["Next.js 16.2.4<br/>+ shadcn/ui<br/>+ Privy embedded wallet"]
     end
 
     subgraph OnChain["Solana program (on-chain)"]
@@ -106,7 +106,7 @@ app/
 ├── scripts/                     # Mainnet deploy + devnet smoke + IPFS pin + create_project
 ├── migrations/
 │   └── supabase/                # Indexer schema migrations
-├── web/                         # Next.js 14 frontend (TypeScript + Tailwind + shadcn/ui + Privy)
+├── web/                         # Next.js 16.2.4 frontend (TypeScript + Tailwind + shadcn/ui + Privy)
 │   └── src/
 │       ├── lib/kommit.ts        # PDA derivation + program client + Supabase clients
 │       ├── lib/idl/             # Bundled IDL JSON + TS types
