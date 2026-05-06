@@ -1,30 +1,45 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ProvidersMount } from "@/components/providers-mount";
-import { SiteHeader } from "@/components/kommit/site-header";
-import { SiteFooter } from "@/components/kommit/site-footer";
-import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
-
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+import { bricolage, publicSans, jetbrainsMono } from "@/lib/fonts";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ToastProvider } from "@/components/common/ToastProvider";
+import { DemoControls } from "@/components/layout/DemoControls";
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Kommit — back the next big idea",
+  title: "Kommit — Turn conviction into currency",
   description:
-    "Park USDC. Yield streams to the team building it. Withdraw your principal anytime. Earn on-chain reputation.",
+    "Back early-stage projects without locking your money. Earn kommits the longer you stay.",
+  metadataBase: new URL("https://kommit.vercel.app"),
+  openGraph: {
+    type: "website",
+    siteName: "Kommit",
+    title: "Kommit — Turn conviction into currency.",
+    description:
+      "Back early-stage projects without locking your money. Earn kommits the longer you stay.",
+    images: ["/assets/og-default.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kommit — Turn conviction into currency.",
+    description:
+      "Back early-stage projects without locking your money. Earn kommits the longer you stay.",
+    images: ["/assets/og-default.png"],
+  },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
-        <ProvidersMount>
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <Toaster />
-        </ProvidersMount>
+    <html
+      lang="en"
+      className={`${bricolage.variable} ${publicSans.variable} ${jetbrainsMono.variable} light`}
+    >
+      <body className="min-h-screen flex flex-col bg-white text-dark antialiased selection:bg-primary selection:text-white">
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+            <DemoControls />
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

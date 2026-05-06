@@ -1,142 +1,110 @@
-# Kommit — web
+# Kommit — web (app/web)
 
-Next.js 16 app. Five canonical routes (`/`, `/projects`, `/projects/[slug]`,
-`/dashboard`, `/founder/[slug]`) plus a visual prototype at `/proto` for
-design review. shadcn/ui (Radix + Nova preset) on Slate defaults.
-Privy embedded wallet for Solana + Anchor TS client for tx construction.
+Mock-only frontend rebuilt per **handoff 30**. Replaces the legacy Next 16 / Tailwind 4 / shadcn scaffold (now at `app/web-legacy-anchor-ref/`).
 
-## Quickstart
+## Stack (pinned)
 
-```bash
-cd app/web
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind v3 |
+| Component primitives | Radix UI primitives directly (`@radix-ui/react-dialog`, `-select`, `-dropdown-menu`, `-checkbox`, `-toast`) |
+| Forms | React Hook Form + zod |
+| Fonts | next/font/google for Bricolage Grotesque + Public Sans + JetBrains Mono. Material Symbols via CSS `@import` in globals.css. |
+| State | React Context (`AuthProvider`) + `useState` per page. No Zustand, no Redux, no TanStack Query yet — there's no backend to talk to this session. |
+| Deploy | Vercel |
+
+## Run
+
+```sh
 npm install
-npm run dev
+npm run dev    # http://localhost:3000
+npm run build  # production build (passes clean as of 2026-05-06)
 ```
 
-Open <http://localhost:3000>. Browse renders against mock data with no
-external services required.
+## File map
 
-`npm run build` for a production build (~5s, 20 routes).
+```
+src/
+  app/
+    layout.tsx                       — root layout, fonts, providers
+    page.tsx                         — / landing
+    not-found.tsx                    — 404
+    about/page.tsx
+    projects/page.tsx                — browse
+    projects/[slug]/page.tsx         — detail
+    dashboard/page.tsx               — committer dashboard
+    founder/[slug]/page.tsx          — founder dashboard
+    founder/[slug]/FounderDashboardClient.tsx
+    build/page.tsx                   — application form
+    build/submitted/page.tsx
+    account/page.tsx
+  components/
+    auth/AuthProvider.tsx            — mock role-aware auth (default = Lukas, kommitter)
+    auth/SignInModal.tsx
+    layout/AuthHeader.tsx            — top nav, public vs. authed mode (audit #2)
+    layout/MobileDrawer.tsx          — hamburger drawer (audit #1)
+    layout/Sidebar.tsx               — left rail for dashboard / account / founder
+    layout/Footer.tsx
+    layout/DemoControls.tsx          — floating persona switcher (kept in dev only? — surfaces always for now)
+    landing/HeroRotatingWord.tsx     — 11-word rotation
+    project/ProjectCard.tsx
+    project/UpdatesList.tsx
+    project/KommittersList.tsx
+    project/PositionCard.tsx         — sticky right-rail position card
+    project/RecentUpdatesMini.tsx    — under-PositionCard mini-card (audit #17)
+    project/BrowseToolbar.tsx        — sort right, filters left, search right (audit #4, #5)
+    commit/CommitModal.tsx
+    commit/WithdrawModal.tsx         — % presets (audit #13)
+    dashboard/CommitmentRow.tsx      — pivoted commitment row (audit #6)
+    dashboard/RightRail.tsx          — Recent updates feed + Pivot alerts (audit #14)
+    founder/PostUpdateEditor.tsx     — multiline + pivot toggle + in-memory append
+    account/ExportKeyModal.tsx       — destructive-as-black (audit #11)
+    account/StubModal.tsx            — change name / email / connect / add method
+    common/Modal.tsx                 — Radix Dialog wrapper, scrim @ bg-black/50 (audit #8)
+    common/BrutalButton.tsx
+    common/BrutalInput.tsx
+    common/BrutalSelect.tsx
+    common/Tape.tsx                  — STATE INDICATOR ONLY (audit #16)
+    common/Skeleton.tsx
+    common/ToastProvider.tsx         — Radix Toast + brutal styling
+  lib/
+    cn.ts                            — clsx + tailwind-merge
+    fonts.ts
+    date-utils.ts                    — DEMO_TODAY_ISO = "2026-04-28"
+    kommit-math.ts                   — kommits = USD × days held
+    data/users.ts                    — Lukas, Julian, Lina
+    data/projects.ts                 — 10 projects
+    data/commitments.ts              — Lukas's portfolio (6 commitments)
+    hooks/useFilteredProjects.ts
+```
 
-## Three data sources, two env flags
+## Demo personas
 
-Reads flow through `src/lib/queries.ts`. Same function signatures across
-all sources — screens don't know which one they're hitting.
+Default is signed in as Lukas (kommitter). Three ways to switch:
 
-| Source     | When                                | Reads from                                |
-| ---------- | ----------------------------------- | ----------------------------------------- |
-| `mock`     | default                             | `src/lib/mock-data.ts` fixtures           |
-| `anchor`   | `NEXT_PUBLIC_USE_MOCK_DATA=false`   | on-chain `program.account.*` via RPC      |
-| `indexer`  | `NEXT_PUBLIC_USE_INDEXER=true`      | Supabase `project_dashboard` / `user_dashboard` views |
+1. **Floating dev widget** at bottom-left (`DEMO · LUKAS (KOMMITTER)` — click to swap)
+2. **Query string**: `?as=julian` (founder/Caldera), `?as=lina` (founder/Margin House), `?as=lukas` (default), `?as=anon` (signed out)
+3. Sign-in modal redirects to `/dashboard` on submit; sign-out from the top dropdown returns to `/`
 
-`indexer` wins when both are set. The default keeps the demo working without
-any external service.
+## Audit fixes baked in
 
-### Mode prerequisites
+P0 — #1 mobile drawer · #2 auth-header consistency · #3 hero rotating word can wrap on mobile.
+P1 — #4 drop nav search on /projects · #5 sort moved right · #6 Quire Chess pivot tag · #7 sign-in close-link removed · #8 modal scrim locked to bg-black/50 · #9 404 widened · #10 browse card title scales + content-safe `px-6` · #11 destructive-as-black for export key · #12 sign-in methods as status pills · #13 withdraw % presets · #14 dashboard right rail · #15 drop project-detail in-image text · #16 tape = state-only · #17 RecentUpdatesMini under sticky position card.
+P2 — about-page rotation reduced to -0.2deg · 404 sizing.
+Deferred — #18 card-variant consolidation.
 
-| Mode      | Needs                                                                              |
-| --------- | ---------------------------------------------------------------------------------- |
-| `mock`    | nothing — fixtures live in the repo                                                |
-| `anchor`  | `NEXT_PUBLIC_HELIUS_RPC_URL` (or default devnet); program deployed to that cluster; hand-seeded projects on-chain |
-| `indexer` | the above, plus `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`; webhook running and caught up |
+## Held for follow-on sessions
 
-In `anchor` and `indexer` modes, the slug ↔ project mapping still flows
-through `src/lib/mock-data.ts` (the v1 hand-seeded "off-chain projects table").
-On-chain `Project` PDAs lack name/pitch/founders — that lives in IPFS metadata
-or the Supabase `projects.metadata` jsonb column. Until IPFS pinning is fully
-end-to-end, the seed list provides display data.
+- Real auth (Privy/passkey/social) — handoff 31?
+- Solana program integration — separate session
+- Founder application admin queue
+- OG image generation
+- Production hardening (error boundaries, real loading states, a11y audit, perf)
+- Anonymous variants of `/projects` and `/projects/[slug]`
+- Card-variant consolidation (audit #18)
 
-## Privy — wallet sign-in
+## Deploy
 
-Set `NEXT_PUBLIC_PRIVY_APP_ID` in `.env.local` to enable real sign-in.
-Without it, the dashboard renders against mock data and an amber banner
-warns that sign-in attempts will fail.
-
-`PrivyProvider` is wrapped in `src/components/providers-mount.tsx` with
-`next/dynamic({ ssr: false })`. Privy rejects placeholder app IDs at init
-which would otherwise break SSG of `/_not-found`. Brief flash on first
-paint is acceptable for v1; revisit when a real app ID is in `.env.local`.
-
-## Anchor IDL
-
-Bundled at `src/lib/idl/kommit.{json,ts}`. Regenerated via `anchor build`
-at the workspace root and synced into this directory. The frontend reads
-it via `import idl from '@/lib/idl/kommit.json'` and `import type { Kommit }
-from '@/lib/idl/kommit'`.
-
-`useKommitProgram()` (in `src/lib/anchor-client.ts`) constructs a
-`Program<Kommit>` from the IDL plus a Privy-wallet-backed `AnchorProvider`.
-It returns `null` until a wallet is connected.
-
-For read-only queries (browse, project detail), `lib/queries.ts` builds its
-own provider with a dummy wallet — no signing capability, but `program.account.*`
-fetches work fine.
-
-## Commit + withdraw
-
-`src/lib/tx.ts`:
-
-- `commitToProject(client, recipientWallet, amountDollars)` — wraps
-  `program.methods.commit(amount).accountsPartial({...}).rpc()`. Derives
-  user's USDC ATA + escrow PDA + commitment PDA + config PDA.
-- `withdrawFromProject(client, recipientWallet, amountDollars)` — same
-  shape; passes `redeem_collateral_amount = 0` (escrow-only path).
-
-Devnet USDC mint is hardcoded as `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
-(Circle faucet-mintable). Mainnet swap is one constant change.
-
-**v1 caveat:** withdraws don't yet handle the klend redeem path. When
-`supply_to_yield_source` has moved funds from escrow to klend, withdraws
-need the 14-account klend graph passed via `remaining_accounts`. Private
-beta avoids this by not auto-supplying — keep funds in escrow until the
-v1.5 redeem path lands here.
-
-## Routes
-
-| Path                  | What                                       | Server / Client          |
-| --------------------- | ------------------------------------------ | ------------------------ |
-| `/`                   | landing — rotating hero, how-it-works, featured teams, FAQ | server                   |
-| `/projects`           | browse grid                                | server                   |
-| `/projects/[slug]`    | project detail + Commit/Withdraw modals    | server (data) + client (modals) |
-| `/dashboard`          | committer view — Privy-gated              | client (needs wallet)    |
-| `/founder/[slug]`     | founder view — supporters + receipts      | server (data) + client (post update) |
-| `/proto`              | preserved monolithic visual prototype      | server                   |
-| `/api/webhook/helius` | indexer webhook handler (engineer's track) | dynamic                  |
-
-## Component primitives
-
-`src/components/kommit/`:
-
-- `project-card`, `team-header` — display surfaces
-- `commit-modal`, `withdraw-modal` — sign in user's wallet, sonner toasts on success/failure
-- `points-display` — quiet number + label, no badge or sparkle
-- `yield-routed-display` — $ to a named team, not %APY
-- `committer-list` — founder dashboard supporter table
-- `hero-rotating-word` — landing animator
-- `connect-wallet`, `role-switcher` — Privy login + "Switch to founder view" if user owns a project
-- `site-header` / `site-footer` — collapses to `Sheet` on mobile
-
-## Env reference
-
-Copy `app/.env.example` to `app/web/.env.local` and fill what you need.
-
-| Var                                | Required for | Default                              |
-| ---------------------------------- | ------------ | ------------------------------------ |
-| `NEXT_PUBLIC_KOMMIT_PROGRAM_ID`    | anchor mode  | `GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3` |
-| `NEXT_PUBLIC_HELIUS_RPC_URL`       | anchor mode  | `https://api.devnet.solana.com`      |
-| `NEXT_PUBLIC_PRIVY_APP_ID`         | sign-in      | placeholder (banner shows)           |
-| `NEXT_PUBLIC_SUPABASE_URL`         | indexer mode | —                                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`    | indexer mode | —                                    |
-| `NEXT_PUBLIC_USE_MOCK_DATA`        | source flag  | `true` (set `false` to use Anchor)   |
-| `NEXT_PUBLIC_USE_INDEXER`          | source flag  | `false` (set `true` to use Supabase) |
-
-## Notes
-
-- `.npmrc` pins `legacy-peer-deps=true` — Privy + `@solana-program/memo` peer
-  range conflict on `@solana/kit` (5 vs 6). Without it, `npm install` fails.
-- Multi-lockfile workspace warning in `next build` is harmless. Set
-  `turbopack.root` in `next.config.ts` to silence.
-- `anchor` mode supports browse + project detail + dashboard list, but the
-  per-commitment "weekly yield routed" and yield receipts need harvest event
-  history — anchor reads can't provide that without scraping tx logs. Those
-  fields stay at mock placeholders in `anchor` mode; live in `indexer` mode.
+The legacy Vercel project at `kommit-design-v2.vercel.app` is `prj_xm7Wbxxt4DEXSUsvwSeq17AdNGNT`. Plan: link this app at `app/web/` to a new project (or repurpose the legacy alias once parity is signed off). Static mockups in `design/v2/` stay as repo artifacts.
