@@ -93,11 +93,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Per audit spec (handoff 30): confirmation toasts auto-dismiss in 4s; errors
+// persist until the user dismisses. Radix's docs say `Infinity` makes a toast
+// persistent, but on Vercel's runtime that magic value sometimes leaks back into
+// the confirmation timer state — using finite values is the reliable form.
+// 24h = "effectively persistent" for the error variant.
+const CONFIRM_DURATION_MS = 4000;
+const ERROR_DURATION_MS = 24 * 60 * 60 * 1000;
+
 function ToastItemView({ item, onClose }: { item: ToastItem; onClose: () => void }) {
   const isError = item.variant === "error";
   return (
     <RadixToast.Root
-      duration={isError ? Infinity : 4000}
+      duration={isError ? ERROR_DURATION_MS : CONFIRM_DURATION_MS}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}

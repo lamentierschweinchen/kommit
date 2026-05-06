@@ -13,6 +13,11 @@ export type PendingUpdate = {
   isPivot: boolean;
 };
 
+/** Per Codex M6 — explicit length cap before this becomes a real on-chain
+ * write. Roughly two short paragraphs; matches what `admin_update_project_metadata`
+ * will accept once Pass 3+ wires the founder→admin queue. */
+const MAX_UPDATE_LENGTH = 2000;
+
 export function PostUpdateEditor({
   onPosted,
 }: {
@@ -44,9 +49,13 @@ export function PostUpdateEditor({
       <BrutalTextarea
         rows={6}
         value={body}
-        onChange={(e) => setBody(e.target.value)}
+        onChange={(e) => setBody(e.target.value.slice(0, MAX_UPDATE_LENGTH))}
         placeholder="What's new?"
+        maxLength={MAX_UPDATE_LENGTH}
       />
+      <div className="mt-2 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest text-right">
+        {body.length} / {MAX_UPDATE_LENGTH}
+      </div>
       <div className="mt-5 flex items-center justify-between flex-wrap gap-4">
         <label className="inline-flex items-center gap-3 cursor-pointer relative">
           <Checkbox.Root

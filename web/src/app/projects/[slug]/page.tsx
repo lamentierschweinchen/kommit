@@ -4,10 +4,9 @@ import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { UpdatesList } from "@/components/project/UpdatesList";
 import { KommittersList } from "@/components/project/KommittersList";
-import { PositionCard } from "@/components/project/PositionCard";
+import { UserPositionCard } from "@/components/project/UserPositionCard";
 import { RecentUpdatesMini } from "@/components/project/RecentUpdatesMini";
 import { getProject, projectImageUrl, type Project } from "@/lib/data/projects";
-import { LUKAS_COMMITMENTS } from "@/lib/data/commitments";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD, formatNumber } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
@@ -34,9 +33,6 @@ export default async function ProjectDetailPage({
   const { slug } = await params;
   const project = getProject(slug);
   if (!project) notFound();
-
-  // Demo: assume signed-in user is Lukas; look up his position in this project.
-  const userCommitment = LUKAS_COMMITMENTS.find((c) => c.projectSlug === slug);
 
   return (
     <>
@@ -117,12 +113,7 @@ export default async function ProjectDetailPage({
           </div>
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
-            <PositionCard
-              project={project}
-              variant={userCommitment ? "active" : "no-position"}
-              committedUSD={userCommitment?.kommittedUSD}
-              sinceISO={userCommitment?.sinceISO}
-            />
+            <UserPositionCard project={project} />
             <RecentUpdatesMini projectSlug={project.slug} updates={project.updates} />
           </aside>
         </div>

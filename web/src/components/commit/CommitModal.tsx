@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PublicKey } from "@solana/web3.js";
 import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
+import { useKommitProgram } from "@/lib/anchor-client";
+import { commitToProject } from "@/lib/tx";
+import { mapAnchorError } from "@/lib/anchor-errors";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD } from "@/lib/kommit-math";
 import { cn } from "@/lib/cn";
@@ -15,33 +19,65 @@ export function CommitModal({
   open,
   onOpenChange,
   project,
+  onSuccess,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   project: Project;
+  /** Fires after a successful on-chain settle so callers can refresh reads. */
+  onSuccess?: () => void;
 }) {
   const [raw, setRaw] = useState("100.00");
-  const { confirm } = useToast();
+  const [submitting, setSubmitting] = useState(false);
+  const { confirm, error: toastError } = useToast();
+  const client = useKommitProgram();
 
   useEffect(() => {
     if (open) setRaw("100.00");
   }, [open]);
 
   const numeric = parseFloat(raw) || 0;
+  const isOnChain = !!project.recipientWallet;
+  const walletReady = !!client;
+  const submitDisabled = !isOnChain || !walletReady || numeric <= 0 || submitting;
 
-  const handleSubmit = () => {
-    onOpenChange(false);
-    setTimeout(() => confirm("Kommit confirmed."), 220);
+  const submitHelp = !isOnChain
+    ? "This project isn't open for kommitments yet."
+    : !walletReady
+      ? "Sign in to kommit."
+      : null;
+
+  const handleSubmit = async () => {
+    if (!client || !project.recipientWallet) return;
+    setSubmitting(true);
+    try {
+      await commitToProject(client, new PublicKey(project.recipientWallet), raw);
+      onOpenChange(false);
+      setSubmitting(false);
+      setTimeout(() => confirm("Kommit confirmed."), 220);
+      onSuccess?.();
+    } catch (e) {
+      setSubmitting(false);
+      const mapped = mapAnchorError(e);
+      // Always log raw for debugging; never show it to the user.
+      // eslint-disable-next-line no-console
+      console.warn("commit failed:", e);
+      if (mapped.kind === "user_cancel") return;
+      toastError(
+        mapped.kind === "unknown" ? "Kommit didn't go through." : mapped.title,
+        mapped.kind === "unknown" ? "Try again." : mapped.detail,
+        {
+          recoveryLabel: "Try again",
+          onRecover: () => void handleSubmit(),
+        },
+      );
+    }
   };
 
   const founder = project.founders[0];
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      title={`Kommit to ${project.name}`}
-    >
+    <Modal open={open} onOpenChange={onOpenChange} title={`Kommit to ${project.name}`}>
       <div className="mt-3 inline-flex items-center gap-2.5 bg-gray-100 px-3 py-1.5 border-[2px] border-black shadow-brutal-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -59,7 +95,9 @@ export function CommitModal({
           Amount
         </label>
         <div className="flex items-stretch border-[3px] border-black bg-white shadow-brutal focus-within:translate-x-[-2px] focus-within:translate-y-[-2px] focus-within:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] transition-all">
-          <span className="px-4 flex items-center font-epilogue font-black text-3xl text-gray-400">$</span>
+          <span className="px-4 flex items-center font-epilogue font-black text-3xl text-gray-400">
+            $
+          </span>
           <input
             type="text"
             inputMode="decimal"
@@ -67,6 +105,7 @@ export function CommitModal({
             onChange={(e) => setRaw(e.target.value.replace(/[^0-9.]/g, ""))}
             className="flex-1 px-2 py-3 font-epilogue font-black text-3xl bg-transparent outline-none min-w-0 tracking-tight w-full"
             aria-label="Kommit amount"
+            disabled={submitting}
           />
         </div>
         <div className="mt-3 flex gap-2 flex-wrap">
@@ -77,8 +116,9 @@ export function CommitModal({
                 key={a}
                 type="button"
                 onClick={() => setRaw(String(a))}
+                disabled={submitting}
                 className={cn(
-                  "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform",
+                  "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
                   isActive ? "bg-primary text-white" : "bg-white text-black",
                 )}
               >
@@ -89,8 +129,9 @@ export function CommitModal({
           <button
             type="button"
             onClick={() => setRaw(String(MAX_AMOUNT))}
+            disabled={submitting}
             className={cn(
-              "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform",
+              "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
               numeric === MAX_AMOUNT ? "bg-primary text-white" : "bg-black text-white",
             )}
           >
@@ -121,12 +162,26 @@ export function CommitModal({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={numeric <= 0}
+          disabled={submitDisabled}
           className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
         >
-          Kommit {formatUSD(numeric || 0)}
-          <span className="material-symbols-outlined font-bold">arrow_forward</span>
+          {submitting ? (
+            <>
+              Signing…
+              <span className="material-symbols-outlined font-bold animate-spin">progress_activity</span>
+            </>
+          ) : (
+            <>
+              Kommit {formatUSD(numeric || 0)}
+              <span className="material-symbols-outlined font-bold">arrow_forward</span>
+            </>
+          )}
         </button>
+        {submitHelp ? (
+          <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest text-center">
+            {submitHelp}
+          </p>
+        ) : null}
       </div>
     </Modal>
   );

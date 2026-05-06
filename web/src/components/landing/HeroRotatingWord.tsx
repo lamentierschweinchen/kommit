@@ -34,7 +34,7 @@ export function HeroRotatingWord() {
   return (
     <span
       key={animKey}
-      className="word-rotate inline-block bg-black text-white px-4 py-2 mt-2 border-[3px] border-black shadow-brutal-purple max-w-full"
+      className="word-rotate inline-block bg-black text-white px-4 py-2 mt-2 border-[3px] border-black shadow-brutal-purple max-w-full [overflow-wrap:anywhere]"
     >
       {WORDS[index]}
     </span>

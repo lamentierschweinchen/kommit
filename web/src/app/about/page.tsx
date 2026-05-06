@@ -29,7 +29,7 @@ export default function AboutPage() {
           <p className="text-xl md:text-2xl font-medium leading-relaxed text-gray-900">
             You back a project with real money. Your money stays yours; withdraw anytime. The longer
             you stay, the more kommits you earn —{" "}
-            <span className="font-black text-primary">conviction, made measurable</span>.
+            <span className="font-black text-primary">conviction, made&nbsp;measurable</span>.
           </p>
         </section>
 
@@ -48,7 +48,7 @@ export default function AboutPage() {
 
         <section className="max-w-2xl mx-auto py-10 md:py-14">
           <p className="font-epilogue font-bold text-xl md:text-2xl leading-snug text-gray-500 italic">
-            To be early, you used to need to be rich, lucky, or willing to lose your money.
+            To be early, you used to need to be rich, lucky, or willing to lose your&nbsp;money.
           </p>
         </section>
 
@@ -59,7 +59,7 @@ export default function AboutPage() {
             </div>
             <p className="font-epilogue font-black uppercase text-3xl md:text-4xl lg:text-5xl tracking-tighter leading-[1.05]">
               Kommit is the fourth way: back early, keep your money, and get rewarded when the
-              project reaches the next stage.
+              project reaches the next&nbsp;stage.
             </p>
           </div>
         </section>

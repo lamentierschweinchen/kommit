@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { bricolage, publicSans, jetbrainsMono } from "@/lib/fonts";
+import { ProvidersMount } from "@/components/providers-mount";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/common/ToastProvider";
 import { DemoControls } from "@/components/layout/DemoControls";
@@ -34,12 +35,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${bricolage.variable} ${publicSans.variable} ${jetbrainsMono.variable} light`}
     >
       <body className="min-h-screen flex flex-col bg-white text-dark antialiased selection:bg-primary selection:text-white">
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-            <DemoControls />
-          </ToastProvider>
-        </AuthProvider>
+        <ProvidersMount>
+          <AuthProvider>
+            <ToastProvider>
+              {children}
+              {process.env.NODE_ENV !== "production" ? <DemoControls /> : null}
+            </ToastProvider>
+          </AuthProvider>
+        </ProvidersMount>
       </body>
     </html>
   );

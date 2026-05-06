@@ -58,6 +58,16 @@ export type Project = {
   titleSize?: "tight" | "normal";
   updates: ProjectUpdate[];
   kommitters: ProjectKommitter[];
+  /**
+   * On-chain recipient wallet address (base58). Drives `findProjectPda(...)` for
+   * the kommit/withdraw flow. Optional — projects without an on-chain Project
+   * account yet show a friendly "not yet open for kommitments" state.
+   *
+   * The 6 wallets below are the existing devnet projects from the
+   * web-legacy-anchor-ref scaffold; we repurpose their on-chain accounts for
+   * the demo. New projects need `scripts/create_project.ts` run first.
+   */
+  recipientWallet?: string;
 };
 
 const CALDERA: Project = {
@@ -92,6 +102,7 @@ const CALDERA: Project = {
   totalKommitsGenerated: 1_240_500,
   activeSinceISO: "2026-03-12",
   imageSeed: "caldera",
+  recipientWallet: "Fpn7Fp41SeZ1fSDcZDSZMYwjnTUyx23Ui2ie1NhLRDad",
   titleSize: "normal",
   updates: [
     {
@@ -166,6 +177,7 @@ const LIGHTHOUSE: Project = {
   totalKommittedUSD: 42_180,
   totalKommitsGenerated: 412_240,
   activeSinceISO: "2026-04-02",
+  recipientWallet: "6JEf5rbNH73sKuNZfnELaMcuAbYUNLTjrgTTzpBAJ1sh",
   imageSeed: "lighthouse",
   titleSize: "tight",
   updates: [
@@ -212,6 +224,7 @@ const AURORA: Project = {
   totalKommittedUSD: 118_500,
   totalKommitsGenerated: 2_184_750,
   activeSinceISO: "2026-02-28",
+  recipientWallet: "AoB7NCrsHTuD7cDPrGebdVvi3oYgGW1RVJNJahrVXJYF",
   imageSeed: "aurora",
   titleSize: "normal",
   updates: [
@@ -253,6 +266,7 @@ const QUIRE_CHESS: Project = {
   totalKommittedUSD: 31_820,
   totalKommitsGenerated: 318_200,
   activeSinceISO: "2026-04-08",
+  recipientWallet: "DVpAMZCyCeE53whFxvxdPcvAyUif52T4Xp6jPWapDugJ",
   imageSeed: "quire",
   titleSize: "tight",
   updates: [
@@ -295,6 +309,7 @@ const FRAME_STUDIO: Project = {
   totalKommittedUSD: 58_930,
   totalKommitsGenerated: 1_876_400,
   activeSinceISO: "2026-01-22",
+  recipientWallet: "5SnBWYLqpuphFNfrWSLHYrXQYMCJrfEpNjMFpGPETBMV",
   imageSeed: "frame",
   titleSize: "tight",
   updates: [
@@ -336,6 +351,7 @@ const BEACON_SCI: Project = {
   totalKommittedUSD: 24_610,
   totalKommitsGenerated: 482_760,
   activeSinceISO: "2026-02-14",
+  recipientWallet: "3ZZbd8jcVJ4aoPa768U2JqVRqeHA6SQfGUm7geQocpCe",
   imageSeed: "beacon",
   titleSize: "tight",
   updates: [

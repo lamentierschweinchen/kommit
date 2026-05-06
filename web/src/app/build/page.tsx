@@ -9,15 +9,18 @@ import { Footer } from "@/components/layout/Footer";
 import { BrutalInput, BrutalTextarea } from "@/components/common/BrutalInput";
 import { BrutalSelect } from "@/components/common/BrutalSelect";
 
+// Caps per Codex M6 — every freeform field has an explicit max so an oversized
+// payload can't slip through to the future server-side route. Matches what
+// the admin queue (Pass 3) will accept.
 const schema = z.object({
-  name: z.string().min(1, "Required"),
+  name: z.string().min(1, "Required").max(120, "Max 120 characters"),
   pitch: z.string().min(1, "Required").max(80, "Max 80 characters"),
-  sector: z.string().min(1, "Required"),
-  longer: z.string().min(20, "Tell us more"),
-  founders: z.string().min(1, "Required"),
-  stage: z.string().min(1, "Required"),
-  extra: z.string().optional(),
-  email: z.string().email("Valid email required"),
+  sector: z.string().min(1, "Required").max(40, "Pick from the list"),
+  longer: z.string().min(20, "Tell us more").max(4000, "Max 4000 characters"),
+  founders: z.string().min(1, "Required").max(2000, "Max 2000 characters"),
+  stage: z.string().min(1, "Required").max(40, "Pick from the list"),
+  extra: z.string().max(2000, "Max 2000 characters").optional(),
+  email: z.string().email("Valid email required").max(254, "Max 254 characters"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -61,7 +64,7 @@ export default function BuildApplicationPage() {
             required
             help="Display name."
           >
-            <BrutalInput {...register("name")} type="text" />
+            <BrutalInput {...register("name")} type="text" maxLength={120} />
           </Field>
           <Field
             label="One-sentence pitch"
@@ -87,7 +90,7 @@ export default function BuildApplicationPage() {
             required
             help="What you're building, why now, why this team."
           >
-            <BrutalTextarea {...register("longer")} rows={6} />
+            <BrutalTextarea {...register("longer")} rows={6} maxLength={4000} />
           </Field>
           <Field
             label="Founders & links"
@@ -98,6 +101,7 @@ export default function BuildApplicationPage() {
             <BrutalTextarea
               {...register("founders")}
               rows={5}
+              maxLength={2000}
               placeholder={`Lina Park, CEO — linkedin.com/in/lina\nDiego Romero, COO — github.com/diegoromero`}
             />
           </Field>
@@ -118,9 +122,10 @@ export default function BuildApplicationPage() {
           </Field>
           <Field
             label="Anything we should know?"
+            error={errors.extra?.message}
             help="Pivots, prior versions, what you want from the cohort. Anything worth flagging."
           >
-            <BrutalTextarea {...register("extra")} rows={4} />
+            <BrutalTextarea {...register("extra")} rows={4} maxLength={2000} />
           </Field>
           <Field
             label="Email"
@@ -128,7 +133,7 @@ export default function BuildApplicationPage() {
             required
             help="Where we send the response."
           >
-            <BrutalInput {...register("email")} type="email" />
+            <BrutalInput {...register("email")} type="email" maxLength={254} />
           </Field>
 
           <div className="pt-6">

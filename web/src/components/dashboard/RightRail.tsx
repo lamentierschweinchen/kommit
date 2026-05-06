@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { relativeTime } from "@/lib/date-utils";
-import { LUKAS_COMMITMENTS } from "@/lib/data/commitments";
+import type { Commitment } from "@/lib/data/commitments";
 import { PROJECTS, type Project, type ProjectUpdate } from "@/lib/data/projects";
 
 /**
@@ -12,9 +12,9 @@ import { PROJECTS, type Project, type ProjectUpdate } from "@/lib/data/projects"
  *
  * Also houses Round invites + Pivot alerts (moved from full-width sections).
  */
-export function RightRail() {
+export function RightRail({ commitments }: { commitments: Commitment[] }) {
   // Build a flat list of [project, update] pairs from backed projects, sort by recency.
-  const backed = LUKAS_COMMITMENTS
+  const backed = commitments
     .map((c) => PROJECTS.find((p) => p.slug === c.projectSlug))
     .filter((p): p is Project => !!p);
 

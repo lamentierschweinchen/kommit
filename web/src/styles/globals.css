@@ -29,6 +29,20 @@
     font-family: var(--font-bricolage), system-ui, sans-serif;
   }
 
+  /* Orphan-word avoidance — Pass 2 fix 4b.
+     Headings balance every line evenly; prose paragraphs only protect the
+     last-line widow. Browsers without `text-wrap` support silently ignore. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
   /* Material symbols default load — overridden by per-component variation-settings */
   .material-symbols-outlined {
     font-family: "Material Symbols Outlined";

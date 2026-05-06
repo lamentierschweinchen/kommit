@@ -16,6 +16,7 @@ export function PositionCard({
   committedUSD,
   sinceISO,
   graduatedRecord,
+  onTxSuccess,
 }: {
   project: Project;
   variant: PositionVariant;
@@ -28,6 +29,8 @@ export function PositionCard({
     activeFromISO: string;
     activeToISO: string;
   };
+  /** Fires after a successful kommit/withdraw so caller can refresh reads. */
+  onTxSuccess?: () => void;
 }) {
   const [commitOpen, setCommitOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -126,13 +129,20 @@ export function PositionCard({
         </p>
       </div>
 
-      <CommitModal open={commitOpen} onOpenChange={setCommitOpen} project={project} />
+      <CommitModal
+        open={commitOpen}
+        onOpenChange={setCommitOpen}
+        project={project}
+        onSuccess={onTxSuccess}
+      />
       {variant === "active" && committedUSD ? (
         <WithdrawModal
           open={withdrawOpen}
           onOpenChange={setWithdrawOpen}
           projectName={project.name}
           committedUSD={committedUSD}
+          recipientWallet={project.recipientWallet}
+          onSuccess={onTxSuccess}
         />
       ) : null}
     </>

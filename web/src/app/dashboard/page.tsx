@@ -1,3 +1,6 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
@@ -5,22 +8,62 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ProjectCardSmall } from "@/components/project/ProjectCardSmall";
-import { LUKAS_COMMITMENTS } from "@/lib/data/commitments";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getCommitmentsForUser } from "@/lib/queries";
 import { getProject, PROJECTS } from "@/lib/data/projects";
+import type { Commitment } from "@/lib/data/commitments";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 
 export default function DashboardPage() {
-  const commitments = LUKAS_COMMITMENTS;
+  const { user, isSignedIn } = useAuth();
+  const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  useEffect(() => {
+    if (!isSignedIn || !user?.wallet) {
+      setCommitments([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    getCommitmentsForUser(user.wallet)
+      .then((c) => {
+        if (cancelled) return;
+        // Join pivot history from project metadata so the inline `↳ Pivoted Mar 04`
+        // tag still renders on commitments where the project pivoted after the
+        // user's deposit. Audit fix #6.
+        const enriched = c.map((commitment) => {
+          const project = getProject(commitment.projectSlug);
+          const pivotSince = project?.updates.find(
+            (u) => u.isPivot && u.atISO >= commitment.sinceISO,
+          )?.atISO;
+          return pivotSince ? { ...commitment, pivotedAtISO: pivotSince } : commitment;
+        });
+        setCommitments(enriched);
+      })
+      .catch((e) => {
+        // eslint-disable-next-line no-console
+        console.warn("dashboard commitments read failed:", e);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, user?.wallet, refreshKey]);
 
   const activeUSD = commitments.reduce((acc, c) => acc + c.kommittedUSD, 0);
   const lifetimeKommits = commitments.reduce(
     (acc, c) => acc + kommitsFor(c.kommittedUSD, c.sinceISO),
     0,
   );
-  const earliest = commitments
-    .map((c) => c.sinceISO)
-    .sort()[0];
+  const earliest = commitments.map((c) => c.sinceISO).sort()[0];
 
   const recommendedSlugs = ["cadence", "forge-health", "verity-books"];
   const recommended = recommendedSlugs
@@ -43,7 +86,13 @@ export default function DashboardPage() {
             <StatCard
               label="Active committed"
               value={formatUSD(activeUSD)}
-              hint={`across ${commitments.length} projects`}
+              hint={
+                commitments.length > 0
+                  ? `across ${commitments.length} project${commitments.length === 1 ? "" : "s"}`
+                  : isSignedIn
+                    ? "no kommitments yet"
+                    : "sign in to see your kommits"
+              }
             />
             <StatCard
               label="Lifetime kommits"
@@ -58,33 +107,30 @@ export default function DashboardPage() {
             />
           </section>
 
-          {/* Audit #14: two-column grid at lg+. Single column at md and below. */}
           <div className="mt-20 grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,400px)] gap-10">
             <div className="space-y-20">
               <section className="pt-10 border-t-[8px] border-black">
                 <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                   Your commitments
                 </h2>
-                {commitments.length === 0 ? (
-                  <div className="bg-white border-[3px] border-black shadow-brutal p-8 text-center">
-                    <p className="font-epilogue font-black uppercase text-2xl tracking-tighter mb-4">
-                      No commitments yet.
-                    </p>
-                    <Link
-                      href="/projects"
-                      className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
-                    >
-                      Browse projects
-                      <span className="material-symbols-outlined text-base">arrow_forward</span>
-                    </Link>
-                  </div>
+                {!isSignedIn ? (
+                  <SignInPrompt />
+                ) : loading ? (
+                  <CommitmentsSkeleton />
+                ) : commitments.length === 0 ? (
+                  <EmptyCommitments />
                 ) : (
                   <div className="space-y-5">
                     {commitments.map((c) => {
                       const project = getProject(c.projectSlug);
                       if (!project) return null;
                       return (
-                        <CommitmentRow key={c.projectSlug} commitment={c} project={project} />
+                        <CommitmentRow
+                          key={c.projectSlug}
+                          commitment={c}
+                          project={project}
+                          onWithdrawSuccess={refresh}
+                        />
                       );
                     })}
                   </div>
@@ -104,13 +150,60 @@ export default function DashboardPage() {
             </div>
 
             <aside className="lg:pt-10 lg:border-t-[8px] lg:border-black">
-              <RightRail />
+              <RightRail commitments={commitments} />
             </aside>
           </div>
         </main>
       </div>
       <Footer withSidebarOffset />
     </>
+  );
+}
+
+function SignInPrompt() {
+  return (
+    <div className="bg-white border-[3px] border-black shadow-brutal p-8 text-center">
+      <p className="font-epilogue font-black uppercase text-2xl tracking-tighter mb-4">
+        Sign in to see your kommits.
+      </p>
+      <Link
+        href="/projects"
+        className="inline-flex items-center gap-2 bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
+      >
+        Browse projects
+        <span className="material-symbols-outlined text-base">arrow_forward</span>
+      </Link>
+    </div>
+  );
+}
+
+function EmptyCommitments() {
+  return (
+    <div className="bg-white border-[3px] border-black shadow-brutal p-8 text-center">
+      <p className="font-epilogue font-black uppercase text-2xl tracking-tighter mb-4">
+        No commitments yet.
+      </p>
+      <Link
+        href="/projects"
+        className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
+      >
+        Browse projects
+        <span className="material-symbols-outlined text-base">arrow_forward</span>
+      </Link>
+    </div>
+  );
+}
+
+function CommitmentsSkeleton() {
+  return (
+    <div className="space-y-5">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="bg-gray-100 border-[3px] border-black shadow-brutal h-24 animate-pulse"
+        />
+      ))}
+    </div>
   );
 }
 

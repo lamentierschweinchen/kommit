@@ -13,20 +13,22 @@ export default function LandingPage() {
     <>
       <AuthHeader />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
-        {/* HERO — audit #3: drop H1 to text-4xl base; rotating slot can wrap to 2 lines */}
+        {/* HERO — audit #3 + Pass 2 mobile-walk fix 4a: H1 bottoms out at text-3xl
+            so single-word rotations like BREAKTHROUGH fit at 320px. Rotating slot can
+            still wrap to 2 lines on multi-word values (BILLION DOLLAR IDEA, etc.) */}
         <section className="mt-12 md:mt-16 relative">
           <div className="absolute inset-0 bg-primary translate-x-4 translate-y-4 border-[3px] border-black -z-10" />
           <div className="bg-white border-[3px] border-black p-8 md:p-12 flex flex-col lg:flex-row gap-10 items-center">
             <div className="flex-1 min-w-0 space-y-8 relative z-10 w-full">
               {/* Audit #16: this hero pill is informational — pill, not tape */}
               <StatePill color="secondary">The conviction primitive</StatePill>
-              <h1 className="font-epilogue font-black uppercase leading-[1.05] tracking-tighter text-4xl sm:text-5xl md:text-6xl lg:text-7xl min-h-[180px] sm:min-h-[210px] md:min-h-[260px] lg:min-h-[300px]">
+              <h1 className="font-epilogue font-black uppercase leading-[1.05] tracking-tighter text-3xl sm:text-5xl md:text-6xl lg:text-7xl min-h-[160px] sm:min-h-[210px] md:min-h-[260px] lg:min-h-[300px]">
                 Back the next
                 <br />
                 <HeroRotatingWord />
               </h1>
               <p className="text-xl md:text-2xl font-medium text-gray-800 max-w-xl leading-relaxed border-l-[4px] border-primary pl-6 italic">
-                Turn conviction into currency. Back early-stage projects without locking your money.
+                Turn conviction into currency. Back early-stage projects without locking your&nbsp;money.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
                 <Link
@@ -193,7 +195,7 @@ export default function LandingPage() {
             >
               <p>
                 Equity crowdfunding loses backers their money at painful rates. A real Wefunder
-                investor&apos;s review:
+                investor&apos;s&nbsp;review:
               </p>
               <blockquote className="bg-gray-100 border-[3px] border-black shadow-brutal p-5 md:p-6 relative my-2">
                 <div className="absolute -top-2 -right-2 w-12 h-4 bg-primary -rotate-6 border-[2px] border-black" />
@@ -207,7 +209,7 @@ export default function LandingPage() {
               <p>
                 Crowdfunding platforms collect cash, founders disappear, refunds don&apos;t happen.
                 Kommit is the inverse: your money never leaves your control. Teams see a verifiable
-                signal of conviction; you keep your money; you can pull out anytime.
+                signal of conviction; you keep your money; you can pull out&nbsp;anytime.
               </p>
             </FAQItem>
             <FAQItem question="Is there a Kommit token?">

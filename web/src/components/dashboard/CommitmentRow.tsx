@@ -11,9 +11,11 @@ import { cn } from "@/lib/cn";
 export function CommitmentRow({
   commitment,
   project,
+  onWithdrawSuccess,
 }: {
   commitment: Commitment;
   project: Project;
+  onWithdrawSuccess?: () => void;
 }) {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const isPivot = !!commitment.pivotedAtISO;
@@ -79,6 +81,8 @@ export function CommitmentRow({
         onOpenChange={setWithdrawOpen}
         projectName={project.name}
         committedUSD={commitment.kommittedUSD}
+        recipientWallet={project.recipientWallet}
+        onSuccess={onWithdrawSuccess}
       />
     </>
   );
