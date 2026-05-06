@@ -1,8 +1,10 @@
 # Kommit
 
-A Solana primitive for early-stage validation. Users park USDC; principal stays theirs in escrow; yield routes to a curated project's wallet; users earn soulbound on-chain reputation (capital × time, active + lifetime split). The platform issues no token, ever.
+A Solana primitive for early-stage validation. Users park USDC; principal stays theirs in escrow; yield routes via the program's harvest path to a curated project's wallet; users earn soulbound on-chain reputation (capital × time, active + lifetime split). The platform issues no token, ever.
 
 Built for the Solana Frontier hackathon (May 2026). MIT-licensed and open-source from commit 1.
+
+> ⚠️ **Hackathon / devnet-grade — not production-ready.** This codebase is submitted to Solana Frontier and currently runs on **Solana devnet only**. It has **not been independently audited**. Mainnet deploy artifacts exist (`scripts/deploy_mainnet.sh`) but the button has not been pressed; mainnet is whenever-if-ever. Don't put real money you can't afford to lose into anything here. See [`SECURITY.md`](SECURITY.md) for disclosure path and known limitations, [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program audit, and the parent workspace's `SECURITY_HARDENING.md` for the most recent full-stack review.
 
 ## What it does
 
