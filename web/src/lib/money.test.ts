@@ -64,9 +64,9 @@ describe("parseTokenAmount", () => {
   });
 
   it("rejects non-string input", () => {
-    // @ts-expect-error — defensive runtime check
+    // @ts-expect-error — defensive runtime check (number passed instead of string)
     expect(() => parseTokenAmount(100, 6)).toThrow(/expected string/);
-    // @ts-expect-error
+    // @ts-expect-error — defensive runtime check (null passed instead of string)
     expect(() => parseTokenAmount(null, 6)).toThrow(/expected string/);
   });
 });
