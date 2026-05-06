@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-white text-dark antialiased;
+    font-family: var(--font-public-sans), system-ui, sans-serif;
+  }
+
+  body {
+    @apply min-h-screen;
+  }
+
+  ::selection {
+    @apply bg-primary text-white;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-epilogue {
+    font-family: var(--font-bricolage), system-ui, sans-serif;
+  }
+
+  /* Material symbols default load — overridden by per-component variation-settings */
+  .material-symbols-outlined {
+    font-family: "Material Symbols Outlined";
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings:
+      "FILL" 0,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings:
+      "FILL" 1,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+}
+
+@layer components {
+  /* Brutal focus ring across all form fields */
+  .brutal-focus:focus,
+  .brutal-focus:focus-within {
+    outline: none;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px rgba(153, 69, 255, 1);
+    transition: all 120ms ease;
+  }
+
+  .brutal-input,
+  .brutal-textarea,
+  .brutal-select {
+    transition: all 120ms ease;
+  }
+
+  /* Native select arrow tweak */
+  .brutal-select-native {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2rem;
+  }
+
+  /* FAQ details marker */
+  details > summary {
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details[open] .faq-icon {
+    transform: rotate(45deg);
+  }
+}
+
+@layer utilities {
+  .word-rotate {
+    animation: wordIn 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: inline-block;
+    transform: rotate(-2deg);
+  }
+}
