@@ -336,7 +336,7 @@ export default function ReviewPage() {
 
         <footer className="pt-12 pb-6 border-t-[3px] border-black">
           <p className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 text-center">
-            End of review. Reach the bottom = you've seen it all.
+            End of review. Reach the bottom = you&rsquo;ve seen it all.
           </p>
         </footer>
       </main>
