@@ -12,6 +12,7 @@ import { formatUSD, formatNumber } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { cn } from "@/lib/cn";
 import { Tape } from "@/components/common/Tape";
+import { Icon } from "@/components/common/Icon";
 
 const SECTOR_BG: Record<string, string> = {
   Climate: "bg-primary text-white",
@@ -83,7 +84,7 @@ export default async function ProjectDetailPage({
                           className="inline-flex items-center gap-1 font-epilogue font-bold uppercase tracking-widest text-[11px] text-primary hover:underline"
                         >
                           Past work
-                          <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                          <Icon name="arrow_outward" size="xs" />
                         </Link>
                       ) : null}
                     </div>
@@ -132,7 +133,7 @@ function ProjectHero({ project }: { project: Project }) {
             href="/projects"
             className="font-epilogue font-bold uppercase tracking-widest text-xs text-gray-500 hover:text-black flex items-center gap-1"
           >
-            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <Icon name="arrow_back" size="sm" />
             Back to projects
           </Link>
           <span className="text-gray-300">·</span>

@@ -5,6 +5,7 @@ import { HeroRotatingWord } from "@/components/landing/HeroRotatingWord";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { StatePill } from "@/components/common/Tape";
 import { PROJECTS } from "@/lib/data/projects";
+import { Icon } from "@/components/common/Icon";
 
 export default function LandingPage() {
   const featured = PROJECTS.slice(0, 3);
@@ -36,7 +37,7 @@ export default function LandingPage() {
                   className="bg-secondary text-black font-epilogue font-black uppercase tracking-wide text-base md:text-lg px-8 py-4 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-lg flex items-center justify-center gap-3"
                 >
                   Browse projects
-                  <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                  <Icon name="arrow_forward" className="font-bold" />
                 </Link>
                 <Link
                   href="#how-it-works"
@@ -62,12 +63,7 @@ export default function LandingPage() {
                   <div className="bg-secondary border-[3px] border-black shadow-brutal rounded-full" />
                   <div className="bg-black border-[3px] border-black shadow-brutal-purple rounded-tl-[50px] rounded-br-[50px]" />
                   <div className="bg-white border-[3px] border-black shadow-brutal flex items-center justify-center">
-                    <span
-                      className="material-symbols-outlined text-5xl filled"
-                      aria-hidden
-                    >
-                      deployed_code
-                    </span>
+                    <Icon name="deployed_code" size="xl" />
                   </div>
                 </div>
               </div>
@@ -177,7 +173,7 @@ export default function LandingPage() {
                 className="bg-secondary text-black font-epilogue font-black uppercase tracking-wide text-base md:text-lg px-8 py-4 border-[3px] border-black shadow-brutal-white hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-white-lg flex items-center justify-center gap-3"
               >
                 Apply
-                <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                <Icon name="arrow_forward" className="font-bold" />
               </Link>
             </div>
           </div>
@@ -299,7 +295,7 @@ function FAQItem({
         <span className="font-epilogue font-black uppercase text-lg md:text-xl tracking-tight">
           {question}
         </span>
-        <span className="faq-icon material-symbols-outlined transition-transform text-2xl">add</span>
+        <Icon name="add" size="lg" className="faq-icon transition-transform" />
       </summary>
       <div className="px-6 pb-6 text-base font-medium text-gray-800 leading-relaxed border-t-[3px] border-black pt-5 space-y-5">
         {children}

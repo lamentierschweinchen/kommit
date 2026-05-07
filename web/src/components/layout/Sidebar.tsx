@@ -5,8 +5,9 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
+import { Icon, type IconName } from "@/components/common/Icon";
 
-type Item = { href: string; label: string; icon: string; badge?: string | number };
+type Item = { href: string; label: string; icon: IconName; badge?: string | number };
 
 export function Sidebar({
   variant,
@@ -84,10 +85,10 @@ export function Sidebar({
           className="mb-8 flex items-center justify-between gap-2 px-3 py-2 border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform font-epilogue font-bold uppercase text-[10px] tracking-widest"
         >
           <span className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-sm">swap_horiz</span>
+            <Icon name="swap_horiz" size="xs" />
             {variant === "founder" ? "Switch to kommitter" : "Switch to founder"}
           </span>
-          <span className="material-symbols-outlined text-sm">arrow_outward</span>
+          <Icon name="arrow_outward" size="xs" />
         </button>
       ) : (
         <div className="mb-8" />
@@ -110,7 +111,7 @@ export function Sidebar({
                   : "text-black bg-white hover:bg-secondary hover:shadow-brutal active:translate-x-1 active:translate-y-1 active:shadow-none",
               )}
             >
-              <span className="material-symbols-outlined">{item.icon}</span>
+              <Icon name={item.icon} size="md" />
               <span className="flex-1">{item.label}</span>
               {item.badge !== undefined ? (
                 <span className="ml-auto bg-primary text-white px-2 py-0.5 border-[2px] border-black text-[10px] tracking-tight">

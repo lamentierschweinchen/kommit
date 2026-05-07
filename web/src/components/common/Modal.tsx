@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Tape } from "./Tape";
+import { Icon } from "@/components/common/Icon";
 
 export type ModalShadow = "default" | "purple";
 
@@ -79,7 +80,7 @@ export function Modal({
                 aria-label="Close"
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform z-10"
               >
-                <span className="material-symbols-outlined text-base">close</span>
+                <Icon name="close" size="sm" />
               </Dialog.Close>
 
               {titleSrOnly ? (

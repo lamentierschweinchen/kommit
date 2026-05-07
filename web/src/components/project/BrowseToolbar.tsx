@@ -3,6 +3,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/cn";
 import type { Sector } from "@/lib/data/projects";
+import { Icon } from "@/components/common/Icon";
 
 export type SortKey = "recent" | "kommitted" | "kommitters";
 const SORT_LABELS: Record<SortKey, string> = {
@@ -82,7 +83,7 @@ export function BrowseToolbar({
               )}
             >
               {filters.sectors.includes(s) ? (
-                <span className="material-symbols-outlined text-base filled">check</span>
+                <Icon name="check" size="sm" />
               ) : null}
             </span>
             {s}
@@ -109,7 +110,7 @@ export function BrowseToolbar({
               )}
             >
               {filters.stages.includes(s.value) ? (
-                <span className="material-symbols-outlined text-base filled">check</span>
+                <Icon name="check" size="sm" />
               ) : null}
             </span>
             {s.label}
@@ -125,7 +126,7 @@ export function BrowseToolbar({
           }
           className="bg-white text-black font-epilogue font-black uppercase text-xs tracking-tight px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform flex items-center gap-1.5"
         >
-          <span className="material-symbols-outlined text-base">close</span>
+          <Icon name="close" size="sm" />
           Clear
         </button>
       )}
@@ -133,9 +134,7 @@ export function BrowseToolbar({
       {/* Right side — search + sort */}
       <div className="ml-auto flex items-center gap-3 flex-wrap">
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-black pointer-events-none">
-            search
-          </span>
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-black pointer-events-none" />
           <input
             type="text"
             value={filters.query}
@@ -151,7 +150,7 @@ export function BrowseToolbar({
               className="bg-white text-black font-epilogue font-black uppercase text-sm tracking-tight px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
             >
               {SORT_LABELS[filters.sort]}
-              <span className="material-symbols-outlined text-base">expand_more</span>
+              <Icon name="expand_more" size="sm" />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
@@ -208,7 +207,7 @@ function FilterDropdown({
               {count}
             </span>
           ) : null}
-          <span className="material-symbols-outlined text-base">expand_more</span>
+          <Icon name="expand_more" size="sm" />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>

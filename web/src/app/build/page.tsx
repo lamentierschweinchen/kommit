@@ -8,19 +8,22 @@ import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { BrutalInput, BrutalTextarea } from "@/components/common/BrutalInput";
 import { BrutalSelect } from "@/components/common/BrutalSelect";
+import { Icon } from "@/components/common/Icon";
 
 // Caps per Codex M6 — every freeform field has an explicit max so an oversized
 // payload can't slip through to the future server-side route. Matches what
 // the admin queue (Pass 3) will accept.
+//
+// `.trim()` on text fields rejects whitespace-only input (platform-test Low #13).
 const schema = z.object({
-  name: z.string().min(1, "Required").max(120, "Max 120 characters"),
-  pitch: z.string().min(1, "Required").max(80, "Max 80 characters"),
+  name: z.string().trim().min(1, "Required").max(120, "Max 120 characters"),
+  pitch: z.string().trim().min(1, "Required").max(80, "Max 80 characters"),
   sector: z.string().min(1, "Required").max(40, "Pick from the list"),
-  longer: z.string().min(20, "Tell us more").max(4000, "Max 4000 characters"),
-  founders: z.string().min(1, "Required").max(2000, "Max 2000 characters"),
+  longer: z.string().trim().min(20, "Tell us more").max(4000, "Max 4000 characters"),
+  founders: z.string().trim().min(1, "Required").max(2000, "Max 2000 characters"),
   stage: z.string().min(1, "Required").max(40, "Pick from the list"),
-  extra: z.string().max(2000, "Max 2000 characters").optional(),
-  email: z.string().email("Valid email required").max(254, "Max 254 characters"),
+  extra: z.string().trim().max(2000, "Max 2000 characters").optional(),
+  email: z.string().trim().email("Valid email required").max(254, "Max 254 characters"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -33,10 +36,13 @@ export default function BuildApplicationPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
+
+  const pitchLength = watch("pitch")?.length ?? 0;
 
   const onSubmit = handleSubmit(async () => {
     // Simulate the submission
@@ -70,7 +76,7 @@ export default function BuildApplicationPage() {
             label="One-sentence pitch"
             error={errors.pitch?.message}
             required
-            help="Plain English. Goes on the project card. Max 80 characters."
+            help={`Plain English. Goes on the project card. ${pitchLength}/80 characters.`}
           >
             <BrutalInput {...register("pitch")} type="text" maxLength={80} />
           </Field>
@@ -143,7 +149,7 @@ export default function BuildApplicationPage() {
               className="w-full md:w-auto bg-primary text-white font-epilogue font-black uppercase tracking-wide text-base md:text-lg px-10 py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
             >
               {isSubmitting ? "Submitting…" : "Apply"}
-              <span className="material-symbols-outlined font-bold">arrow_forward</span>
+              <Icon name="arrow_forward" className="font-bold" />
             </button>
           </div>
         </form>

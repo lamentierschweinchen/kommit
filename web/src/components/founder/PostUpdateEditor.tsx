@@ -5,6 +5,7 @@ import { BrutalTextarea } from "@/components/common/BrutalInput";
 import { useToast } from "@/components/common/ToastProvider";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { cn } from "@/lib/cn";
+import { Icon } from "@/components/common/Icon";
 
 export type PendingUpdate = {
   atISO: string;
@@ -68,7 +69,7 @@ export function PostUpdateEditor({
             aria-label="Tag as pivot"
           >
             <Checkbox.Indicator>
-              <span className="material-symbols-outlined text-lg filled">check</span>
+              <Icon name="check" size="md" />
             </Checkbox.Indicator>
           </Checkbox.Root>
           <span className="font-epilogue font-bold uppercase text-xs tracking-widest">
@@ -84,7 +85,7 @@ export function PostUpdateEditor({
           className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base px-7 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-lg flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
         >
           Post
-          <span className="material-symbols-outlined font-bold">arrow_forward</span>
+          <Icon name="arrow_forward" className="font-bold" />
         </button>
       </div>
     </form>

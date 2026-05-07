@@ -12,6 +12,7 @@ import { shortDate, daysBetween } from "@/lib/date-utils";
 import { avatarUrl } from "@/lib/data/users";
 import type { Project, ProjectKommitter } from "@/lib/data/projects";
 import { cn } from "@/lib/cn";
+import { Icon } from "@/components/common/Icon";
 
 type SortKey = "recent" | "kommitted" | "kommits";
 
@@ -50,7 +51,7 @@ export function FounderDashboardClient({ project }: { project: Project }) {
                 target="_blank"
                 className="inline-flex items-center gap-1 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest hover:text-black"
               >
-                View public page <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                View public page <Icon name="arrow_outward" size="xs" />
               </Link>
             </div>
             <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
@@ -166,7 +167,7 @@ export function FounderDashboardClient({ project }: { project: Project }) {
                       className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
                     >
                       Load 25 more
-                      <span className="material-symbols-outlined text-base">expand_more</span>
+                      <Icon name="expand_more" size="sm" />
                     </button>
                   ) : null}
                 </div>
@@ -192,7 +193,7 @@ function FounderEmptyKommittersState({ slug }: { slug: string }) {
         className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
       >
         Share your page
-        <span className="material-symbols-outlined text-base">arrow_outward</span>
+        <Icon name="arrow_outward" size="sm" />
       </Link>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
+import { Icon } from "@/components/common/Icon";
 
 export default function BuildSubmittedPage() {
   return (
@@ -22,7 +23,7 @@ export default function BuildSubmittedPage() {
                 className="bg-primary text-white font-epilogue font-black uppercase tracking-wide text-base px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] flex items-center justify-center gap-2"
               >
                 Browse projects
-                <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                <Icon name="arrow_forward" className="font-bold" />
               </Link>
               <Link
                 href="/about"

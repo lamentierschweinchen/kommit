@@ -4,6 +4,7 @@ import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
 import { Tape } from "@/components/common/Tape";
 import { useExportWallet, useWallets } from "@privy-io/react-auth/solana";
+import { Icon } from "@/components/common/Icon";
 
 /**
  * Export private key — wired to Privy's secure export UI.
@@ -61,9 +62,7 @@ export function ExportKeyModal({
       }
     >
       <div className="mt-5 bg-primary border-[3px] border-black w-14 h-14 flex items-center justify-center shadow-brutal-sm">
-        <span className="material-symbols-outlined text-white text-3xl filled" aria-hidden>
-          key
-        </span>
+        <Icon name="key" size="xl" className="text-white" />
       </div>
 
       <p className="mt-5 text-base md:text-lg font-medium text-gray-900 leading-relaxed border-l-[4px] border-primary pl-4">
@@ -84,7 +83,7 @@ export function ExportKeyModal({
           className="bg-black text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(20,241,149,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_rgba(20,241,149,1)] flex items-center justify-center gap-2"
         >
           Show key
-          <span className="material-symbols-outlined text-base">visibility</span>
+          <Icon name="visibility" size="sm" />
         </button>
       </div>
 

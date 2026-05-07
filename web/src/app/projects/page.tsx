@@ -9,6 +9,7 @@ import {
   BrowseToolbar,
   type BrowseFilters,
 } from "@/components/project/BrowseToolbar";
+import { Icon } from "@/components/common/Icon";
 import { useFilteredProjects } from "@/lib/hooks/useFilteredProjects";
 import { PROJECTS } from "@/lib/data/projects";
 import { formatNumber, formatUSD } from "@/lib/kommit-math";
@@ -75,7 +76,7 @@ export default function BrowsePage() {
                 className="mt-8 inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
               >
                 Clear filters
-                <span className="material-symbols-outlined text-base">arrow_forward</span>
+                <Icon name="arrow_forward" size="sm" />
               </button>
             </div>
           ) : (
@@ -93,7 +94,7 @@ export default function BrowsePage() {
               href="/"
               className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
             >
-              <span className="material-symbols-outlined">arrow_back</span>
+              <Icon name="arrow_back" />
               Home
             </Link>
             <div className="font-epilogue font-bold uppercase text-xs tracking-widest text-gray-500">

@@ -12,6 +12,7 @@ import { formatUSD } from "@/lib/kommit-math";
 import { parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import type { Project } from "@/lib/data/projects";
+import { Icon } from "@/components/common/Icon";
 
 // USDC has 6 decimals on Solana. Mirror of `tx.ts:USDC_DECIMALS`; kept local
 // so this UI module doesn't reach into the tx layer just for the constant.
@@ -197,12 +198,12 @@ export function CommitModal({
           {submitting ? (
             <>
               Signing…
-              <span className="material-symbols-outlined font-bold animate-spin">progress_activity</span>
+              <Icon name="progress_activity" className="font-bold animate-spin" />
             </>
           ) : (
             <>
               Kommit {formatUSD(displayUSD)}
-              <span className="material-symbols-outlined font-bold">arrow_forward</span>
+              <Icon name="arrow_forward" className="font-bold" />
             </>
           )}
         </button>

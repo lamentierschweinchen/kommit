@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
+import { Icon } from "@/components/common/Icon";
 
 export default function NotFound() {
   return (
@@ -25,7 +26,7 @@ export default function NotFound() {
                 className="bg-primary text-white font-epilogue font-black uppercase tracking-wide text-base md:text-lg px-8 py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-lg inline-flex items-center gap-3"
               >
                 Browse projects
-                <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                <Icon name="arrow_forward" className="font-bold" />
               </Link>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { SignInModal } from "@/components/auth/SignInModal";
 import { MobileDrawer } from "./MobileDrawer";
 import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 const PUBLIC_ROUTES = ["/", "/about", "/build", "/build/submitted"];
 
@@ -75,9 +76,7 @@ export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
         <div className="flex items-center gap-3">
           {showHeaderSearch ? (
             <div className="relative hidden xl:block">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-black pointer-events-none">
-                search
-              </span>
+              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-black pointer-events-none" />
               <input
                 type="text"
                 placeholder="SEARCH PROJECTS..."
@@ -110,7 +109,7 @@ export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
             onClick={() => setDrawerOpen(true)}
             className="lg:hidden w-11 h-11 flex items-center justify-center border-[3px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
           >
-            <span className="material-symbols-outlined">menu</span>
+            <Icon name="menu" />
           </button>
         </div>
       </nav>
@@ -153,7 +152,7 @@ function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatar
           <span className="font-epilogue font-black uppercase text-sm tracking-tight max-w-[140px] truncate">
             {firstName(user.displayName)}
           </span>
-          <span className="material-symbols-outlined text-base">expand_more</span>
+          <Icon name="expand_more" size="sm" />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -178,7 +177,7 @@ function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatar
               onClick={onSignOut}
               className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight text-black hover:bg-gray-100 cursor-pointer outline-none"
             >
-              <span className="material-symbols-outlined text-base">logout</span>
+              <Icon name="logout" size="sm" />
               Sign out
             </button>
           </DropdownMenu.Item>
@@ -188,14 +187,14 @@ function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatar
   );
 }
 
-function UserMenuLink({ href, icon, label }: { href: string; icon: string; label: string }) {
+function UserMenuLink({ href, icon, label }: { href: string; icon: IconName; label: string }) {
   return (
     <DropdownMenu.Item asChild>
       <Link
         href={href}
         className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight text-black hover:bg-gray-100 cursor-pointer outline-none"
       >
-        <span className="material-symbols-outlined text-base">{icon}</span>
+        <Icon name={icon} size="sm" />
         {label}
       </Link>
     </DropdownMenu.Item>

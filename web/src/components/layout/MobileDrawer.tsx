@@ -7,8 +7,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
+import { Icon, type IconName } from "@/components/common/Icon";
 
-type Item = { href: string; label: string; icon: string };
+type Item = { href: string; label: string; icon: IconName };
 
 const PUBLIC_ITEMS: Item[] = [
   { href: "/projects", label: "Browse projects", icon: "explore" },
@@ -80,7 +81,7 @@ export function MobileDrawer({
               aria-label="Close"
               className="w-10 h-10 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
             >
-              <span className="material-symbols-outlined">close</span>
+              <Icon name="close" />
             </Dialog.Close>
           </div>
 
@@ -124,7 +125,7 @@ export function MobileDrawer({
                         : "bg-white text-black hover:bg-secondary hover:shadow-brutal",
                     )}
                   >
-                    <span className="material-symbols-outlined">{item.icon}</span>
+                    <Icon name={item.icon} size="md" />
                     {item.label}
                   </Link>
                 );
@@ -147,10 +148,10 @@ export function MobileDrawer({
                 className="w-full flex items-center justify-between gap-2 px-3 py-3 border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform font-epilogue font-bold uppercase text-[10px] tracking-widest"
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm">swap_horiz</span>
+                  <Icon name="swap_horiz" size="xs" />
                   {role === "founder" ? "Switch to kommitter" : "Switch to founder"}
                 </span>
-                <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                <Icon name="arrow_outward" size="xs" />
               </button>
             ) : null}
           </div>
@@ -162,7 +163,7 @@ export function MobileDrawer({
                 onClick={handleSignOut}
                 className="w-full flex items-center justify-center gap-2 px-3 py-3 border-[3px] border-black bg-white shadow-brutal hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform font-epilogue font-bold uppercase text-sm tracking-tight"
               >
-                <span className="material-symbols-outlined text-base">logout</span>
+                <Icon name="logout" size="sm" />
                 Sign out
               </button>
             ) : (

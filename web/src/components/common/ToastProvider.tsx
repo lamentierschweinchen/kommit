@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "@/components/common/Icon";
 
 export type ToastVariant = "confirmation" | "error";
 
@@ -116,19 +117,9 @@ function ToastItemView({ item, onClose }: { item: ToastItem; onClose: () => void
       )}
     >
       {isError ? (
-        <span
-          className="material-symbols-outlined text-black mt-0.5 shrink-0 filled"
-          aria-hidden
-        >
-          error
-        </span>
+        <Icon name="error" className="text-black mt-0.5 shrink-0" />
       ) : (
-        <span
-          className="material-symbols-outlined text-black shrink-0 bg-secondary border-[2px] border-black w-9 h-9 flex items-center justify-center filled"
-          aria-hidden
-        >
-          check
-        </span>
+        <Icon name="check" className="text-black shrink-0 bg-secondary border-[2px] border-black w-9 h-9 flex items-center justify-center" />
       )}
       <div className="flex-1 min-w-0">
         <RadixToast.Title className="font-epilogue font-black uppercase text-sm tracking-tight leading-snug">
@@ -172,7 +163,7 @@ function ToastItemView({ item, onClose }: { item: ToastItem; onClose: () => void
         aria-label="Dismiss"
         className="shrink-0 w-7 h-7 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
       >
-        <span className="material-symbols-outlined text-base">close</span>
+        <Icon name="close" size="sm" />
       </RadixToast.Close>
     </RadixToast.Root>
   );

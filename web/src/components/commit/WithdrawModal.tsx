@@ -10,6 +10,7 @@ import { mapAnchorError } from "@/lib/anchor-errors";
 import { formatUSD } from "@/lib/kommit-math";
 import { formatTokenAmount, parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
+import { Icon } from "@/components/common/Icon";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -206,12 +207,12 @@ export function WithdrawModal({
         >
           {submitting ? (
             <>
-              <span className="material-symbols-outlined font-bold animate-spin">progress_activity</span>
+              <Icon name="progress_activity" className="font-bold animate-spin" />
               Signing…
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined font-bold rotate-180">arrow_forward</span>
+              <Icon name="arrow_forward" className="font-bold rotate-180" />
               Withdraw {formatUSD(displayUSD)}
             </>
           )}
