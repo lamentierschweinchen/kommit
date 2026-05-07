@@ -9,11 +9,23 @@ import { commitToProject } from "@/lib/tx";
 import { mapAnchorError } from "@/lib/anchor-errors";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD } from "@/lib/kommit-math";
+import { parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import type { Project } from "@/lib/data/projects";
 
-const QUICK_AMOUNTS = [50, 100, 500];
+// USDC has 6 decimals on Solana. Mirror of `tx.ts:USDC_DECIMALS`; kept local
+// so this UI module doesn't reach into the tx layer just for the constant.
+const USDC_DECIMALS = 6;
+const USDC_DECIMALS_DIVISOR = 10n ** BigInt(USDC_DECIMALS);
+
+// Codex L1: comparisons run on exact bigint base units; the dollar literals
+// here exist only to mint the matching base-unit constants below.
+const QUICK_AMOUNTS = [50, 100, 500] as const;
+const QUICK_AMOUNTS_BASE = QUICK_AMOUNTS.map(
+  (n) => BigInt(n) * USDC_DECIMALS_DIVISOR,
+);
 const MAX_AMOUNT = 5000;
+const MAX_AMOUNT_BASE = BigInt(MAX_AMOUNT) * USDC_DECIMALS_DIVISOR;
 
 export function CommitModal({
   open,
@@ -36,16 +48,33 @@ export function CommitModal({
     if (open) setRaw("100.00");
   }, [open]);
 
-  const numeric = parseFloat(raw) || 0;
+  // Exact base-unit parse — disable + preset-active checks compare bigints
+  // (Codex L1). 0n covers both the empty/zero case and the malformed-input
+  // case (validateAmount surfaces the specific error string for display).
+  let parsedBaseUnits: bigint = 0n;
+  try {
+    if (raw.trim().length > 0) parsedBaseUnits = parseTokenAmount(raw, USDC_DECIMALS);
+  } catch {
+    parsedBaseUnits = 0n;
+  }
+  const validationError = raw.trim().length > 0 ? validateAmount(raw, USDC_DECIMALS, MAX_AMOUNT_BASE) : null;
+
+  // Display value — parseFloat is OK for the human-readable button label;
+  // it never feeds into TX construction or boundary checks.
+  const displayUSD = parseFloat(raw) || 0;
+
   const isOnChain = !!project.recipientWallet;
   const walletReady = !!client;
-  const submitDisabled = !isOnChain || !walletReady || numeric <= 0 || submitting;
+  const submitDisabled =
+    !isOnChain || !walletReady || parsedBaseUnits === 0n || !!validationError || submitting;
 
   const submitHelp = !isOnChain
     ? "This project isn't open for kommitments yet."
     : !walletReady
       ? "Sign in to kommit."
-      : null;
+      : validationError && raw.trim().length > 0
+        ? validationError
+        : null;
 
   const handleSubmit = async () => {
     if (!client || !project.recipientWallet) return;
@@ -109,8 +138,8 @@ export function CommitModal({
           />
         </div>
         <div className="mt-3 flex gap-2 flex-wrap">
-          {QUICK_AMOUNTS.map((a) => {
-            const isActive = numeric === a;
+          {QUICK_AMOUNTS.map((a, i) => {
+            const isActive = parsedBaseUnits === QUICK_AMOUNTS_BASE[i];
             return (
               <button
                 key={a}
@@ -132,7 +161,7 @@ export function CommitModal({
             disabled={submitting}
             className={cn(
               "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
-              numeric === MAX_AMOUNT ? "bg-primary text-white" : "bg-black text-white",
+              parsedBaseUnits === MAX_AMOUNT_BASE ? "bg-primary text-white" : "bg-black text-white",
             )}
           >
             Max
@@ -172,7 +201,7 @@ export function CommitModal({
             </>
           ) : (
             <>
-              Kommit {formatUSD(numeric || 0)}
+              Kommit {formatUSD(displayUSD)}
               <span className="material-symbols-outlined font-bold">arrow_forward</span>
             </>
           )}

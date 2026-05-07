@@ -8,9 +8,21 @@ import { useKommitProgram } from "@/lib/anchor-client";
 import { withdrawFromProject } from "@/lib/tx";
 import { mapAnchorError } from "@/lib/anchor-errors";
 import { formatUSD } from "@/lib/kommit-math";
+import { formatTokenAmount, parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
 
-const PERCENT_PRESETS = [0.25, 0.5, 0.75, 1];
+// USDC has 6 decimals on Solana.
+const USDC_DECIMALS = 6;
+const USDC_DECIMALS_DIVISOR = 10n ** BigInt(USDC_DECIMALS);
+
+// Codex L1: percent presets compose as exact bigint fractions of the user's
+// committed base-unit balance — no Math.round on a float dollar value.
+const PERCENT_PRESETS: { num: bigint; den: bigint; label: string }[] = [
+  { num: 1n, den: 4n, label: "25%" },
+  { num: 1n, den: 2n, label: "50%" },
+  { num: 3n, den: 4n, label: "75%" },
+  { num: 1n, den: 1n, label: "Max" },
+];
 
 /**
  * Audit fix #13: [25%] [50%] [75%] [Max] preset chips + custom amount input.
@@ -33,30 +45,63 @@ export function WithdrawModal({
   recipientWallet?: string;
   onSuccess?: () => void;
 }) {
-  const [raw, setRaw] = useState(String(Math.round(committedUSD * 0.25)));
+  // The committed amount arrives as a JS number (queries.ts converts it for
+  // display). Reconstruct base units exactly via parseTokenAmount on the
+  // 6-decimal toFixed string — precise at any retail USDC scale, well within
+  // u64 / 2^53.
+  const committedBaseUnits = parseTokenAmount(committedUSD.toFixed(USDC_DECIMALS), USDC_DECIMALS);
+
+  // Pre-compute the four preset base-unit values so chip clicks set the
+  // input to the same string `parseTokenAmount` would round-trip back to.
+  const presetBaseUnits = PERCENT_PRESETS.map(
+    ({ num, den }) => (committedBaseUnits * num) / den,
+  );
+  const presetDecimals = presetBaseUnits.map((b) => formatTokenAmount(b, USDC_DECIMALS));
+
+  const [raw, setRaw] = useState(presetDecimals[0] ?? "0");
   const [submitting, setSubmitting] = useState(false);
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
 
   useEffect(() => {
-    if (open) setRaw(String(Math.round(committedUSD * 0.25)));
+    if (open) setRaw(presetDecimals[0] ?? "0");
+    // presetDecimals derives from committedUSD; depend on that primitive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, committedUSD]);
 
-  const numeric = parseFloat(raw) || 0;
-  const overMax = numeric > committedUSD;
+  // Codex L1: parse to base units for exact bigint comparisons.
+  let parsedBaseUnits: bigint = 0n;
+  try {
+    if (raw.trim().length > 0) parsedBaseUnits = parseTokenAmount(raw, USDC_DECIMALS);
+  } catch {
+    parsedBaseUnits = 0n;
+  }
+  const validationError =
+    raw.trim().length > 0 ? validateAmount(raw, USDC_DECIMALS, committedBaseUnits) : null;
+  const overMax = parsedBaseUnits > committedBaseUnits;
+
+  // Display-only values; never feed into TX construction or boundary checks.
+  const displayUSD = parseFloat(raw) || 0;
+
   const isOnChain = !!recipientWallet;
   const walletReady = !!client;
   const submitDisabled =
-    !isOnChain || !walletReady || overMax || numeric <= 0 || submitting;
+    !isOnChain ||
+    !walletReady ||
+    parsedBaseUnits === 0n ||
+    !!validationError ||
+    submitting;
 
   const submitHelp = !isOnChain
     ? "Withdraw isn't available for this project."
     : !walletReady
       ? "Sign in to withdraw."
-      : null;
+      : validationError && raw.trim().length > 0
+        ? validationError
+        : null;
 
   const handleSubmit = async () => {
-    if (!client || !recipientWallet || overMax || numeric <= 0) return;
+    if (!client || !recipientWallet || parsedBaseUnits === 0n || overMax) return;
     setSubmitting(true);
     try {
       await withdrawFromProject(client, new PublicKey(recipientWallet), raw);
@@ -116,15 +161,14 @@ export function WithdrawModal({
           />
         </div>
         <div className="mt-3 flex gap-2 flex-wrap">
-          {PERCENT_PRESETS.map((p) => {
-            const value = Math.round(committedUSD * p);
-            const isMax = p === 1;
-            const isActive = numeric === value;
+          {PERCENT_PRESETS.map((p, i) => {
+            const isMax = p.num === p.den;
+            const isActive = parsedBaseUnits === presetBaseUnits[i];
             return (
               <button
-                key={p}
+                key={p.label}
                 type="button"
-                onClick={() => setRaw(String(value))}
+                onClick={() => setRaw(presetDecimals[i])}
                 disabled={submitting}
                 className={cn(
                   "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
@@ -135,7 +179,7 @@ export function WithdrawModal({
                       : "bg-white text-black",
                 )}
               >
-                {isMax ? "Max" : `${Math.round(p * 100)}%`}
+                {p.label}
               </button>
             );
           })}
@@ -168,7 +212,7 @@ export function WithdrawModal({
           ) : (
             <>
               <span className="material-symbols-outlined font-bold rotate-180">arrow_forward</span>
-              Withdraw {formatUSD(numeric)}
+              Withdraw {formatUSD(displayUSD)}
             </>
           )}
         </button>
