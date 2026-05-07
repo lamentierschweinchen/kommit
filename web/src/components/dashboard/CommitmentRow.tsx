@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { shortDate } from "@/lib/date-utils";
+import { daysBetween, shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
 import { cn } from "@/lib/cn";
@@ -20,6 +20,7 @@ export function CommitmentRow({
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const isPivot = !!commitment.pivotedAtISO;
   const kommits = kommitsFor(commitment.kommittedUSD, commitment.sinceISO);
+  const days = daysBetween(commitment.sinceISO);
   const founder = project.founders[0];
 
   return (
@@ -63,7 +64,10 @@ export function CommitmentRow({
             Committed <span className="font-black text-base">{formatUSD(commitment.kommittedUSD)}</span>
           </div>
           <div className="text-gray-500">
-            Since {shortDate(commitment.sinceISO)} · {formatNumber(kommits)} kommits
+            Since {shortDate(commitment.sinceISO)} · <span className="font-black text-black">{formatNumber(kommits)} kommits</span>
+          </div>
+          <div className="text-gray-400 text-xs normal-case font-medium tracking-normal">
+            {formatUSD(commitment.kommittedUSD)} × {days} {days === 1 ? "day" : "days"}
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">

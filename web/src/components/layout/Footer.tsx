@@ -19,7 +19,7 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
         <div className="text-black">© 2026 KOMMIT · MIT Licensed · Built on Solana</div>
         <div className="flex gap-6 font-bold">
           <Link
-            href="https://github.com/lukasseelos/kommit"
+            href="https://github.com/lamentierschweinchen/kommit"
             target="_blank"
             rel="noreferrer noopener"
             className="text-black hover:underline"
