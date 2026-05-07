@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>kommit — pitch deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<script src="deck-stage.js"></script>
+<script type="application/json" id="speaker-notes">[
+  "Cover slide. Hold a beat. Wait for the room to settle, then move into the three-question stand-up.",
+  "Three-question stand-up. Thirty seconds. Don't rush it. The room sitting down IS the slide. By the third question, almost everyone is sitting. These are the three things kommit fixes.",
+  "This is the THE slide. Real money, real conviction, real opportunity cost — and you keep your money. Land the rights line. Kommits aren't rewards.",
+  "Reframe the category before the mechanism. Otherwise reviewers pattern-match to IdeaPad or Wefunder. We own the rights layer.",
+  "Walk the diagram cleanly. Yield funds the platform sustainably. Founders get the signal, not the yield. Backers keep their principal.",
+  "The cross-section is empty. Capital times time, soulbound, public, redeemable, convertible. Conviction made measurable.",
+  "Today the primitive. v1 card-and-bank. v2 Visa-direct invisible-tech. Be honest about the conditional on Visa.",
+  "Engagement loop is new in v0.5 and proves we're not vaporware. Sixty to eighty agentic hours produced this.",
+  "The underclaimed selling point. Kommitters aren't a passive audience — they're a working cohort with skin in the game.",
+  "Capturing 0.5% of SAM at maturity is a four-to-five million dollar cash business plus a long-tail equity-rights portfolio.",
+  "Name the killable scenario explicitly. Base case is sustainable. Aggressive case is the Series A conversation.",
+  "Yield is load-bearing but it's part of a mix. Five lines, not one.",
+  "Don't pretend IdeaPad doesn't exist. The deposit mechanic isn't novel; the rights layer is.",
+  "Three moats compounding. Cohort primitive, project-mix curation, upstream-of-launchpads positioning.",
+  "Solana-native, then bridge, then real-investor. Project-mix curation is the highest-leverage GTM decision.",
+  "Fifty to one-fifty K hackathon target. Visa partnership conversation. Project intros from the room."
+]</script>
+<style>
+  :root {
+    --cream: #F5F1E8;
+    --cream-2: #ECE6D6;
+    --ink: #0A0A0A;
+    --ink-2: #1a1a1a;
+    --purple: #4D2BE5;
+    --purple-deep: #3919C2;
+    --mint: #3FE0A0;
+    --line: #0A0A0A;
+
+    --type-display: 180px;
+    --type-title: 84px;
+    --type-subtitle: 52px;
+    --type-body: 32px;
+    --type-small: 26px;
+    --type-mono: 22px;
+
+    --pad-x: 110px;
+    --pad-top: 90px;
+    --pad-bottom: 90px;
+    --gap-title: 48px;
+    --gap-item: 28px;
+
+    --border: 4px;
+    --offset: 14px;
+  }
+
+  html, body { margin: 0; padding: 0; background: #000; color: var(--ink); }
+  body { font-family: "Space Grotesk", system-ui, sans-serif; }
+
+  deck-stage > section {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    box-sizing: border-box;
+    padding: var(--pad-top) var(--pad-x) var(--pad-bottom);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Dot grid background utility */
+  .dotgrid {
+    background-image: radial-gradient(circle, #0a0a0a22 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
+
+  /* === GLOBAL ELEMENTS === */
+  .corner {
+    position: absolute;
+    top: 44px;
+    left: var(--pad-x);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    text-transform: lowercase;
+  }
+  .corner img { height: 32px; }
+  .corner-r {
+    position: absolute;
+    top: 44px;
+    right: var(--pad-x);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .footer {
+    position: absolute;
+    bottom: 44px;
+    left: var(--pad-x);
+    right: var(--pad-x);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-top: 2px solid var(--ink);
+    padding-top: 16px;
+  }
+
+  /* Eyebrow tag */
+  .tag {
+    display: inline-block;
+    background: var(--mint);
+    color: var(--ink);
+    border: var(--border) solid var(--ink);
+    padding: 8px 18px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: var(--offset) var(--offset) 0 var(--purple);
+  }
+  .tag.purple { background: var(--purple); color: #fff; box-shadow: var(--offset) var(--offset) 0 var(--mint); }
+  .tag.cream { background: var(--cream); }
+
+  /* Slab — black highlighter */
+  .slab {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--cream);
+    padding: 4px 22px 12px;
+    line-height: 1;
+  }
+  .slab.purple { background: var(--purple); color: #fff; }
+  .slab.mint { background: var(--mint); color: var(--ink); }
+
+  /* Big card — bordered with offset shadow */
+  .card {
+    background: var(--cream);
+    border: var(--border) solid var(--ink);
+    box-shadow: var(--offset) var(--offset) 0 var(--ink);
+    padding: 36px;
+    box-sizing: border-box;
+  }
+  .card.purple-shadow { box-shadow: var(--offset) var(--offset) 0 var(--purple); }
+  .card.mint-shadow { box-shadow: var(--offset) var(--offset) 0 var(--mint); }
+  .card.purple-fill { background: var(--purple); color: #fff; }
+  .card.mint-fill { background: var(--mint); color: var(--ink); }
+  .card.ink-fill { background: var(--ink); color: var(--cream); }
+
+  h1, h2, h3, h4 { margin: 0; font-weight: 700; line-height: 0.95; letter-spacing: -0.02em; }
+  p { margin: 0; }
+
+  .display {
+    font-size: var(--type-display);
+    font-weight: 700;
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+  }
+  .title {
+    font-size: var(--type-title);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .subtitle {
+    font-size: var(--type-subtitle);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .body {
+    font-size: var(--type-body);
+    line-height: 1.35;
+    font-weight: 400;
+  }
+  .small {
+    font-size: var(--type-small);
+    line-height: 1.4;
+  }
+  .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: var(--type-mono);
+    letter-spacing: 0.02em;
+  }
+
+  /* Slide # 01 — Cover */
+  .cover-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle, #0a0a0a18 1.5px, transparent 1.5px) 0 0/26px 26px,
+      var(--cream);
+  }
+  .cover-wordmark {
+    font-size: 360px;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 0.85;
+  }
+  .cover-wordmark .star {
+    color: var(--purple);
+    font-family: "Space Grotesk", sans-serif;
+    display: inline-block;
+    transform: translateY(-110px);
+    font-size: 200px;
+  }
+
+  /* Question stand-up */
+  .q-num {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 90px;
+    color: var(--purple);
+    line-height: 1;
+  }
+
+  /* Mechanism flow */
+  .flow-node {
+    border: var(--border) solid var(--ink);
+    background: var(--cream);
+    padding: 22px 28px;
+    text-align: center;
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+  .flow-arrow {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* Tables */
+  table.k {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 24px;
+  }
+  table.k th, table.k td {
+    border: 3px solid var(--ink);
+    padding: 14px 16px;
+    text-align: left;
+    vertical-align: middle;
+    background: var(--cream);
+  }
+  table.k th {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  table.k td.center { text-align: center; }
+  table.k td.num { text-align: right; font-family: "JetBrains Mono", monospace; font-weight: 600; }
+  table.k tr.row-kommit td { background: var(--purple); color: #fff; font-weight: 700; }
+  table.k tr.row-kommit td:first-child { background: var(--ink); color: var(--mint); }
+  .check { color: var(--purple); font-weight: 700; font-size: 28px; }
+  .cross { color: #999; font-weight: 700; font-size: 28px; }
+
+  /* Section headers — full bleed */
+  .section-head {
+    background: var(--ink) !important;
+    color: var(--cream);
+  }
+  .section-head .section-num {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--mint);
+    font-size: 32px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Helpers */
+  .row { display: flex; }
+  .col { display: flex; flex-direction: column; }
+  .grow { flex: 1; }
+
+  /* Star-asterisk svg */
+  .asterisk {
+    display: inline-block;
+    width: 1em; height: 1em;
+    vertical-align: -0.15em;
+  }
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+<!-- ============ 01 / COVER ============ -->
+<section data-label="01 Cover">
+  <div class="cover-bg"></div>
+  <div style="position:relative; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <span class="mono" style="font-size:22px; letter-spacing:0.12em; text-transform:uppercase;">Pitch deck — May 2026</span>
+      <span class="mono" style="font-size:22px; letter-spacing:0.12em; text-transform:uppercase;">Solana Frontier · Visa Germany</span>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:48px; align-items:flex-start; margin-left:-12px;">
+      <img src="assets/kommit-wordmark.png" alt="kommit" style="height:340px; width:auto;" />
+      <div style="display:flex; flex-direction:column; gap:18px; max-width:1500px;">
+        <div class="slab" style="font-size:62px; font-weight:700; transform:rotate(-1deg);">Showing up early should buy you something.</div>
+        <div class="slab purple" style="font-size:62px; font-weight:700; transform:rotate(-1deg); margin-left:40px;">Right now, it doesn't.</div>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:3px solid var(--ink); padding-top:18px;">
+      <span class="mono" style="font-size:22px; letter-spacing:0.1em; text-transform:uppercase;">A stake-backed signal layer for early-stage teams</span>
+      <span class="mono" style="font-size:22px; letter-spacing:0.1em; text-transform:uppercase;">v0.5 live on devnet</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 / THREE QUESTIONS ============ -->
+<section data-label="02 Three questions">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">02 / 16 — the three questions</div>
+
+  <div style="margin-top:80px; display:flex; flex-direction:column; gap:40px;">
+    <div class="title" style="font-size:72px; max-width:1300px;">Stand up. Sit down if&hellip;</div>
+
+    <div style="display:grid; grid-template-columns: 120px 1fr; gap:32px 48px; align-items:start; max-width:1700px;">
+      <div class="q-num">01</div>
+      <div class="subtitle" style="font-size:46px; line-height:1.15; padding-top:8px;">&hellip;a startup, a Kickstarter, or an early token has ever <span class="slab" style="font-size:46px; padding:2px 14px 8px;">cost you most of your money.</span></div>
+
+      <div class="q-num">02</div>
+      <div class="subtitle" style="font-size:46px; line-height:1.15; padding-top:8px;">&hellip;you've ever been <span class="slab purple" style="font-size:46px; padding:2px 14px 8px;">right about a startup early</span> &mdash; with nothing to show for it.</div>
+
+      <div class="q-num">03</div>
+      <div class="subtitle" style="font-size:46px; line-height:1.15; padding-top:8px;">&hellip;a points program, an airdrop, or a token has ever made you feel like <span class="slab mint" style="font-size:46px; padding:2px 14px 8px;">the product.</span></div>
+    </div>
+
+    <div class="card mint-fill" style="margin-top:24px; border-width:4px; padding:28px 36px; max-width:1300px; align-self:flex-end; transform:rotate(-0.6deg);">
+      <div class="mono" style="font-size:24px; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">By question three</div>
+      <div style="font-size:42px; font-weight:700; line-height:1.1;">The room is sitting. These are the three things kommit fixes.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 / WHAT KOMMIT IS ============ -->
+<section data-label="03 What kommit is">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">03 / 16 — synthesis</div>
+
+  <div style="margin-top:60px; display:grid; grid-template-columns: 1.2fr 1fr; gap:80px; align-items:start;">
+    <div>
+      <div class="tag" style="margin-bottom:36px;">An upvote with a stake</div>
+      <div class="display" style="font-size:140px; line-height:0.88;">
+        Real money.<br/>
+        <span style="color:var(--purple);">Real conviction.</span><br/>
+        Real opportunity cost.
+      </div>
+      <div class="body" style="margin-top:36px; font-size:34px; max-width:900px;">
+        Park USDC. Allocate across early-stage teams. Yield funds the platform &mdash;
+        no fees on you, no fees on the team. <b>Withdraw anytime.</b>
+      </div>
+    </div>
+
+    <div class="col" style="gap:28px;">
+      <div class="card purple-shadow">
+        <div class="mono" style="text-transform:uppercase; color:var(--purple); font-weight:700; margin-bottom:8px;">What you earn</div>
+        <div style="font-size:44px; font-weight:700; line-height:1.05;">Kommits &mdash; capital × time, soulbound, public, verifiable.</div>
+        <div class="small" style="margin-top:12px;">A portable record of conviction.</div>
+      </div>
+      <div class="card ink-fill" style="box-shadow: var(--offset) var(--offset) 0 var(--mint);">
+        <div class="mono" style="text-transform:uppercase; color:var(--mint); font-weight:700; margin-bottom:8px;">What kommits are</div>
+        <div style="font-size:44px; font-weight:700; line-height:1.05;">Not a trophy. <span style="color:var(--mint);">A right.</span></div>
+        <div class="small" style="margin-top:12px; color:#d8d2c2;">Right of first allocation at graduation. Access &amp; perks. First dibs on later rounds. A portable record other products can read.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 / CATEGORY ============ -->
+<section data-label="04 Category">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">04 / 16 — the category</div>
+
+  <div style="margin-top:80px;">
+    <div class="mono" style="text-transform:uppercase; letter-spacing:0.1em; color:var(--purple); font-weight:700; margin-bottom:18px;">Kommit invents a new lane</div>
+    <div class="title" style="font-size:88px; max-width:1700px; margin-bottom:60px;">
+      A <span class="slab">stake-backed signal layer</span> for early-stage teams that <span class="slab purple">converts to allocation rights</span> at graduation.
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:40px;">
+      <div class="card" style="background:var(--cream-2);">
+        <div class="mono" style="text-transform:uppercase; color:#888; font-weight:700; margin-bottom:14px;">Signal without stake</div>
+        <div style="font-size:34px; font-weight:600; line-height:1.15; margin-bottom:14px;">Product Hunt upvotes. Twitter likes. Discord roles. Follower counts.</div>
+        <div class="small" style="color:#444;">Gameable. No opportunity cost. Volume is cheap; founders can't separate engagement from noise.</div>
+      </div>
+      <div class="card" style="background:var(--cream-2);">
+        <div class="mono" style="text-transform:uppercase; color:#888; font-weight:700; margin-bottom:14px;">Stake without survival</div>
+        <div style="font-size:34px; font-weight:600; line-height:1.15; margin-bottom:14px;">Wefunder. Republic. Crowdcube.</div>
+        <div class="small" style="color:#444;">Real stake — but principal loss for backers, accreditation gates, high friction. Real signal, extracted at cost.</div>
+      </div>
+    </div>
+
+    <div class="card purple-fill" style="margin-top:36px; padding:32px 40px;">
+      <div class="mono" style="text-transform:uppercase; color:var(--mint); font-weight:700; margin-bottom:10px;">Kommit's signal</div>
+      <div style="font-size:44px; font-weight:700; line-height:1.1;">
+        Stake-backed <span style="color:var(--mint);">and</span> survival-compatible.
+      </div>
+      <div class="small" style="margin-top:14px; color:#e9e3d2; font-size:26px;">Hard to game (wash-trading volume doesn't work when the input is patient capital tied up over time). Easy to verify (public, soulbound, on-chain).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 / MECHANISM ============ -->
+<section data-label="05 Mechanism">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">05 / 16 — the mechanism</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:64px; margin-bottom:50px;">How a kommit moves through the system</div>
+
+    <div style="display:grid; grid-template-columns: repeat(7, auto); gap:18px; align-items:center; justify-content:center;">
+      <div class="flow-node" style="background:var(--mint);">
+        <div class="mono" style="font-weight:700; font-size:18px; text-transform:uppercase;">01</div>
+        <div style="font-size:28px; font-weight:700; line-height:1.05; margin-top:6px;">Kommitter</div>
+        <div class="small" style="font-size:18px;">Commits USDC</div>
+      </div>
+      <div class="flow-arrow" style="font-size:40px;">→</div>
+      <div class="flow-node">
+        <div class="mono" style="font-weight:700; font-size:18px; text-transform:uppercase;">02</div>
+        <div style="font-size:28px; font-weight:700; line-height:1.05; margin-top:6px;">Escrow</div>
+        <div class="small" style="font-size:18px;">On-chain program</div>
+      </div>
+      <div class="flow-arrow" style="font-size:40px;">→</div>
+      <div class="flow-node">
+        <div class="mono" style="font-weight:700; font-size:18px; text-transform:uppercase;">03</div>
+        <div style="font-size:28px; font-weight:700; line-height:1.05; margin-top:6px;">Yield venue</div>
+        <div class="small" style="font-size:18px;">Audited (Kamino)</div>
+      </div>
+      <div class="flow-arrow" style="font-size:40px;">→</div>
+      <div class="flow-node" style="background:var(--purple); color:#fff;">
+        <div class="mono" style="font-weight:700; font-size:18px; text-transform:uppercase;">04</div>
+        <div style="font-size:28px; font-weight:700; line-height:1.05; margin-top:6px;">Platform</div>
+        <div class="small" style="font-size:18px;">~5% APY → revenue</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:24px; margin-top:60px;">
+      <div class="card mint-shadow">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; margin-bottom:8px;">In parallel</div>
+        <div style="font-size:30px; font-weight:700; line-height:1.15;">Kommit record accrues — capital × time, soulbound.</div>
+      </div>
+      <div class="card mint-shadow">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; margin-bottom:8px;">The team gets</div>
+        <div style="font-size:30px; font-weight:700; line-height:1.15;">The cohort, the validation, the allocation key.</div>
+      </div>
+      <div class="card mint-shadow">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; margin-bottom:8px;">The kommitter gets</div>
+        <div style="font-size:30px; font-weight:700; line-height:1.15;">The rights at graduation. Principal back anytime.</div>
+      </div>
+    </div>
+
+    <div class="mono" style="margin-top:36px; font-size:22px; color:#444; max-width:1700px;">
+      Principal-protected via audited protocols. Yield → platform (not team, not kommitter). Withdraw anytime, no fees, no lockup. Smart-contract and yield-source risk are non-zero — named explicitly in app/RISK.md.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 / NEW PRIMITIVE ============ -->
+<section data-label="06 New primitive">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">06 / 16 — new primitive</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:14px;">The cross-section is empty.</div>
+    <div class="subtitle" style="font-size:34px; color:#444; margin-bottom:40px; max-width:1600px;">No existing tool combines all seven properties. Capital × time, soulbound, redeemable, convertible — conviction made measurable.</div>
+
+    <table class="k">
+      <thead>
+        <tr>
+          <th style="width:24%;"></th>
+          <th class="center">Principal protected</th>
+          <th class="center">Retail-accessible</th>
+          <th class="center">Non-extractive</th>
+          <th class="center">Verifiable record</th>
+          <th class="center">Public + readable</th>
+          <th class="center">Soulbound</th>
+          <th class="center">Allocation rights</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Product Hunt / upvotes</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center small">partial</td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td></tr>
+        <tr><td>Equity crowdfunding</td><td class="center"><span class="cross">—</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center small">partial</td><td class="center"><span class="cross">—</span></td><td class="center small">n/a</td><td class="center small">extractive</td></tr>
+        <tr><td>Angel / syndicate</td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center small">n/a</td><td class="center"><span class="check">✓</span></td></tr>
+        <tr><td>Tokens</td><td class="center small">partial</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center small">partial</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center small">partial</td></tr>
+        <tr><td>Donations</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td><td class="center small">n/a</td><td class="center"><span class="cross">—</span></td></tr>
+        <tr><td>Patreon / Substack</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center small">partial</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td></tr>
+        <tr><td>Principal-safe deposit</td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td><td class="center small">partial</td><td class="center small">partial</td><td class="center"><span class="cross">—</span></td><td class="center"><span class="cross">—</span></td></tr>
+        <tr class="row-kommit"><td>kommit</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 07 / ARCHITECTURE ============ -->
+<section data-label="07 Three-phase architecture">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">07 / 16 — architecture</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:14px;">Three phases. Real product at each.</div>
+    <div class="subtitle" style="font-size:30px; color:#444; margin-bottom:40px;">Today the primitive. v1 card-and-bank retail-frictionless. v2 Visa-direct invisible-tech.</div>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
+      <div class="card mint-shadow" style="position:relative;">
+        <div class="tag" style="font-size:18px; padding:6px 14px;">v0.5 — today</div>
+        <div style="font-size:38px; font-weight:700; line-height:1.05; margin-top:20px;">The primitive</div>
+        <div class="mono" style="margin-top:6px; color:var(--purple); font-weight:700; text-transform:uppercase; font-size:18px;">Devnet end-to-end verified</div>
+        <div class="small" style="margin-top:18px; line-height:1.4;">
+          On-chain program (commit / withdraw / harvest / accrual). Walletless onboarding (passkey + email + Google). Audited yield routing. Engagement loop: founder updates + reactions + sybil-gated comments.
+        </div>
+        <div class="mono" style="margin-top:20px; font-size:18px; border-top:2px solid var(--ink); padding-top:14px; line-height:1.6;">
+          Privy · Kamino · Helius
+        </div>
+      </div>
+
+      <div class="card purple-shadow" style="position:relative;">
+        <div class="tag purple" style="font-size:18px; padding:6px 14px;">v1 — weeks away</div>
+        <div style="font-size:38px; font-weight:700; line-height:1.05; margin-top:20px;">Retail-frictionless</div>
+        <div class="mono" style="margin-top:6px; color:var(--purple); font-weight:700; text-transform:uppercase; font-size:18px;">~1–2 weeks engineering</div>
+        <div class="small" style="margin-top:18px; line-height:1.4;">
+          Card → USDC entry. SEPA → USDC entry. Multisig admin/upgrade authority. Second yield adapter for diversification.
+        </div>
+        <div class="mono" style="margin-top:20px; font-size:18px; border-top:2px solid var(--ink); padding-top:14px; line-height:1.6;">
+          MoonPay · Coinbase Pay · Helio · Mercuryo · Squads V4 · LI.FI
+        </div>
+      </div>
+
+      <div class="card ink-fill" style="position:relative; box-shadow: var(--offset) var(--offset) 0 var(--mint);">
+        <div class="tag mint" style="font-size:18px; padding:6px 14px;">v2 — partnership</div>
+        <div style="font-size:38px; font-weight:700; line-height:1.05; margin-top:20px; color:var(--mint);">Visa-direct invisible-tech</div>
+        <div class="mono" style="margin-top:6px; color:var(--mint); font-weight:700; text-transform:uppercase; font-size:18px;">Partnership conversation</div>
+        <div class="small" style="margin-top:18px; line-height:1.4; color:#d8d2c2;">
+          User enters a Visa card and a kommit amount in local currency. Crypto vocabulary disappears entirely from the user surface. The tech is invisible.
+        </div>
+        <div class="mono" style="margin-top:20px; font-size:18px; border-top:2px solid #444; padding-top:14px; line-height:1.6; color:var(--mint);">
+          Visa USDC-on-Solana rail · $7B+ run rate
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 / SHIPPED ============ -->
+<section data-label="08 Shipped today">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">08 / 16 — shipped today</div>
+
+  <div style="margin-top:60px; display:grid; grid-template-columns: 1.1fr 1fr; gap:60px; align-items:start;">
+    <div>
+      <div class="tag purple" style="margin-bottom:24px;">v0.5 — Live on devnet</div>
+      <div class="title" style="font-size:80px; line-height:0.95;">
+        Not a roadmap. <br/>
+        <span style="color:var(--purple);">A working system.</span>
+      </div>
+      <div class="body" style="margin-top:30px; font-size:30px; color:#222; max-width:800px;">
+        ~60–80 hours of agentic dev. Single director × N agents (engineer / frontend / QA / design / BD-GTM). The execution model is itself a competitive advantage.
+      </div>
+
+      <div class="card ink-fill" style="margin-top:32px; padding:24px 28px;">
+        <div class="mono" style="color:var(--mint); text-transform:uppercase; font-weight:700; margin-bottom:8px; font-size:18px;">60-second demo cue</div>
+        <div class="small" style="font-size:22px; line-height:1.5; color:#e9e3d2;">
+          Sign in with email → land on a project page → kommit $50 USDC via passkey → watch settlement → check dashboard, see kommit accruing → react to a founder update → withdraw → principal back, kommit record preserved.
+        </div>
+      </div>
+    </div>
+
+    <div class="col" style="gap:14px;">
+      <div class="card mint-shadow" style="padding:18px 24px;">
+        <div class="mono" style="font-size:18px; color:var(--purple); font-weight:700; text-transform:uppercase;">On-chain program</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px;">5 PDAs · 10 instructions · 30/30 anchor TS · 7/7 Rust unit tests · SHIP-CLEAN</div>
+      </div>
+      <div class="card mint-shadow" style="padding:18px 24px;">
+        <div class="mono" style="font-size:18px; color:var(--purple); font-weight:700; text-transform:uppercase;">Yield routing</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px;">Kamino USDC reserve · 4 tx hashes · adapter-agnostic</div>
+      </div>
+      <div class="card mint-shadow" style="padding:18px 24px;">
+        <div class="mono" style="font-size:18px; color:var(--purple); font-weight:700; text-transform:uppercase;">Wallet + auth</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px;">Privy walletless · passkey + email + Google · Anchor 0.31</div>
+      </div>
+      <div class="card mint-shadow" style="padding:18px 24px;">
+        <div class="mono" style="font-size:18px; color:var(--purple); font-weight:700; text-transform:uppercase;">Frontend</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px;">20 routes built · live at kommit-lilac.vercel.app</div>
+      </div>
+      <div class="card purple-fill" style="padding:18px 24px; box-shadow: var(--offset) var(--offset) 0 var(--ink);">
+        <div class="mono" style="font-size:18px; color:var(--mint); font-weight:700; text-transform:uppercase;">Engagement loop ⟵ new in v0.5</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px; color:#fff;">Founder updates · reactions · sybil-gated comments. Working retention loop, not vaporware.</div>
+      </div>
+      <div class="card mint-shadow" style="padding:18px 24px;">
+        <div class="mono" style="font-size:18px; color:var(--purple); font-weight:700; text-transform:uppercase;">Risk posture</div>
+        <div style="font-size:24px; font-weight:600; margin-top:4px;">Six structural risk surfaces named in app/RISK.md</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 / FOUNDER COHORT ============ -->
+<section data-label="09 Founder cohort">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">09 / 16 — the cohort</div>
+
+  <div style="margin-top:60px;">
+    <div class="tag" style="margin-bottom:24px;">The underclaimed selling point</div>
+    <div class="title" style="font-size:78px; max-width:1700px; line-height:0.95;">
+      Kommitters aren't an audience.<br/>
+      They're a <span class="slab purple">working cohort.</span>
+    </div>
+    <div class="body" style="margin-top:24px; font-size:30px; color:#333; max-width:1500px;">
+      The cleanest pool of skin-in-the-game attention a founder has — people literally invested in the team's success.
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:18px; margin-top:50px;">
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="color:var(--purple); font-weight:700; font-size:18px;">01</div>
+        <div style="font-size:26px; font-weight:700; margin-top:6px; line-height:1.1;">Beta testers</div>
+        <div class="small" style="font-size:20px; margin-top:8px;">First 50 humans, motivated to engage.</div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="color:var(--purple); font-weight:700; font-size:18px;">02</div>
+        <div style="font-size:26px; font-weight:700; margin-top:6px; line-height:1.1;">Iteration partners</div>
+        <div class="small" style="font-size:20px; margin-top:8px;">Sounding-board for which version, feature, pivot.</div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="color:var(--purple); font-weight:700; font-size:18px;">03</div>
+        <div style="font-size:26px; font-weight:700; margin-top:6px; line-height:1.1;">Recruitment funnel</div>
+        <div class="small" style="font-size:20px; margin-top:8px;">Cohort → first-50-hires pipeline.</div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="color:var(--purple); font-weight:700; font-size:18px;">04</div>
+        <div style="font-size:26px; font-weight:700; margin-top:6px; line-height:1.1;">Attention leverage</div>
+        <div class="small" style="font-size:20px; margin-top:8px;">Posting that costs the team nothing, lands credibly.</div>
+      </div>
+      <div class="card mint-fill" style="padding:22px; box-shadow: var(--offset) var(--offset) 0 var(--ink);">
+        <div class="mono" style="color:var(--ink); font-weight:700; font-size:18px;">05</div>
+        <div style="font-size:26px; font-weight:700; margin-top:6px; line-height:1.1;">A community</div>
+        <div class="small" style="font-size:20px; margin-top:8px;">Aligned-incentives beats parasocial-fan every time.</div>
+      </div>
+    </div>
+
+    <div class="card purple-fill" style="margin-top:32px; padding:26px 32px;">
+      <div class="mono" style="color:var(--mint); text-transform:uppercase; font-weight:700; margin-bottom:8px; font-size:18px;">v1+ time × effort earning vector</div>
+      <div style="font-size:28px; font-weight:600; line-height:1.25;">
+        Kommitters earn kommits by <i>showing up</i> — not just by parking dollars. Both vectors compound into the same soulbound balance. Meritocratic on effort, not just bankroll.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 / MARKET ============ -->
+<section data-label="10 Market">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">10 / 16 — market</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:40px;">We don't need to own the market.</div>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
+      <div class="card mint-shadow" style="padding:32px;">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; font-size:20px; color:#666;">TAM</div>
+        <div style="font-size:96px; font-weight:700; line-height:0.95; margin-top:8px; letter-spacing:-0.04em;">$10–15B<span style="font-size:32px; color:#666;"> /yr</span></div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.35;">Global retail-accessible early-stage patient-capital backing — equity crowdfunding + creator economy + retail syndicates.</div>
+      </div>
+
+      <div class="card purple-shadow" style="padding:32px;">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; font-size:20px; color:var(--purple);">SAM</div>
+        <div style="font-size:96px; font-weight:700; line-height:0.95; margin-top:8px; letter-spacing:-0.04em; color:var(--purple);">$0.3–1.5B<span style="font-size:32px; color:#666;"> /yr</span></div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.35;">USDC-denominated, non-custodial, walletless-onboardable, cross-border-compliant subset.</div>
+      </div>
+
+      <div class="card ink-fill" style="padding:32px; box-shadow: var(--offset) var(--offset) 0 var(--mint);">
+        <div class="mono" style="font-weight:700; text-transform:uppercase; font-size:20px; color:var(--mint);">SOM (Y3)</div>
+        <div style="font-size:96px; font-weight:700; line-height:0.95; margin-top:8px; letter-spacing:-0.04em; color:var(--mint);">$20–100M</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.35; color:#d8d2c2;">Deposits held. Base = 1.4% SAM. PoolTogether peaked ~$170M; Echo deployed $200M in 18 months.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:36px; padding:24px 32px; transform:rotate(-0.3deg);">
+      <div class="mono" style="text-transform:uppercase; font-weight:700; color:var(--purple); font-size:20px; margin-bottom:6px;">Read-through</div>
+      <div style="font-size:34px; font-weight:600; line-height:1.2;">Capturing 0.5% of SAM at maturity = a <b>$4–5M cash business</b> + a long-tail equity-rights portfolio.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 / FINANCIAL MODEL ============ -->
+<section data-label="11 Financial model">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">11 / 16 — financial model</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:60px; margin-bottom:14px;">Yield sensitivity — three × three.</div>
+    <div class="subtitle" style="font-size:28px; color:#444; margin-bottom:34px;">Y3 yield-line revenue (yield × Y3 average deposits × 1 yr).</div>
+
+    <table class="k">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="center">3% APY</th>
+          <th class="center">5% APY</th>
+          <th class="center">7% APY</th>
+          <th class="center">Y3 total cash (all 5 lines)</th>
+          <th class="center">Net cash</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Downside</b><br/><span class="mono" style="font-size:18px; color:#666;">$1.5M avg deposits</span></td>
+          <td class="num">$45K</td>
+          <td class="num">$75K</td>
+          <td class="num">$105K</td>
+          <td class="num">~$220K</td>
+          <td class="num" style="color:#aa1f1f;">−$550K</td>
+        </tr>
+        <tr style="background:var(--cream-2);">
+          <td style="background:var(--ink); color:var(--mint);"><b>Base</b><br/><span class="mono" style="font-size:18px; color:#aaa;">$15M avg</span></td>
+          <td class="num" style="background:var(--cream-2);">$450K</td>
+          <td class="num" style="background:var(--purple); color:#fff;">$750K</td>
+          <td class="num" style="background:var(--cream-2);">$1.05M</td>
+          <td class="num" style="background:var(--cream-2);"><b>~$1.4M</b></td>
+          <td class="num" style="background:var(--mint); color:var(--ink);"><b>+$280K</b></td>
+        </tr>
+        <tr>
+          <td><b>Aggressive</b><br/><span class="mono" style="font-size:18px; color:#666;">$62M avg</span></td>
+          <td class="num">$1.86M</td>
+          <td class="num">$3.1M</td>
+          <td class="num">$4.34M</td>
+          <td class="num">~$4.2M</td>
+          <td class="num" style="color:#1a7a3e;">+$2.8M</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:24px; margin-top:32px;">
+      <div class="card" style="padding:20px 24px;">
+        <div class="mono" style="font-size:18px; text-transform:uppercase; font-weight:700; color:#aa1f1f;">Downside — killable</div>
+        <div class="small" style="margin-top:6px; font-size:22px;">Mitigated by Y1 hackathon grant + active project recruitment in months 0–6.</div>
+      </div>
+      <div class="card purple-fill" style="padding:20px 24px;">
+        <div class="mono" style="font-size:18px; text-transform:uppercase; font-weight:700; color:var(--mint);">Base — sustainable</div>
+        <div class="small" style="margin-top:6px; font-size:22px; color:#fff;">Cashflow-positive in Y3. Paper portfolio building.</div>
+      </div>
+      <div class="card mint-fill" style="padding:20px 24px;">
+        <div class="mono" style="font-size:18px; text-transform:uppercase; font-weight:700;">Aggressive — Series A</div>
+        <div class="small" style="margin-top:6px; font-size:22px;">$25–50M conversation at Solana-fintech multiples + paper portfolio NPV.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 / FIVE REVENUE LINES ============ -->
+<section data-label="12 Five revenue lines">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">12 / 16 — revenue lines</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:12px;">Five revenue lines, not one.</div>
+    <div class="subtitle" style="font-size:28px; color:#444; margin-bottom:36px;">Yield-to-platform is load-bearing. The mix carries weight if deposits scale slower than expected.</div>
+
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:18px;">
+      <div class="card mint-shadow" style="padding:22px;">
+        <div class="mono" style="font-size:20px; color:var(--purple); font-weight:700;">01</div>
+        <div style="font-size:24px; font-weight:700; line-height:1.05; margin-top:8px;">Yield-to-platform</div>
+        <div class="small" style="font-size:18px; margin-top:8px; line-height:1.35;">Linear with deposits. PoolTogether V5 design pattern.</div>
+        <div class="mono" style="margin-top:14px; font-size:24px; font-weight:700; color:var(--purple);">$750K</div>
+      </div>
+
+      <div class="card mint-shadow" style="padding:22px;">
+        <div class="mono" style="font-size:20px; color:var(--purple); font-weight:700;">02</div>
+        <div style="font-size:24px; font-weight:700; line-height:1.05; margin-top:8px;">Launchpad partnerships</div>
+        <div class="small" style="font-size:18px; margin-top:8px; line-height:1.35;">CoinList / Buidlpad / Echo allocation routing.</div>
+        <div class="mono" style="margin-top:14px; font-size:24px; font-weight:700; color:var(--purple);">$200–300K</div>
+      </div>
+
+      <div class="card mint-shadow" style="padding:22px;">
+        <div class="mono" style="font-size:20px; color:var(--purple); font-weight:700;">03</div>
+        <div style="font-size:24px; font-weight:700; line-height:1.05; margin-top:8px;">On-ramp rev-share</div>
+        <div class="small" style="font-size:18px; margin-top:8px; line-height:1.35;">0.3–0.5% rebate on fiat → USDC volume.</div>
+        <div class="mono" style="margin-top:14px; font-size:24px; font-weight:700; color:var(--purple);">$100–200K</div>
+      </div>
+
+      <div class="card mint-shadow" style="padding:22px;">
+        <div class="mono" style="font-size:20px; color:var(--purple); font-weight:700;">04</div>
+        <div style="font-size:24px; font-weight:700; line-height:1.05; margin-top:8px;">Cohort intelligence</div>
+        <div class="small" style="font-size:18px; margin-top:8px; line-height:1.35;">Anonymized opt-in signal to capital allocators.</div>
+        <div class="mono" style="margin-top:14px; font-size:24px; font-weight:700; color:var(--purple);">$200–300K</div>
+      </div>
+
+      <div class="card purple-fill" style="padding:22px; box-shadow: var(--offset) var(--offset) 0 var(--ink);">
+        <div class="mono" style="font-size:20px; color:var(--mint); font-weight:700;">05</div>
+        <div style="font-size:24px; font-weight:700; line-height:1.05; margin-top:8px; color:#fff;">Graduation success</div>
+        <div class="small" style="font-size:18px; margin-top:8px; line-height:1.35; color:#e9e3d2;">1% on kommit-channeled rounds, paid out of round.</div>
+        <div class="mono" style="margin-top:14px; font-size:24px; font-weight:700; color:var(--mint);">$250K + warrants</div>
+      </div>
+    </div>
+
+    <div class="card ink-fill" style="margin-top:32px; padding:22px 32px;">
+      <div class="mono" style="text-transform:uppercase; font-weight:700; color:var(--mint); font-size:18px;">Long-tail upside (v2+)</div>
+      <div style="font-size:26px; margin-top:6px; line-height:1.3; color:#e9e3d2;">Once cashflow established, mix graduation fee: 0.5% cash + 0.5% warrants at round price. Builds a venture portfolio alongside the operating business. YC and Techstars anchor the structural pattern.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 / COMPETITION ============ -->
+<section data-label="13 Competition">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">13 / 16 — competition</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:60px; margin-bottom:14px;">The deposit isn't novel. The rights layer is.</div>
+    <div class="subtitle" style="font-size:26px; color:#444; margin-bottom:30px;">Direct prior art on the deposit primitive: IdeaPad (Phase Labs, Renaissance 2024). Below, what kommit adds.</div>
+
+    <table class="k" style="font-size:22px;">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="center">Deposit mechanic</th>
+          <th class="center">Principal protected</th>
+          <th class="center">Soulbound capital × time</th>
+          <th class="center">Right of first allocation</th>
+          <th class="center">Graduation pipeline</th>
+          <th class="center">Fiat rails roadmap</th>
+          <th class="center">Engagement loop</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>IdeaPad</b><br/><span class="mono" style="font-size:16px; color:#666;">Renaissance 2024</span></td>
+          <td class="center small">staking-to-support</td>
+          <td class="center"><span class="check">✓</span></td>
+          <td class="center"><span class="cross">—</span></td>
+          <td class="center"><span class="cross">—</span></td>
+          <td class="center"><span class="cross">—</span></td>
+          <td class="center"><span class="cross">—</span></td>
+          <td class="center"><span class="cross">—</span></td>
+        </tr>
+        <tr class="row-kommit">
+          <td>kommit</td>
+          <td class="center">conviction primitive</td>
+          <td class="center">✓</td>
+          <td class="center">✓ on-chain</td>
+          <td class="center">✓ at graduation</td>
+          <td class="center">✓ to launchpads</td>
+          <td class="center">v1 + v2 named</td>
+          <td class="center">✓ shipped v0.5</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:22px; margin-top:36px;">
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="font-weight:700; color:var(--purple); text-transform:uppercase; font-size:18px;">Equity crowdfunding</div>
+        <div class="small" style="margin-top:8px; font-size:22px; line-height:1.3;">Wefunder · Crowdcube · Republic. Founders pay 7–9%; backers risk principal. <b>Direct displacement.</b></div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="font-weight:700; color:var(--purple); text-transform:uppercase; font-size:18px;">Echo (Coinbase $375M)</div>
+        <div class="small" style="margin-top:8px; font-size:22px; line-height:1.3;">5%-of-profits carry; gates accredited capital. <b>Different lane —</b> kommit is retail-accessible, principal-protected.</div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div class="mono" style="font-weight:700; color:var(--purple); text-transform:uppercase; font-size:18px;">PoolTogether V5</div>
+        <div class="small" style="margin-top:8px; font-size:22px; line-height:1.3;">Closest mechanism analog. Survived constitutional-grade legal threat — encouraging precedent for the architecture.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14 / DEFENSIBILITY ============ -->
+<section data-label="14 Defensibility">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">14 / 16 — defensibility</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:40px;">Three moats compounding.</div>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
+      <div class="card purple-shadow" style="padding:32px;">
+        <div style="font-size:90px; font-weight:700; line-height:0.85; color:var(--purple);">01</div>
+        <div style="font-size:34px; font-weight:700; margin-top:14px; line-height:1.05;">Cohort primitive</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">Capital × time can't be bot-bought. Soulbound, on-chain, readable by other Solana protocols directly. Network effects kommit's UI doesn't have to maintain. <b>Farcaster FID model.</b></div>
+      </div>
+      <div class="card purple-shadow" style="padding:32px;">
+        <div style="font-size:90px; font-weight:700; line-height:0.85; color:var(--purple);">02</div>
+        <div style="font-size:34px; font-weight:700; margin-top:14px; line-height:1.05;">Project mix curation</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">First 15 projects define the brand. Active recruitment toward non-crypto-native (hardware, medtech, SaaS using Solana as plumbing). <b>Stripe / Mercury / Substack playbook.</b></div>
+      </div>
+      <div class="card purple-shadow" style="padding:32px;">
+        <div style="font-size:90px; font-weight:700; line-height:0.85; color:var(--purple);">03</div>
+        <div style="font-size:34px; font-weight:700; margin-top:14px; line-height:1.05;">Upstream of launchpads</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">183 launchpads in the Solana hackathon archive. Kommit isn't one of them. <b>Cohort-validation layer that hands off</b> to CoinList / Buidlpad / Echo / Series A.</div>
+      </div>
+    </div>
+
+    <div class="card ink-fill" style="margin-top:36px; padding:24px 32px;">
+      <div class="mono" style="color:var(--mint); text-transform:uppercase; font-weight:700; margin-bottom:6px; font-size:18px;">What we don't claim</div>
+      <div style="font-size:26px; line-height:1.3; color:#e9e3d2;">The on-chain mechanism alone is not the moat. MIT from commit 1 — it can be forked. Defensibility is execution + cohort density + integrator base + curation quality.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15 / GTM ============ -->
+<section data-label="15 Go-to-market">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">15 / 16 — go-to-market</div>
+
+  <div style="margin-top:60px;">
+    <div class="title" style="font-size:68px; margin-bottom:36px;">Solana-native → Bridge → Real-investor.</div>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:24px;">
+      <div class="card" style="padding:28px;">
+        <div class="tag" style="font-size:18px; padding:6px 14px; box-shadow:8px 8px 0 var(--ink);">Phase 1</div>
+        <div style="font-size:30px; font-weight:700; margin-top:18px; line-height:1.05;">Solana-native</div>
+        <div class="mono" style="margin-top:6px; font-size:20px; color:var(--purple); font-weight:700;">Months 0–12</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">Solana Foundation, Superteam, Farcaster crypto-native, hackathon ecosystem.</div>
+        <div class="mono" style="margin-top:14px; font-size:18px; color:#666; border-top:2px solid var(--ink); padding-top:10px;">Crypto-native patient-capital subset</div>
+      </div>
+
+      <div class="card purple-shadow" style="padding:28px;">
+        <div class="tag purple" style="font-size:18px; padding:6px 14px; box-shadow:8px 8px 0 var(--ink);">Phase 2</div>
+        <div style="font-size:30px; font-weight:700; margin-top:18px; line-height:1.05;">Bridge</div>
+        <div class="mono" style="margin-top:6px; font-size:20px; color:var(--purple); font-weight:700;">Months 12–18</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">Substack patient-curious newsletters, CoinDesk / The Block fintech framing, indie-hacker communities.</div>
+        <div class="mono" style="margin-top:14px; font-size:18px; color:#666; border-top:2px solid var(--ink); padding-top:10px;">Stripe Atlas / Mercury alumni</div>
+      </div>
+
+      <div class="card mint-shadow" style="padding:28px;">
+        <div class="tag" style="background:var(--ink); color:var(--mint); font-size:18px; padding:6px 14px; box-shadow:8px 8px 0 var(--ink);">Phase 3</div>
+        <div style="font-size:30px; font-weight:700; margin-top:18px; line-height:1.05;">Real-investor</div>
+        <div class="mono" style="margin-top:6px; font-size:20px; color:var(--purple); font-weight:700;">Months 18–36</div>
+        <div class="small" style="margin-top:14px; font-size:22px; line-height:1.4;">Wefunder/Republic disillusioned alumni, SEIS/EIS UK, YC alumni, On Deck, mainstream press inflection.</div>
+        <div class="mono" style="margin-top:14px; font-size:18px; color:#666; border-top:2px solid var(--ink); padding-top:10px;">Mainstream patient-capital retail</div>
+      </div>
+    </div>
+
+    <div class="card mint-fill" style="margin-top:34px; padding:24px 32px; transform:rotate(-0.4deg);">
+      <div class="mono" style="text-transform:uppercase; font-weight:700; font-size:18px; margin-bottom:6px;">The unlock between phases</div>
+      <div style="font-size:30px; font-weight:700; line-height:1.2;">Graduating projects as social proof. Project-mix curation is the highest-leverage GTM decision — target 60%+ non-crypto-native by month 6.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 16 / THE ASK ============ -->
+<section data-label="16 The ask">
+  <div class="corner"><img src="assets/kommit-logo.png" alt=""/><span>kommit</span></div>
+  <div class="corner-r">16 / 16 — the ask</div>
+
+  <div style="margin-top:60px; display:grid; grid-template-columns: 1fr 1.05fr; gap:60px; align-items:start;">
+    <div>
+      <div class="tag purple" style="margin-bottom:30px;">Hackathon target</div>
+      <div class="display" style="font-size:200px; line-height:0.85; color:var(--purple);">$150K</div>
+      <div class="subtitle" style="font-size:34px; margin-top:18px; max-width:800px;">
+        Solana Frontier main pool + Visa Germany side track. <b>Y2 self-funds.</b>
+      </div>
+
+      <div class="card ink-fill" style="margin-top:32px; padding:22px 28px;">
+        <div class="mono" style="color:var(--mint); text-transform:uppercase; font-weight:700; font-size:18px; margin-bottom:8px;">Beyond capital — what we need from the room</div>
+        <div class="small" style="font-size:22px; line-height:1.4; color:#e9e3d2;">
+          <b style="color:var(--mint);">Visa Germany:</b> partnership conversation on the v2 USDC-on-Solana settlement layer.<br/>
+          <b style="color:var(--mint);">Solana Frontier:</b> intros to launchpad partners (CoinList / Buidlpad).<br/>
+          <b style="color:var(--mint);">Anyone in the room:</b> candidates for the first 15 hand-seeded projects.
+        </div>
+      </div>
+    </div>
+
+    <div class="col" style="gap:14px;">
+      <div class="card" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:24px; font-weight:700;">Y1 operating runway</div>
+          <div class="small" style="font-size:18px; color:#666;">Lukas full-time, agentic infra</div>
+        </div>
+        <div class="mono" style="font-size:32px; font-weight:700; color:var(--purple);">$80K</div>
+      </div>
+      <div class="card" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:24px; font-weight:700;">Audit reserve</div>
+          <div class="small" style="font-size:18px; color:#666;">Code4rena / Cantina + Immunefi pool</div>
+        </div>
+        <div class="mono" style="font-size:32px; font-weight:700; color:var(--purple);">$20K</div>
+      </div>
+      <div class="card" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:24px; font-weight:700;">Mainnet bootstrap</div>
+          <div class="small" style="font-size:18px; color:#666;">Self-commit + first 5–15 projects</div>
+        </div>
+        <div class="mono" style="font-size:32px; font-weight:700; color:var(--purple);">$5K</div>
+      </div>
+      <div class="card" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:24px; font-weight:700;">Bridge GTM (Y2 head start)</div>
+          <div class="small" style="font-size:18px; color:#666;">First Substack / fintech-press placements</div>
+        </div>
+        <div class="mono" style="font-size:32px; font-weight:700; color:var(--purple);">$25K</div>
+      </div>
+      <div class="card" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:24px; font-weight:700;">EU compliance counsel reserve</div>
+          <div class="small" style="font-size:18px; color:#666;">MiCA scoping ahead of expansion</div>
+        </div>
+        <div class="mono" style="font-size:32px; font-weight:700; color:var(--purple);">$20K</div>
+      </div>
+      <div class="card mint-fill" style="padding:18px 24px; display:flex; justify-content:space-between; align-items:center; box-shadow: var(--offset) var(--offset) 0 var(--ink);">
+        <div>
+          <div style="font-size:26px; font-weight:700;">Total Y1 ask</div>
+          <div class="small" style="font-size:18px;">Series A targeted end of Y3</div>
+        </div>
+        <div class="mono" style="font-size:40px; font-weight:700;">$150K</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</deck-stage>
+
+</body>
+</html>
