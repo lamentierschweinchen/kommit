@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
+import { AuthGate } from "@/components/auth/AuthGate";
 import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BrutalSelect } from "@/components/common/BrutalSelect";
@@ -40,7 +41,13 @@ export function FounderDashboardClient({ project }: { project: Project }) {
           founderSlug={project.slug}
           founderKommittersCount={project.kommittersCount}
         />
-        <main className="flex-1 lg:ml-64 px-6 md:px-12 pb-24 max-w-[calc(80rem-16rem)] w-full">
+        <main className="flex-1 lg:ml-64 pb-24 max-w-[calc(80rem-16rem)] w-full">
+          <AuthGate
+            requireOwnsProject={project.slug}
+            anonHeadline="Sign in to manage your project."
+            anonBody="The founder console — kommitters, post-update editor, cohort numbers — is the team's private view."
+          >
+          <div className="px-6 md:px-12">
           <section id="overview" className="mt-12 md:mt-16">
             <div className="flex items-center gap-3 flex-wrap mb-3">
               <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
@@ -174,6 +181,8 @@ export function FounderDashboardClient({ project }: { project: Project }) {
               </>
             )}
           </section>
+          </div>
+          </AuthGate>
         </main>
       </div>
       <Footer withSidebarOffset />

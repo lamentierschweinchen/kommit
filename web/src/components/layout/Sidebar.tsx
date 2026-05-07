@@ -39,8 +39,8 @@ export function Sidebar({
       : [
           { href: "/dashboard", label: "Overview", icon: "grid_view" },
           { href: "/projects", label: "New kommit", icon: "add_circle" },
-          { href: "/dashboard", label: "Withdraw", icon: "payments" },
-          { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
+          { href: "/dashboard#withdraw", label: "Withdraw", icon: "payments" },
+          { href: "/dashboard#kommits", label: "Your kommits", icon: "workspace_premium" },
           { href: "/account", label: "Account", icon: "settings" },
         ];
 
@@ -96,10 +96,17 @@ export function Sidebar({
 
       <nav className="flex-1 flex flex-col gap-2 font-epilogue font-bold uppercase text-sm tracking-tight">
         {items.map((item, i) => {
+          // Pass-2 P1 #10 fix: only the FIRST item that points at the current
+          // pathname (with no anchor) is active. Anchor-link siblings
+          // (e.g. /dashboard#withdraw) aren't a separate route, so they
+          // shouldn't mirror the Overview's active state. Account / Public
+          // page / Browse projects (different paths) match strictly.
           const base = item.href.split("#")[0];
-          const isActive =
-            (i === 0 && pathname === base) ||
-            (i !== 0 && pathname === item.href);
+          const hasAnchor = item.href.includes("#");
+          const isActive = hasAnchor
+            ? false
+            : (i === 0 && pathname === base) ||
+              (i !== 0 && pathname === item.href);
           return (
             <Link
               key={`${item.href}-${i}`}

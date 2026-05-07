@@ -51,9 +51,14 @@ export function Modal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger}
       <Dialog.Portal>
+        {/* Pass-2 P0 #2 fix: scrim was reported as missing on first paint. The
+            animate-scrim-in keyframe starts at opacity:0; if the GPU drops
+            the first frame, the scrim is invisible until 180ms later. We
+            keep the animation but force bg-black/50 to land on initial render
+            via the explicit opacity-100 override on data-state=open. */}
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-40 bg-black/50",
+            "fixed inset-0 z-40 bg-black/50 opacity-100",
             "data-[state=open]:animate-scrim-in",
           )}
         />
@@ -63,6 +68,12 @@ export function Modal({
             "w-[calc(100vw-2rem)]",
             maxWidth,
             "focus:outline-none",
+            // Force opacity:1 on content. Pass-2 P0 #2 fix: the change-display-name
+            // modal was rendering with low-opacity title + input, which we suspect
+            // was animation timing leaving the content mid-fade. Explicit
+            // opacity-100 guarantees the final state regardless of animation
+            // resolution.
+            "opacity-100",
             "data-[state=open]:animate-modal-in",
             className,
           )}
@@ -73,6 +84,7 @@ export function Modal({
               className={cn(
                 "bg-white border-[3px] border-black p-7 md:p-8",
                 "max-h-[92vh] overflow-y-auto",
+                "opacity-100",
                 shadow === "purple" ? "shadow-brutal-purple" : "shadow-brutal-lg",
               )}
             >

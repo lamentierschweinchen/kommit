@@ -64,7 +64,11 @@ export const BrutalButton = forwardRef<HTMLButtonElement, BrutalButtonProps>(fun
         "inline-flex items-center justify-center font-epilogue font-black uppercase tracking-tight",
         "transition-transform hover:translate-x-[-2px] hover:translate-y-[-2px]",
         "active:translate-x-[2px] active:translate-y-[2px]",
+        // Pass-2 P1 #11: disabled visual is demoted — no offset shadow, grey
+        // border, lower fill opacity. Stops disabled buttons from reading as
+        // pressable.
         "disabled:opacity-50 disabled:pointer-events-none",
+        "disabled:shadow-none disabled:!border-gray-300",
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         fullWidth && "w-full",

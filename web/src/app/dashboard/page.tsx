@@ -9,6 +9,7 @@ import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ProjectCardSmall } from "@/components/project/ProjectCardSmall";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { AuthGate } from "@/components/auth/AuthGate";
 import { getCommitmentsForUser } from "@/lib/queries";
 import { getProject, PROJECTS } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
@@ -78,7 +79,12 @@ export default function DashboardPage() {
       <AuthHeader />
       <div className="flex flex-1 relative">
         <Sidebar variant="kommitter" />
-        <main className="flex-1 lg:ml-64 px-6 md:px-12 pb-24 max-w-[calc(80rem-16rem)] w-full">
+        <main className="flex-1 lg:ml-64 pb-24 max-w-[calc(80rem-16rem)] w-full">
+          <AuthGate
+            anonHeadline="Sign in to see your dashboard."
+            anonBody="Your kommitments, kommits, and recent updates from teams you back. Nothing here for visitors."
+          >
+          <div className="px-6 md:px-12">
           <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
               Overview
@@ -166,6 +172,8 @@ export default function DashboardPage() {
               <RightRail commitments={commitments} />
             </aside>
           </div>
+          </div>
+          </AuthGate>
         </main>
       </div>
       <Footer withSidebarOffset />

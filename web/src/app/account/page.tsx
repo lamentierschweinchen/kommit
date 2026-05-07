@@ -9,6 +9,7 @@ import { ExportKeyModal } from "@/components/account/ExportKeyModal";
 import { StubModal } from "@/components/account/StubModal";
 import { DepositModal } from "@/components/account/DepositModal";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { AuthGate } from "@/components/auth/AuthGate";
 import { useToast } from "@/components/common/ToastProvider";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -47,7 +48,12 @@ export default function AccountPage() {
       <AuthHeader />
       <div className="flex flex-1 relative">
         <Sidebar variant="kommitter" />
-        <main className="flex-1 lg:ml-64 px-6 md:px-12 pb-24 max-w-[calc(80rem-16rem)] w-full">
+        <main className="flex-1 lg:ml-64 pb-24 max-w-[calc(80rem-16rem)] w-full">
+          <AuthGate
+            anonHeadline="Sign in to your account."
+            anonBody="Display name, email, wallet, sign-in methods. All of it lives here once you're signed in."
+          >
+          <div className="px-6 md:px-12">
           <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <div>
               <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
@@ -181,6 +187,8 @@ export default function AccountPage() {
               Sign out
             </button>
           </section>
+          </div>
+          </AuthGate>
         </main>
       </div>
       <Footer withSidebarOffset />

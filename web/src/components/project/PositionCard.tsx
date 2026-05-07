@@ -134,7 +134,10 @@ export function PositionCard({
             type="button"
             onClick={() => (isSignedIn ? setWithdrawOpen(true) : setSignInOpen(true))}
             disabled={variant !== "active"}
-            className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none"
+            // Pass-2 P1 #11: disabled visual demoted (no offset shadow, grey border,
+            // lower fill opacity). Stops the WITHDRAW button reading as pressable
+            // when the user has no position.
+            className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none disabled:border-gray-300"
           >
             <Icon name="remove" size="sm" />
             Withdraw
