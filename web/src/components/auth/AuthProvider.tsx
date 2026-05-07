@@ -1,35 +1,40 @@
 "use client";
 
 /**
- * Real auth — backed by Privy's embedded Solana wallet.
+ * Auth provider — switches between two implementations at module load.
  *
- * The exported API surface (`{ user, role, isSignedIn, signIn, signOut,
- * switchRole, switchUser }`) is identical to the Pass 1 mock so consumer
- * components compile unchanged. Internals delegate to Privy:
+ *   NEXT_PUBLIC_MOCK_AUTH=1   → MockAuthProvider (USERS-keyed, ?as= query,
+ *                               DemoControls switchUser actually mutates state)
+ *   else (default)            → RealAuthProvider (Privy embedded Solana wallet)
  *
- *   - `signIn()`   → `usePrivy().login()` (opens Privy modal, ignores any arg)
- *   - `signOut()`  → `usePrivy().logout()`
- *   - `user`       → derived from `usePrivy().user` + `useWallets()[0]`
- *   - `role`       → local state. Default `"kommitter"`. Founder mode is admin-
- *                    allow-listed and not wired this pass; per handoff 32.
- *   - `switchUser` → no-op in real mode. Demo widget is the only caller and
- *                    it's gated behind `NODE_ENV !== "production"`.
+ * Both implementations expose the same `AuthState` API (`{ user, role,
+ * isSignedIn, signIn, signOut, switchRole, switchUser }`) so consumers
+ * compile unchanged.
  *
- * SSR-safe: hooks are client-only via `"use client"`. AuthProvider must sit
- * inside `<Providers>` (PrivyProvider). See app/layout.tsx.
+ * Mock mode exists to let reviewers QA the authed surfaces (dashboard,
+ * account, founder console) without burning real email accounts. It must
+ * never ship to production: the gate is set in `.env.local` for local dev
+ * and is intentionally absent on Vercel. Per Codex H2, the DemoControls
+ * widget is also gated by `NODE_ENV !== "production"` at the layout mount
+ * site so even an accidental flip can't expose persona switching to real
+ * users.
+ *
+ * Privy hooks (real path) only work inside <PrivyProvider>; that wrapper
+ * still mounts in mock mode but goes unused. SSR-safe via `"use client"`.
  */
 
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
-import type { Role, User } from "@/lib/data/users";
+import { USERS, type Role, type User } from "@/lib/data/users";
 
 type AuthState = {
   user: User | null;
@@ -43,23 +48,41 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+const MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === "1";
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  // Compile-time constant — Next inlines `process.env.NEXT_PUBLIC_*` at
+  // build, so React's rules-of-hooks aren't violated within a single build.
+  return MOCK_AUTH ? (
+    <MockAuthProvider>{children}</MockAuthProvider>
+  ) : (
+    <RealAuthProvider>{children}</RealAuthProvider>
+  );
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  return ctx;
+}
+
+// ---------------------------------------------------------------------------
+// Real provider — Privy embedded Solana wallet.
+// ---------------------------------------------------------------------------
+
 function truncateWallet(addr: string): string {
   if (addr.length < 8) return addr;
   return `${addr.slice(0, 3)}…${addr.slice(-3)}`;
 }
 
-/**
- * Deterministic avatar seed from a wallet address. Pravatar.cc accepts
- * `?img=N` for N in 1-70; we map the address to that range so the same wallet
- * always renders the same avatar across sessions.
- */
+/** Deterministic avatar seed from wallet address (pravatar accepts img=1..70). */
 function avatarSeedFromAddress(addr: string): number {
   let acc = 0;
   for (let i = 0; i < addr.length; i++) acc = (acc * 31 + addr.charCodeAt(i)) >>> 0;
   return (acc % 70) + 1;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+function RealAuthProvider({ children }: { children: ReactNode }) {
   const { user: privyUser, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const [activeRole, setActiveRole] = useState<Role>("kommitter");
@@ -79,13 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatarSeed: avatarSeedFromAddress(address),
       email: email ?? "",
       wallet: address,
-      // ownsProject left undefined — founder allow-list lookup ships in a later
-      // slice once the user_profiles table is wired.
     };
   }, [isSignedIn, privyUser, wallet, activeRole]);
 
-  // signIn ignores the asUserId argument (legacy mock-only param). Real flow
-  // uses Privy's modal, which handles method selection itself.
   const signIn = useCallback(
     (_asUserId?: string) => {
       void _asUserId;
@@ -99,9 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout]);
 
   const switchRole = useCallback((role: Role) => setActiveRole(role), []);
-
-  // No-op in real mode. Only DemoControls calls this, and DemoControls is
-  // gated behind NODE_ENV !== "production".
+  // No-op in real mode. DemoControls is gated behind NODE_ENV !== "production".
   const switchUser = useCallback((_userId: string) => {
     void _userId;
   }, []);
@@ -122,8 +139,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
+// ---------------------------------------------------------------------------
+// Mock provider — USERS-keyed, ?as= query, DemoControls fully wired.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_MOCK_USER_ID = "lukas";
+
+function MockAuthProvider({ children }: { children: ReactNode }) {
+  const [userId, setUserId] = useState<string | null>(DEFAULT_MOCK_USER_ID);
+  const [activeRole, setActiveRole] = useState<Role>("kommitter");
+
+  // Hydrate from `?as=` on mount so reviewers can deep-link directly into a
+  // persona. Only meaningful in mock mode; the real provider ignores it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const as = params.get("as");
+    if (as === "anon") {
+      setUserId(null);
+      return;
+    }
+    if (as && USERS[as]) {
+      setUserId(as);
+      const u = USERS[as];
+      setActiveRole(u.role === "founder" ? "founder" : "kommitter");
+    }
+  }, []);
+
+  const user = useMemo<User | null>(() => (userId ? USERS[userId] ?? null : null), [userId]);
+
+  const signIn = useCallback((asUserId: string = DEFAULT_MOCK_USER_ID) => {
+    setUserId(asUserId);
+    const u = USERS[asUserId];
+    if (u) setActiveRole(u.role === "founder" ? "founder" : "kommitter");
+  }, []);
+
+  const signOut = useCallback(() => {
+    setUserId(null);
+    setActiveRole("anon");
+  }, []);
+
+  const switchRole = useCallback((role: Role) => setActiveRole(role), []);
+
+  const switchUser = useCallback((id: string) => {
+    if (USERS[id]) {
+      setUserId(id);
+      setActiveRole(USERS[id].role === "founder" ? "founder" : "kommitter");
+    }
+  }, []);
+
+  const value: AuthState = useMemo(
+    () => ({
+      user,
+      role: user ? activeRole : "anon",
+      isSignedIn: !!user,
+      signIn,
+      signOut,
+      switchRole,
+      switchUser,
+    }),
+    [user, activeRole, signIn, signOut, switchRole, switchUser],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -15,7 +15,25 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import idl from "@/lib/idl/kommit.json";
 import { type Kommit, findProjectPda } from "@/lib/kommit";
 import { PROJECTS, type Project } from "@/lib/data/projects";
-import type { Commitment } from "@/lib/data/commitments";
+import { LUKAS_COMMITMENTS, type Commitment } from "@/lib/data/commitments";
+import { USERS } from "@/lib/data/users";
+
+const MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === "1";
+
+/**
+ * In mock-auth mode, the seeded users carry placeholder wallet strings (e.g.
+ * `5x9...kT2`) that are not valid base58 Solana addresses. Detect them up-
+ * front and return mock fixtures so the dashboard renders something
+ * substantive for QA. Real auth always passes through the on-chain reads.
+ */
+function mockCommitmentsFor(wallet: string): Commitment[] | null {
+  if (!MOCK_AUTH) return null;
+  // Match against the USERS table by wallet field; only Lukas has a populated
+  // demo portfolio (other mock users seed empty for now).
+  const lukas = USERS.lukas;
+  if (lukas && wallet === lukas.wallet) return LUKAS_COMMITMENTS;
+  return [];
+}
 
 const RPC_URL =
   process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? "https://api.devnet.solana.com";
@@ -73,6 +91,9 @@ function unixToISO(unixSeconds: number): string {
 export async function getCommitmentsForUser(
   userWallet: PublicKey | string,
 ): Promise<Commitment[]> {
+  const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
+  const mock = mockCommitmentsFor(walletStr);
+  if (mock !== null) return mock;
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
   const program = getReadProgram();
   const accounts = await program.account.commitment.all([
@@ -105,6 +126,13 @@ export async function getCommitmentForUserAndProject(
 ): Promise<Commitment | null> {
   const project = PROJECTS.find((p) => p.slug === projectSlug);
   if (!project?.recipientWallet) return null;
+
+  // Mock-auth fast path — match by slug against the seeded LUKAS_COMMITMENTS.
+  if (MOCK_AUTH) {
+    const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
+    const mock = mockCommitmentsFor(walletStr);
+    if (mock !== null) return mock.find((c) => c.projectSlug === projectSlug) ?? null;
+  }
 
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
   const projectPda = findProjectPda(new PublicKey(project.recipientWallet));
