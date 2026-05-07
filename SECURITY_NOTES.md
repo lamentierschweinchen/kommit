@@ -1,6 +1,6 @@
 # Security notes
 
-Operational addendum to [`SECURITY.md`](SECURITY.md). Documents known accepted-risk items in the dependency chain for the v1 hackathon submission, with reachability analysis. Updated as the security posture evolves.
+Operational addendum to [`SECURITY.md`](SECURITY.md). Documents known accepted-risk items in the dependency chain for the v0.5 hackathon submission, with reachability analysis. Updated as the security posture evolves.
 
 Last updated: 2026-05-07 (Codex Layer-9 burndown).
 
@@ -57,9 +57,9 @@ Verified by Codex Layer-9 (2026-05-07): zero verified secrets across all-history
 ## What's NOT yet covered
 
 - **CSP enforcement.** `next.config.ts` ships `Content-Security-Policy-Report-Only` with `frame-ancestors 'none'` plus a comprehensive directive list (Privy, WalletConnect, Helius RPC, Supabase, Google Fonts, image sources). Plan: walk a full sign-in / kommit / withdraw session, watch for CSP violation reports in browser console, then flip to enforcing `Content-Security-Policy` on the next deploy.
-- **Server-side form validation.** The `/build` form has zod client-side caps but no server-side write route. This is a v1.5+ requirement; the form currently mock-submits to `/build/submitted`. When real writes land, all server-side handlers must re-validate via zod or equivalent.
+- **Server-side form validation.** The `/build` form has zod client-side caps but no server-side write route. This is a v1+ requirement (lands alongside the founder application admin queue); the form currently mock-submits to `/build/submitted`. When real writes land, all server-side handlers must re-validate via zod or equivalent.
 - **Branch protection on `main`.** Requires GitHub Pro for private repos; enabled the moment the repo flips public via the `gh api` call queued in coordinator notes.
-- **Independent third-party security audit.** Gates any meaningful mainnet posture. Out of scope for v1 hackathon.
+- **Independent third-party security audit.** Gates any meaningful mainnet posture. Out of scope for v0.5 hackathon.
 
 ## Recently closed (left here as historical record)
 

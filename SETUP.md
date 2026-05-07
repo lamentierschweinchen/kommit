@@ -34,7 +34,7 @@ avm use 0.31.1
 anchor --version  # should print "anchor-cli 0.31.1"
 ```
 
-We pin to **0.31.1** for v1. We were previously on 0.30.1 but bumped on
+We pin to **0.31.1** for v0.5. We were previously on 0.30.1 but bumped on
 2026-05-02 because 0.30.1's IDL builder is broken on modern rustc (anchor-syn
 calls `proc_macro::Span::source_file()`, removed in rustc ~1.84). 0.31.x stays
 pre-1.0, so adapter targets (Kamino, marginfi, Jupiter Lend) — which still
@@ -46,7 +46,7 @@ the full diagnosis and coordinator decision.
 Anchor 1.0.0 landed in early 2026 with breaking changes (TS package rename
 `@coral-xyz/anchor` → `@anchor-lang/core`, stricter `#[derive(Accounts)]`
 enforcement, IDL upload default in `anchor deploy`, removal of legacy IDL
-instructions). Bumping past 0.31.x is a v1.5 task post-adapter spike, not a
+instructions). Bumping past 0.31.x is a post-v0.5 toolchain task, not a
 hackathon-deadline task.
 
 If you already have a different Anchor version installed, the `avm use 0.31.1`
@@ -205,24 +205,23 @@ Use `--transpile-only` on `ts-node` to skip Anchor 0.31's strict-types
 account-resolution checks; the runtime path still validates everything
 on-chain.
 
-### Upgrade authority — v1 single-sig (deferred decision)
+### Upgrade authority — v0.5 single-sig (deferred decision)
 
 The deploy script ships the program with whoever `ANCHOR_WALLET` points
-at as the upgrade authority. v1 fallback is **single-sig** (the deploy
-keypair, typically Lukas's hardware wallet for the initial private-beta
-cohort).
+at as the upgrade authority. v0.5 fallback is **single-sig** (the deploy
+keypair, typically the project lead's hardware wallet for the initial
+private-beta cohort).
 
-This is the **only v1 risk that lets a key compromise drain user funds**
-(see [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) item 14.3): a malicious
-program upgrade can rewrite `withdraw` to transfer to the attacker.
-Mitigation in v1: do not announce the program ID publicly until upgrade
-authority is multisig'd.
+This is the **only v0.5 risk that lets a key compromise drain user
+funds** (see [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) item 14.3): a
+malicious program upgrade can rewrite `withdraw` to transfer to the
+attacker. Mitigation in v0.5: do not announce the program ID publicly
+until upgrade authority is multisig'd.
 
-**v1.5 plan**: rotate upgrade authority to a Squads multisig (3-of-5 or
-similar). Coordinator's call when Lukas is back from his trip and Sean's
-Squads-integration response is in. The `deploy_mainnet.sh` script
-intentionally does NOT rotate the upgrade authority — this is a manual
-post-deploy step:
+**v1 plan**: rotate upgrade authority to a Squads V4 multisig vault PDA
+(see Squads UC1+UC2 in `build_order.md`). The `deploy_mainnet.sh`
+script intentionally does NOT rotate the upgrade authority — this is a
+manual post-deploy step:
 
 ```bash
 solana program set-upgrade-authority \
@@ -278,8 +277,8 @@ locked-decision territory needs coordinator review.**
 
 - **`#[program]` macro emits a `realloc` deprecation warning.** Anchor 0.31.1's
   internal codegen still uses `AccountInfo::realloc` (deprecated in favor of
-  `AccountInfo::resize`). Will be resolved when Anchor 1.0+ lands; deferred to
-  v1.5 per the build_order.md lock.
+  `AccountInfo::resize`). Will be resolved when Anchor 1.0+ lands; deferred
+  post-v0.5 per the build_order.md lock.
 - **17 `unexpected cfg` warnings** about `custom-heap`, `custom-panic`,
   `anchor-debug`. Anchor's macros reference cfg flags that the compiler doesn't
   know about. Cosmetic; no fix needed.

@@ -45,9 +45,9 @@ We follow [coordinated vulnerability disclosure](https://en.wikipedia.org/wiki/C
 
 These are documented and intentional, not bugs:
 
-- **No KYC** — private beta is whitelisted; no KYC plumbing in v1.
-- **Curation is centralized** — admin-curated invite-only in v1; less-centralized paths (DAO, staked-reputation) explored in v2.
-- **Single yield-source adapter** in v1 (Kamino USDC reserve). Adapter failover is a v1.5 task.
+- **No KYC** — private beta is whitelisted; no KYC plumbing in v0.5. KYC plumbing arrives with v1 fiat rails (card / SEPA partners enforce it upstream).
+- **Curation is centralized** — admin-curated invite-only in v0.5; less-centralized paths (DAO, staked-reputation) explored in v2+.
+- **Single yield-source adapter** in v0.5 (Kamino USDC reserve). Second adapter (marginfi or Jupiter Lend) is a v1 task.
 - **Demo controls (`?as=` persona override + floating `<DemoControls />`)** are gated behind `NODE_ENV !== "production"` for production builds. Mock auth never runs in production.
 - **`SECURITY_REVIEW.md`** — internal self-audit of the Anchor program with file:line citations. Verdict: hackathon-private-beta-grade. Pre-scaling upgrade items (multisig admin + multisig upgrade authority + third-party audit) called out explicitly.
 - **`SECURITY_HARDENING.md`** (at workspace parent) — full-stack security review by an internal Codex pass. Verdict: HOLD-WITH-FIXES at time of writing; tracked findings burned down in this commit cycle.
