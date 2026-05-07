@@ -6,43 +6,64 @@ import { useToast } from "@/components/common/ToastProvider";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/common/Icon";
+import { authedFetch } from "@/lib/api-client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import type { RemoteUpdate } from "@/lib/api-types";
 
-export type PendingUpdate = {
-  atISO: string;
-  title: string;
-  body: string;
-  isPivot: boolean;
-};
-
-/** Per Codex M6 — explicit length cap before this becomes a real on-chain
- * write. Roughly two short paragraphs; matches what `admin_update_project_metadata`
- * will accept once Pass 3+ wires the founder→admin queue. */
 const MAX_UPDATE_LENGTH = 2000;
 
 export function PostUpdateEditor({
+  projectPda,
   onPosted,
 }: {
-  onPosted: (u: PendingUpdate) => void;
+  projectPda: string;
+  onPosted: (u: RemoteUpdate) => void;
 }) {
   const [body, setBody] = useState("");
   const [isPivot, setIsPivot] = useState(false);
-  const { confirm } = useToast();
+  const [submitting, setSubmitting] = useState(false);
+  const { confirm, error } = useToast();
+  const { user } = useAuth();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim() || submitting) return;
     const firstLine = body.split("\n")[0].slice(0, 120);
     const restLines = body.split("\n").slice(1).join("\n").trim();
-    const update: PendingUpdate = {
-      atISO: new Date().toISOString().slice(0, 10),
-      title: firstLine || body.slice(0, 80),
-      body: restLines || body,
-      isPivot,
-    };
-    onPosted(update);
-    setBody("");
-    setIsPivot(false);
-    confirm("Update posted.");
+    const title = firstLine || body.slice(0, 80);
+    const messageBody = restLines || body;
+
+    setSubmitting(true);
+    try {
+      const res = await authedFetch("/api/founder/updates", {
+        method: "POST",
+        body: JSON.stringify({
+          project_pda: projectPda,
+          title,
+          body: messageBody,
+          is_pivot: isPivot,
+        }),
+        mockWallet: user?.wallet ?? null,
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        const detail =
+          payload?.error === "not-project-founder"
+            ? "Only the project's recipient wallet can post updates."
+            : payload?.detail ?? payload?.error ?? `HTTP ${res.status}`;
+        error("Couldn't post update", String(detail));
+        return;
+      }
+      const json = (await res.json()) as { update: RemoteUpdate };
+      onPosted(json.update);
+      setBody("");
+      setIsPivot(false);
+      confirm("Update posted.");
+    } catch (e) {
+      error("Network error", e instanceof Error ? e.message : String(e));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -81,10 +102,10 @@ export function PostUpdateEditor({
         </label>
         <button
           type="submit"
-          disabled={!body.trim()}
+          disabled={!body.trim() || submitting}
           className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base px-7 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-brutal-lg flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
         >
-          Post
+          {submitting ? "Posting…" : "Post"}
           <Icon name="arrow_forward" className="font-bold" />
         </button>
       </div>
