@@ -102,7 +102,7 @@ flowchart LR
 
 ## Status
 
-**v1 program is feature-complete on devnet.** End-to-end klend round-trip verified; QA Codex SHIP-CLEAN on `fix/qa-criticals` (merged); 30/30 anchor TS tests + 8/8 Rust unit tests + 3/3 webhook fixture tests passing.
+**v0.5 — primitive feature-complete on devnet.** End-to-end klend round-trip verified; QA Codex SHIP-CLEAN on `fix/qa-criticals` (merged); 30/30 anchor TS tests + 8/8 Rust unit tests + 3/3 webhook fixture tests passing. Fiat rails (card / SEPA / bank) are the v1 architectural milestone — see scope section below.
 
 **Frontend is wired live on devnet.** Real Privy auth (passkey + Google + email), real Anchor program reads, real on-chain commit/withdraw against the deployed program. Indexer reads through Supabase. Mock data fallback for surfaces where indexer hasn't materialized.
 
@@ -183,7 +183,7 @@ Required env vars are documented in [`web/.env.example`](web/.env.example) and [
 
 ## Deploy
 
-**Devnet** is the v1 target for hackathon submission. The program is already deployed at `GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3`.
+**Devnet** is the v0.5 target for hackathon submission. The program is already deployed at `GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3`.
 
 **Mainnet artifacts** under [`scripts/`](scripts/) exist and are tested but not yet executed in production:
 
@@ -196,35 +196,43 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 
 ---
 
-## v1 / v1.5 / v2 scope
+## v0.5 / v1 / v2 scope
 
-**v1 (this submission, devnet):**
-- 10 instructions: `initialize_config`, `create_project`, `commit`, `withdraw`, `accrue_points`, `supply_to_yield_source`, `harvest`, `admin_pause`, `admin_unpause`, `admin_update_project_metadata`, `initialize_kamino_adapter_config`
+**v0.5 (this submission, devnet — today):**
+- 11 instructions: `initialize_config`, `create_project`, `commit`, `withdraw`, `accrue_points`, `supply_to_yield_source`, `harvest`, `admin_pause`, `admin_unpause`, `admin_update_project_metadata`, `initialize_kamino_adapter_config`
 - One yield-source adapter (Kamino klend USDC reserve)
 - Single-sig admin + single-sig program upgrade authority (project lead's keypair)
-- Whitelisted private demo, hand-curated projects, mock + real-tx hybrid for click-through
-- Off-chain stack: Helius → Supabase indexer; Pinata for IPFS; Privy for walletless auth
+- USDC entry, Solana wallet entry — Solana-fluent users only at this layer
+- Demo faucet UX (Circle devnet USDC + Solana devnet SOL airdrop) so evaluators can walk the flow without prep
+- Off-chain stack: Helius → Supabase indexer; Pinata for IPFS; Privy for embedded-wallet auth (passkey + email + Google)
 - Frontend: 10 routes — landing, browse, project detail, kommitter dashboard, founder dashboard, account, build (founder application), about
 
-**v1.5 (post-submission, near-term):**
+**v1 (post-submission, ~1-2 weeks — fiat rails, retail-frictionless):**
+- **Card → USDC on Solana** via Privy's built-in [MoonPay](https://www.moonpay.com/business/onramp) and [Coinbase Pay](https://www.coinbase.com/onramp) — both first-class config flips in `@privy-io/react-auth`. ~5-min onboarding. The user enters their card, kommits; USDC under the hood.
+- **SEPA → USDC** for EU users via [Helio](https://hel.io) or [Mercuryo](https://mercuryo.io) — Solana-native SDKs.
+- **Off-ramps** via the same partner network (card-back / SEPA-back depending on entry rail).
 - Squads V4 multisig governance for `KommitConfig.admin` + program upgrade authority (zero program-side change; vault PDA signs via `invoke_signed`)
 - Squads smart-account project recipient wallets (sub-30s stand-up via `multisigCreateV2`)
-- Second yield-source adapter (marginfi v2 or Jupiter Lend)
+- Second yield-source adapter (marginfi or Jupiter Lend)
 - `admin_update_project_recipient` instruction for recipient rotation
 - Founder application admin queue (currently invite-only)
 - Earned-allocation-rights flow at graduation (kommitters with `lifetime_score` ≥ threshold get first dibs at the team's next round)
 - Public-named display opt-in for kommitters
 - Cross-chain commit via LI.FI bridge integration
 
-**v2 (post-traction):**
+**v2 (with Visa partnership — invisible-tech retail rails):**
+- User enters their Visa card and a kommit amount in their local currency. Crypto vocabulary disappears entirely from the user surface — *the tech is invisible*. The technical rail under the hood: **Visa's USDC settlement on Solana** ($7B+ annualized run-rate per [CoinDesk April 2026](https://www.coindesk.com/business/2026/04/29/visa-expands-stablecoin-settlement-network-as-volume-hits-usd7-billion-run-rate)). Visa moves money in fiat; settlement clears in USDC on Solana inside Kommit's program. The user sees their card statement.
+- This is the layer Visa is the *natural named partner for* — no other entity can deliver it as cleanly.
+- Engineering: a partnership conversation, not a sprint. Architectural commitment locked now; ship date follows the partnership.
+
+**v2+ (post-traction):**
 - `create_graduation_attestation` PDAs + graduation flow
 - Composable points-reading API consumer integrations (other Solana protocols gating access on `lifetime_score`)
 - Cohort SaaS — anonymized, opt-in cohort intelligence sold to launchpads / VCs / adjacent protocols
 - Less-centralized curation (DAO / multisig / staked-reputation)
-- Optional Altitude payment rails (yield → ACH/SEPA/Wire)
-- Mainnet — gated on third-party audit + Squads multisig in place
+- Mainnet — gated on third-party audit + Squads multisig in place + the v1 fiat-rails layer being live
 
-**Hard locks (never reopened in v1+):**
+**Hard locks (never reopened):**
 - No platform token. Ever.
 - No fees on kommitters or founders.
 - Kommitter principal stays redeemable, withdraw anytime, no cooldown.
