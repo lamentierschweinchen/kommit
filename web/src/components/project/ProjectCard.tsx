@@ -25,7 +25,12 @@ const SECTOR_BG: Record<string, string> = {
 export function ProjectCard({ project }: { project: Project }) {
   const founder = project.founders[0];
   const isGraduated = project.state === "graduated";
-  const isJustListed = project.state === "just-listed";
+  // High #5: a project whose state is "just-listed" but whose on-chain Project
+  // account doesn't exist yet (no recipientWallet) is structurally not open
+  // for kommitments. Render "Opening soon" so the badge doesn't contradict the
+  // commit-modal gate.
+  const isJustListedAndOpen = project.state === "just-listed" && !!project.recipientWallet;
+  const isOpeningSoon = project.state === "just-listed" && !project.recipientWallet;
 
   return (
     <Link href={`/projects/${project.slug}`} className="block group">
@@ -35,10 +40,17 @@ export function ProjectCard({ project }: { project: Project }) {
           "group-hover:shadow-brutal-purple",
         )}
       >
-        {isJustListed ? (
+        {isJustListedAndOpen ? (
           <div className="absolute -top-3 left-6 z-20">
             <span className="inline-block bg-secondary text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
               Just listed
+            </span>
+          </div>
+        ) : null}
+        {isOpeningSoon ? (
+          <div className="absolute -top-3 left-6 z-20">
+            <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              Opening soon
             </span>
           </div>
         ) : null}

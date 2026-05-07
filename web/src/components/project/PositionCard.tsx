@@ -4,9 +4,12 @@ import { useState } from "react";
 import { Tape } from "@/components/common/Tape";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
+import { SignInModal } from "@/components/auth/SignInModal";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import type { Project } from "@/lib/data/projects";
+import { Icon } from "@/components/common/Icon";
 
 export type PositionVariant = "active" | "graduated" | "no-position";
 
@@ -32,8 +35,22 @@ export function PositionCard({
   /** Fires after a successful kommit/withdraw so caller can refresh reads. */
   onTxSuccess?: () => void;
 }) {
+  const { isSignedIn } = useAuth();
   const [commitOpen, setCommitOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+
+  // Signed-out + open project → "Sign in to kommit" CTA that opens the sign-in
+  // modal directly (per platform-test Critical #3 + High #7). Signed-in + open
+  // project → real commit modal. Signed-in + project not yet open on-chain →
+  // disabled commit modal with "not open yet" copy.
+  const handleKommitClick = () => {
+    if (!isSignedIn) {
+      setSignInOpen(true);
+    } else {
+      setCommitOpen(true);
+    }
+  };
 
   if (variant === "graduated" && graduatedRecord) {
     return (
@@ -107,19 +124,19 @@ export function PositionCard({
         <div className="grid grid-cols-2 gap-3 mt-6">
           <button
             type="button"
-            onClick={() => setCommitOpen(true)}
+            onClick={handleKommitClick}
             className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
           >
-            <span className="material-symbols-outlined text-base">add</span>
+            <Icon name="add" size="sm" />
             Kommit
           </button>
           <button
             type="button"
-            onClick={() => setWithdrawOpen(true)}
+            onClick={() => (isSignedIn ? setWithdrawOpen(true) : setSignInOpen(true))}
             disabled={variant !== "active"}
             className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none"
           >
-            <span className="material-symbols-outlined text-base">remove</span>
+            <Icon name="remove" size="sm" />
             Withdraw
           </button>
         </div>
@@ -145,6 +162,7 @@ export function PositionCard({
           onSuccess={onTxSuccess}
         />
       ) : null}
+      <SignInModal open={signInOpen} onOpenChange={setSignInOpen} />
     </>
   );
 }
