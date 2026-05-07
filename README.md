@@ -222,7 +222,7 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 
 **v2 (with Visa partnership — invisible-tech retail rails):**
 - User enters their Visa card and a kommit amount in their local currency. Crypto vocabulary disappears entirely from the user surface — *the tech is invisible*. The technical rail under the hood: **Visa's USDC settlement on Solana** ($7B+ annualized run-rate per [CoinDesk April 2026](https://www.coindesk.com/business/2026/04/29/visa-expands-stablecoin-settlement-network-as-volume-hits-usd7-billion-run-rate)). Visa moves money in fiat; settlement clears in USDC on Solana inside Kommit's program. The user sees their card statement.
-- This is the layer Visa is the *natural named partner for* — no other entity can deliver it as cleanly.
+- Visa publishes a USDC-on-Solana settlement rail; v2 targets it. Partnership is how we get there — absent partnership, this is roadmap targeting an existing rail rather than something invented for the deck.
 - Engineering: a partnership conversation, not a sprint. Architectural commitment locked now; ship date follows the partnership.
 
 **v2+ (post-traction):**
@@ -244,6 +244,7 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 
 - [`SECURITY.md`](SECURITY.md) — disclosure email, in/out-of-scope, severity rubric.
 - [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) — internal 14-item Anchor security checklist with file:line citations and named test verifications.
+- [`RISK.md`](RISK.md) — structural risk surfaces named explicitly (smart-contract, yield-source, oracle, counterparty, regulatory, operational). Companion to SECURITY.md; covers tradeoffs we won't fix because they're not bugs, just things kommitters and reviewers should understand.
 - [`RECOVERY.md`](RECOVERY.md) — program upgrade authority keypair recovery procedure (no secrets in the doc).
 
 QA history:

@@ -51,3 +51,7 @@ These are documented and intentional, not bugs:
 - **Demo controls (`?as=` persona override + floating `<DemoControls />`)** are gated behind `NODE_ENV !== "production"` for production builds. Mock auth never runs in production.
 - **`SECURITY_REVIEW.md`** — internal self-audit of the Anchor program with file:line citations. Verdict: hackathon-private-beta-grade. Pre-scaling upgrade items (multisig admin + multisig upgrade authority + third-party audit) called out explicitly.
 - **`SECURITY_HARDENING.md`** (at workspace parent) — full-stack security review by an internal Codex pass. Verdict: HOLD-WITH-FIXES at time of writing; tracked findings burned down in this commit cycle.
+
+## Structural risks (not bugs — architectural tradeoffs)
+
+For the risk surfaces that exist by virtue of the architecture itself — smart-contract risk on Kommit's program, yield-source risk on Kamino, oracle risk, counterparty risk, regulatory framing, operational/curation risk — see [`RISK.md`](RISK.md). Bug reports go through this doc; structural-tradeoff conversations belong there.
