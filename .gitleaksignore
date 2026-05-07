@@ -1,0 +1,30 @@
+# Kommit gitleaks ignore baseline
+#
+# Each line is a finding-fingerprint that gitleaks should suppress.
+# Format: <commit-sha>:<filename>:<rule-id>:<start-line>
+#
+# DO NOT add new entries here without explicit security review.
+# Pre-commit hook at .git/hooks/pre-commit catches new leaks; this
+# file only baselines historical findings that have been triaged.
+#
+# ---------------------------------------------------------------------------
+# Historical mock fixture (Pass 1, 2026-05-06)
+#
+# At commit 7d1c1ac, web/src/components/account/ExportKeyModal.tsx contained
+# a long hex-shaped string named MOCK_KEY used as visual demo content for
+# the Privy "export private key" warning modal. The string was never a real
+# secret — it was a deliberately key-shaped placeholder so reviewers could
+# see what the export-key UX would render.
+#
+# Pass 2 (commit d0c4304+) replaced the mock with a real call to Privy's
+# `exportWallet` flow; the placeholder is gone from the working tree.
+#
+# The historical commit remains in git history. Rather than rewrite history
+# (which would invalidate every branch ancestor), this baseline tells gitleaks
+# the finding is known + intentional + non-secret. Verified by Codex
+# Layer-9 (2026-05-07) as zero verified secrets across all-history scan.
+#
+# Re-verify if you ever doubt: open the file at that commit + observe the
+# MOCK_KEY constant has no real-world referent (no API key it unlocks, no
+# wallet it derives, no signature it forges).
+7d1c1ac646dfd62d08c9b84dc1991ed8ef9d2b79:web/src/components/account/ExportKeyModal.tsx:generic-api-key:8
