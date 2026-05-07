@@ -1,7 +1,6 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { Connection } from "@solana/web3.js";
 import {
   createContext,
@@ -42,7 +41,6 @@ export function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const solanaConnectors = useMemo(() => toSolanaWalletConnectors(), []);
   const appId = PRIVY_APP_ID || "placeholder-app-id";
 
   return (
@@ -53,12 +51,14 @@ export function Providers({ children }: { children: ReactNode }) {
           theme: "light",
           walletChainType: "solana-only",
         },
+        // v0.1 ships embedded-wallet only. External wallet connectors
+        // (toSolanaWalletConnectors) are deliberately NOT wired — they probe
+        // window for injected providers and log a `[DEBUG] Detected injected
+        // providers: Array(N)` to the console, polluting prod telemetry.
+        // Re-add when external-wallet sign-in becomes a v1+ requirement.
         loginMethods: ["email", "google", "passkey"],
         embeddedWallets: {
           solana: { createOnLogin: "all-users" },
-        },
-        externalWallets: {
-          solana: { connectors: solanaConnectors },
         },
       }}
     >
