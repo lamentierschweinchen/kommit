@@ -13,7 +13,7 @@ import { shortDate, daysBetween } from "@/lib/date-utils";
 import { avatarUrl } from "@/lib/data/users";
 import type { Project, ProjectKommitter } from "@/lib/data/projects";
 import { cn } from "@/lib/cn";
-import { Icon } from "@/components/common/Icon";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 type SortKey = "recent" | "kommitted" | "kommits";
 
@@ -181,6 +181,8 @@ export function FounderDashboardClient({ project }: { project: Project }) {
               </>
             )}
           </section>
+
+          <YourCohortSection />
           </div>
           </AuthGate>
         </main>
@@ -269,6 +271,76 @@ function FounderStat({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * "Your cohort" — placeholder section for founder-side v1 tools that aren't
+ * shipped yet. Disabled CTAs with "Coming v1" tags so founders can see the
+ * direction without confusing the surface for live functionality. Mirrors the
+ * kommitter-side `<RoadmapCard>` on the public project page.
+ */
+function YourCohortSection() {
+  const tiles: { icon: IconName; title: string; body: string }[] = [
+    {
+      icon: "mail",
+      title: "Send a private update",
+      body: "Backers-only post, separate from the public timeline. Use it for unannounced ships, internal numbers, or hard asks.",
+    },
+    {
+      icon: "workspace_premium",
+      title: "Reward top kommitters",
+      body: "Allocate priority access slots manually before a raise — beta seats, founder calls, early swag.",
+    },
+    {
+      icon: "payments",
+      title: "Open a raise to your cohort",
+      body: "Token sale, equity round, or SAFE — opened first to your kommitters, ranked by kommits.",
+    },
+    {
+      icon: "groups",
+      title: "Run a cohort poll",
+      body: "Decision input straight from your backers. Pricing, feature direction, naming — whatever benefits from a vote.",
+    },
+  ];
+  return (
+    <section id="your-cohort" className="mt-20 pt-10 border-t-[8px] border-black">
+      <div className="flex items-end justify-between flex-wrap gap-4 mb-2">
+        <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+          Your cohort
+        </h2>
+      </div>
+      <p className="mb-8 font-epilogue font-medium text-sm text-gray-600 max-w-xl">
+        What you&rsquo;ll be able to do with your kommitters as Kommit ships v1. Not live yet — these are the surfaces on the runway.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+        {tiles.map((t, i) => (
+          <article
+            key={i}
+            className="bg-white border-[3px] border-black p-5 md:p-6 relative opacity-90"
+          >
+            <div className="absolute top-4 right-4 inline-block bg-secondary text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              Coming v1
+            </div>
+            <Icon name={t.icon} size="lg" className="text-gray-700" />
+            <div className="mt-3 font-epilogue font-black uppercase text-lg tracking-tight">
+              {t.title}
+            </div>
+            <p className="mt-2 text-sm font-medium text-gray-700 leading-relaxed pr-20">
+              {t.body}
+            </p>
+            <button
+              type="button"
+              disabled
+              className="mt-5 bg-white text-black font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-gray-300 flex items-center gap-2 cursor-not-allowed opacity-50"
+            >
+              Not yet
+              <Icon name="arrow_forward" size="xs" />
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
