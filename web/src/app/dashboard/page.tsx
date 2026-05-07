@@ -14,12 +14,15 @@ import { getProject, PROJECTS } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
+import { Icon } from "@/components/common/Icon";
+import { DepositModal } from "@/components/account/DepositModal";
 
 export default function DashboardPage() {
   const { user, isSignedIn } = useAuth();
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [depositOpen, setDepositOpen] = useState(false);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -76,10 +79,20 @@ export default function DashboardPage() {
       <div className="flex flex-1 relative">
         <Sidebar variant="kommitter" />
         <main className="flex-1 lg:ml-64 px-6 md:px-12 pb-24 max-w-[calc(80rem-16rem)] w-full">
-          <section className="mt-12 md:mt-16">
+          <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
               Overview
             </h1>
+            {isSignedIn ? (
+              <button
+                type="button"
+                onClick={() => setDepositOpen(true)}
+                className="bg-secondary text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2"
+              >
+                <Icon name="add" size="sm" />
+                Deposit
+              </button>
+            ) : null}
           </section>
 
           <section className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
@@ -156,6 +169,7 @@ export default function DashboardPage() {
         </main>
       </div>
       <Footer withSidebarOffset />
+      <DepositModal open={depositOpen} onOpenChange={setDepositOpen} />
     </>
   );
 }
@@ -171,7 +185,7 @@ function SignInPrompt() {
         className="inline-flex items-center gap-2 bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
       >
         Browse projects
-        <span className="material-symbols-outlined text-base">arrow_forward</span>
+        <Icon name="arrow_forward" size="sm" />
       </Link>
     </div>
   );
@@ -188,7 +202,7 @@ function EmptyCommitments() {
         className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
       >
         Browse projects
-        <span className="material-symbols-outlined text-base">arrow_forward</span>
+        <Icon name="arrow_forward" size="sm" />
       </Link>
     </div>
   );

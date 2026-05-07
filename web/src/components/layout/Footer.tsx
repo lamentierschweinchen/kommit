@@ -18,15 +18,19 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
       >
         <div className="text-black">© 2026 KOMMIT · MIT Licensed · Built on Solana</div>
         <div className="flex gap-6 font-bold">
-          <Link href="https://github.com" className="text-black hover:underline">
+          <Link
+            href="https://github.com/lukasseelos/kommit"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-black hover:underline"
+          >
             GitHub
           </Link>
           <Link href="/status" className="text-zinc-500 hover:text-black hover:underline">
             Status
           </Link>
-          <Link href="/privacy" className="text-zinc-500 hover:text-black hover:underline">
-            Privacy
-          </Link>
+          {/* Privacy page deferred until a real policy lands; link removed so the
+              footer doesn't lead to a 404. Re-add in Pass 3 alongside ToS. */}
         </div>
       </div>
     </footer>

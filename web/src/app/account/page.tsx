@@ -7,9 +7,12 @@ import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ExportKeyModal } from "@/components/account/ExportKeyModal";
 import { StubModal } from "@/components/account/StubModal";
+import { DepositModal } from "@/components/account/DepositModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { cn } from "@/lib/cn";
+import { Icon, type IconName } from "@/components/common/Icon";
+import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -17,6 +20,7 @@ export default function AccountPage() {
   const { confirm } = useToast();
 
   const [exportOpen, setExportOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
   const [changeNameOpen, setChangeNameOpen] = useState(false);
   const [changeEmailOpen, setChangeEmailOpen] = useState(false);
   const [addMethodOpen, setAddMethodOpen] = useState(false);
@@ -44,14 +48,26 @@ export default function AccountPage() {
       <div className="flex flex-1 relative">
         <Sidebar variant="kommitter" />
         <main className="flex-1 lg:ml-64 px-6 md:px-12 pb-24 max-w-[calc(80rem-16rem)] w-full">
-          <section className="mt-12 md:mt-16">
-            <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-              Account
-            </h1>
-            <p className="mt-5 max-w-xl text-base font-medium text-gray-700 leading-relaxed">
-              v1 minimal — email, wallet, sign-in methods, advanced. No notification preferences in
-              v1; the dashboard is the inbox.
-            </p>
+          <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+                Account
+              </h1>
+              <p className="mt-5 max-w-xl text-base font-medium text-gray-700 leading-relaxed">
+                v1 minimal — email, wallet, sign-in methods, advanced. No notification preferences
+                in v1; the dashboard is the inbox.
+              </p>
+            </div>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setDepositOpen(true)}
+                className="bg-secondary text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2 self-start sm:self-auto"
+              >
+                <Icon name="add" size="sm" />
+                Deposit
+              </button>
+            ) : null}
           </section>
 
           <section className="mt-12 max-w-3xl space-y-5">
@@ -88,7 +104,7 @@ export default function AccountPage() {
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <StatusPill icon="mail" label="Email" />
-                  <StatusPill icon="g_translate" label="Google" />
+                  <StatusPill customGlyph={<GoogleGlyph />} label="Google" />
                   <StatusPill icon="fingerprint" label="Touch ID" />
                 </div>
               </div>
@@ -97,7 +113,7 @@ export default function AccountPage() {
                 onClick={() => setAddMethodOpen(true)}
                 className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-base">add</span>
+                <Icon name="add" size="sm" />
                 Add method
               </button>
             </article>
@@ -112,7 +128,7 @@ export default function AccountPage() {
               <article className="bg-white border-[3px] border-black shadow-brutal p-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-start">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary filled">key</span>
+                    <Icon name="key" className="text-primary" />
                     <div className="font-epilogue font-black uppercase text-base tracking-tight">
                       Export private key
                     </div>
@@ -128,14 +144,14 @@ export default function AccountPage() {
                   className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2 sm:self-center"
                 >
                   Export
-                  <span className="material-symbols-outlined text-base">arrow_outward</span>
+                  <Icon name="arrow_outward" size="sm" />
                 </button>
               </article>
 
               <article className="bg-white border-[3px] border-black shadow-brutal p-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-start">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                    <Icon name="account_balance_wallet" />
                     <div className="font-epilogue font-black uppercase text-base tracking-tight">
                       Connect external wallet
                     </div>
@@ -161,7 +177,7 @@ export default function AccountPage() {
               onClick={handleSignOut}
               className="font-epilogue font-bold uppercase tracking-tight text-sm text-gray-700 hover:text-black border-b-[2px] border-gray-300 hover:border-black px-1 py-1 transition-colors flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-base">logout</span>
+              <Icon name="logout" size="sm" />
               Sign out
             </button>
           </section>
@@ -170,6 +186,7 @@ export default function AccountPage() {
       <Footer withSidebarOffset />
 
       <ExportKeyModal open={exportOpen} onOpenChange={setExportOpen} />
+      <DepositModal open={depositOpen} onOpenChange={setDepositOpen} />
       <StubModal
         open={changeNameOpen}
         onOpenChange={setChangeNameOpen}
@@ -220,7 +237,7 @@ function Row({
   value: string;
   hint?: string;
   actionLabel: string;
-  actionIcon?: string;
+  actionIcon?: IconName;
   onAction: () => void;
   valueClass?: string;
 }) {
@@ -247,7 +264,7 @@ function Row({
         onClick={onAction}
         className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:self-center flex items-center gap-2"
       >
-        {actionIcon ? <span className="material-symbols-outlined text-base">{actionIcon}</span> : null}
+        {actionIcon ? <Icon name={actionIcon} size="sm" /> : null}
         {actionLabel}
       </button>
     </article>
@@ -258,17 +275,20 @@ function Row({
  * Audit fix #12: status pill — drops the brutal-button shadow, keeps 2px border,
  * green bg, green-on-black filled check glyph. Reads as "✓ connected" not "click me".
  */
-function StatusPill({ icon, label }: { icon: string; label: string }) {
+function StatusPill({
+  icon,
+  label,
+  customGlyph,
+}: {
+  icon?: IconName;
+  label: string;
+  customGlyph?: React.ReactNode;
+}) {
   return (
     <span className="inline-flex items-center gap-2 bg-secondary border-[2px] border-black px-3 py-1.5 font-epilogue font-black uppercase text-xs tracking-tight">
-      <span className="material-symbols-outlined text-base">{icon}</span>
+      {customGlyph ?? (icon ? <Icon name={icon} size="sm" /> : null)}
       {label}
-      <span
-        className="material-symbols-outlined text-base ml-0.5 bg-black text-secondary w-5 h-5 flex items-center justify-center filled"
-        aria-hidden
-      >
-        check
-      </span>
+      <Icon name="check" size="sm" className="ml-0.5 bg-black text-secondary w-5 h-5 p-0.5" />
     </span>
   );
 }
