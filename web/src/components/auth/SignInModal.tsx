@@ -19,9 +19,18 @@ import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 export function SignInModal({
   open,
   onOpenChange,
+  title = "Sign in",
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /**
+   * Optional contextual title. Defaults to the route-agnostic "Sign in" so
+   * a stranger hitting the modal from /projects or /account doesn't get
+   * "Sign in to back a team" when they aren't on a project page.
+   * Pass a contextual title from triggers that have project context, e.g.
+   * `<SignInModal title="Sign in to back CALDERA" />`.
+   */
+  title?: string;
 }) {
   const router = useRouter();
   const { authenticated } = usePrivy();
@@ -60,7 +69,7 @@ export function SignInModal({
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Sign in to back a team">
+    <Modal open={open} onOpenChange={onOpenChange} title={title}>
       <div className="mt-8 space-y-4">
         <button
           type="button"

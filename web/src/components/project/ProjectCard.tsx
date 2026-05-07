@@ -67,13 +67,22 @@ export function ProjectCard({ project }: { project: Project }) {
           <img
             src={projectImageUrl(project.imageSeed, 800, 400)}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
+            draggable={false}
+            // Pass-2 P1 #9: raise image opacity so the imagery has rhythm / colour
+            // across the row instead of reading as greyscale filler.
+            className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none select-none"
           />
-          {/* Darken layer beneath the title — guarantees mix-blend-difference reads on bright/colorful photos */}
-          <div className="absolute inset-0 bg-black/35" aria-hidden />
+          {/* Pass-2 P1 #9: lighten the darken layer so titles read at full
+              white-on-content contrast without muddying every photo into grey.
+              Pass-2 P1 #8: pointer-events-none so this overlay doesn't swallow clicks meant for the parent <Link>. */}
+          <div className="absolute inset-0 bg-black/25 pointer-events-none" aria-hidden />
           <h3
             className={cn(
-              "relative z-10 font-epilogue font-black uppercase tracking-tighter text-white text-center mix-blend-difference px-6",
+              // Pass-2 P1 #9: drop mix-blend-difference (was rendering as pale
+              // grey on mid-tone photos). Solid white + drop shadow guarantees
+              // the title reads at full contrast regardless of the photo behind.
+              "relative z-10 font-epilogue font-black uppercase tracking-tighter text-white text-center px-6 pointer-events-none",
+              "[text-shadow:_0_2px_8px_rgba(0,0,0,0.6)]",
               "text-3xl md:text-4xl lg:text-5xl leading-tight",
             )}
           >

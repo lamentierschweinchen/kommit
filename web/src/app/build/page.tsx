@@ -37,6 +37,7 @@ export default function BuildApplicationPage() {
     register,
     handleSubmit,
     watch,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -44,11 +45,22 @@ export default function BuildApplicationPage() {
 
   const pitchLength = watch("pitch")?.length ?? 0;
 
-  const onSubmit = handleSubmit(async () => {
-    // Simulate the submission
-    await new Promise((r) => setTimeout(r, 250));
-    router.push("/build/submitted");
-  });
+  const onSubmit = handleSubmit(
+    async () => {
+      // Simulate the submission
+      await new Promise((r) => setTimeout(r, 250));
+      router.push("/build/submitted");
+    },
+    // Pass-2 P2: instead of bouncing the user to the page top on first
+    // invalid submit, focus the first errored field. RHF's `setFocus` uses
+    // each registered input's ref directly; modern browsers scroll the
+    // focused element into view automatically, so the user lands on the
+    // first thing they need to fix.
+    (errs) => {
+      const firstError = Object.keys(errs)[0] as keyof FormValues | undefined;
+      if (firstError) setFocus(firstError);
+    },
+  );
 
   return (
     <>

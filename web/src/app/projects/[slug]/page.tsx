@@ -128,15 +128,22 @@ function ProjectHero({ project }: { project: Project }) {
   return (
     <section className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-center">
       <div className="space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/projects"
-            className="font-epilogue font-bold uppercase tracking-widest text-xs text-gray-500 hover:text-black flex items-center gap-1"
-          >
-            <Icon name="arrow_back" size="sm" />
-            Back to projects
-          </Link>
-          <span className="text-gray-300">·</span>
+        {/* Pass-2 P1 #17: breadcrumb row carries ONLY the back-link. The
+            sector + state chips were collapsed three unrelated patterns into
+            one row (back-link · breadcrumb-separator · category-tag). They now
+            live as a metadata strip between the H1 and the pitch — clearly
+            project-context, not navigation. */}
+        <Link
+          href="/projects"
+          className="font-epilogue font-bold uppercase tracking-widest text-xs text-gray-500 hover:text-black inline-flex items-center gap-1"
+        >
+          <Icon name="arrow_back" size="sm" />
+          Back to projects
+        </Link>
+        <h1 className="font-epilogue font-black uppercase text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.95] -rotate-1">
+          {project.name}
+        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
           <span
             className={cn(
               "inline-block font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm",
@@ -151,9 +158,6 @@ function ProjectHero({ project }: { project: Project }) {
             </span>
           ) : null}
         </div>
-        <h1 className="font-epilogue font-black uppercase text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.95] -rotate-1">
-          {project.name}
-        </h1>
         <p className="text-xl md:text-2xl font-medium text-gray-800 leading-snug border-l-[4px] border-primary pl-5">
           {project.pitch}
         </p>

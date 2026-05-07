@@ -60,8 +60,7 @@ export default function AccountPage() {
                 Account
               </h1>
               <p className="mt-5 max-w-xl text-base font-medium text-gray-700 leading-relaxed">
-                v1 minimal — email, wallet, sign-in methods, advanced. No notification preferences
-                in v1; the dashboard is the inbox.
+                Manage how you sign in and where we reach you. Notifications live on your dashboard.
               </p>
             </div>
             {user ? (

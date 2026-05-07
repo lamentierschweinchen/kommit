@@ -26,7 +26,7 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
           >
             GitHub
           </Link>
-          <Link href="/status" className="text-zinc-500 hover:text-black hover:underline">
+          <Link href="/status" className="text-black hover:underline">
             Status
           </Link>
           {/* Privacy page deferred until a real policy lands; link removed so the

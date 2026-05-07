@@ -9,11 +9,13 @@ export default function NotFound() {
       <AuthHeader forcePublic />
       <main className="flex-1 px-6 md:px-12 flex items-center justify-center">
         {/* Audit fix #9: widen to max-w-3xl, push 404 to text-[16rem] on desktop */}
-        <section className="max-w-3xl w-full mx-auto py-20 md:py-32 relative">
-          <div className="absolute -top-3 left-12 w-24 h-7 bg-primary -rotate-3 border-[2px] border-black hidden md:block" />
-          <div className="absolute top-20 -right-4 w-10 h-24 bg-secondary rotate-6 border-[2px] border-black hidden md:block" />
-
+        <section className="max-w-3xl w-full mx-auto py-20 md:py-32">
+          {/* Pass-2 P2 fix: tape decorations now anchor to the inner brutal
+              card, not the outer section. Was clipping at viewport-top on
+              shorter heights when the section's top edge hit the viewport. */}
           <div className="bg-white border-[3px] border-black shadow-brutal-lg p-12 md:p-20 -rotate-[0.5deg] relative">
+            <div className="absolute -top-3 left-12 w-24 h-7 bg-primary -rotate-3 border-[2px] border-black hidden md:block" aria-hidden />
+            <div className="absolute -bottom-3 -right-4 w-10 h-24 bg-secondary rotate-6 border-[2px] border-black hidden md:block" aria-hidden />
             <h1 className="font-epilogue font-black uppercase text-[10rem] md:text-[16rem] leading-[0.85] tracking-tighter">
               404.
             </h1>

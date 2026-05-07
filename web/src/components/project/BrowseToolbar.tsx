@@ -144,12 +144,16 @@ export function BrowseToolbar({
           />
         </div>
         <DropdownMenu.Root>
+          {/* Pass-2 P1 #15: prefix with "Sort by" so the dropdown reads as a sort
+              control, not another filter chip. Uses a quieter weight on the
+              prefix so the active sort label still carries the visual weight. */}
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
               className="bg-white text-black font-epilogue font-black uppercase text-sm tracking-tight px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
             >
-              {SORT_LABELS[filters.sort]}
+              <span className="font-epilogue font-bold text-gray-500 text-xs">Sort by</span>
+              <span>{SORT_LABELS[filters.sort]}</span>
               <Icon name="expand_more" size="sm" />
             </button>
           </DropdownMenu.Trigger>

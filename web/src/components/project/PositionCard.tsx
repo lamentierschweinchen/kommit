@@ -144,9 +144,6 @@ export function PositionCard({
           </button>
         </div>
 
-        <p className="mt-4 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest text-center">
-          Withdraw anytime · No fees
-        </p>
       </div>
 
       <CommitModal
@@ -165,7 +162,11 @@ export function PositionCard({
           onSuccess={onTxSuccess}
         />
       ) : null}
-      <SignInModal open={signInOpen} onOpenChange={setSignInOpen} />
+      <SignInModal
+        open={signInOpen}
+        onOpenChange={setSignInOpen}
+        title={`Sign in to back ${project.name}`}
+      />
     </>
   );
 }

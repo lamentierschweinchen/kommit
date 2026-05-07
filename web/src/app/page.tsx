@@ -286,18 +286,22 @@ function FAQItem({
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
+  // Pass-2 P1 #6: drop the heavy `border-t` between question and answer so the
+  // expanded body reads as part of the SAME card. Add an open-state visual cue
+  // by tinting the question header slightly so it's clear which card is open.
+  // Icon rotation `+ → ×` is handled in globals.css (`details[open] .faq-icon`).
   return (
     <details
       open={defaultOpen}
-      className="bg-white border-[3px] border-black shadow-brutal group"
+      className="bg-white border-[3px] border-black shadow-brutal group open:shadow-brutal-purple"
     >
-      <summary className="flex items-center justify-between gap-6 p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+      <summary className="flex items-center justify-between gap-6 p-6 cursor-pointer hover:bg-gray-100 transition-colors group-open:bg-gray-100">
         <span className="font-epilogue font-black uppercase text-lg md:text-xl tracking-tight">
           {question}
         </span>
         <Icon name="add" size="lg" className="faq-icon transition-transform" />
       </summary>
-      <div className="px-6 pb-6 text-base font-medium text-gray-800 leading-relaxed border-t-[3px] border-black pt-5 space-y-5">
+      <div className="px-6 pb-6 -mt-1 text-base font-medium text-gray-800 leading-relaxed space-y-5">
         {children}
       </div>
     </details>

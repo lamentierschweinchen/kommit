@@ -34,8 +34,10 @@ export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
 
   const isPublic = forcePublic || isPublicRoute(pathname);
   const showAnonHeader = isPublic || !isSignedIn;
-  // On browse/project-detail, show the search field in header (audit #4: drop only on browse).
-  const showHeaderSearch = !isPublic && pathname !== "/projects";
+  // Pass-2 P1 #5: header search dropped globally. The browse page has a
+  // proper filter+sort+search toolbar; every other route had a header search
+  // with no scope (search what? from /account?). One canonical search
+  // affordance, one place — on /projects.
 
   const handleSignOut = () => {
     signOut();
@@ -74,23 +76,6 @@ export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
         </div>
 
         <div className="flex items-center gap-3">
-          {showHeaderSearch ? (
-            <div className="relative hidden xl:block">
-              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-black pointer-events-none" />
-              <input
-                type="text"
-                placeholder="SEARCH PROJECTS..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const v = (e.target as HTMLInputElement).value.trim();
-                    router.push(v ? `/projects?q=${encodeURIComponent(v)}` : "/projects");
-                  }
-                }}
-                className="pl-10 pr-4 py-2 border-[3px] border-black focus:outline-none focus:ring-0 focus:border-primary font-epilogue font-bold text-sm shadow-brutal w-64 bg-white placeholder-black transition-all focus:translate-x-[-2px] focus:translate-y-[-2px] focus:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] uppercase tracking-tight"
-              />
-            </div>
-          ) : null}
-
           {showAnonHeader ? (
             <button
               type="button"
