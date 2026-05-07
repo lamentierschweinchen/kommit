@@ -56,10 +56,14 @@ Verified by Codex Layer-9 (2026-05-07): zero verified secrets across all-history
 
 ## What's NOT yet covered
 
-- **Production CSP / `frame-ancestors`** — `next.config.ts` ships baseline headers (HSTS, X-Content-Type-Options, Referrer-Policy, X-Frame-Options DENY, Permissions-Policy). CSP + `frame-ancestors` are queued for the next frontend pass.
-- **Supabase function execute privileges** — `process_event` and `_mat_*` helpers in migration `0002` rely on default PostgreSQL grants. Migration `0003` (queued) will add explicit `security invoker` + `revoke execute from public, anon, authenticated` + `grant execute to service_role`.
-- **Server-side form validation** — the `/build` form has zod client-side caps but no server route. This is a Pass 3+ requirement; the form currently mock-submits to `/build/submitted`.
-- **Branch protection on `main`** — requires GitHub Pro for private repos; will be enabled the moment the repo flips public.
-- **Independent third-party security audit** — gates any meaningful mainnet posture. Out of scope for v1 hackathon.
+- **CSP enforcement.** `next.config.ts` ships `Content-Security-Policy-Report-Only` with `frame-ancestors 'none'` plus a comprehensive directive list (Privy, WalletConnect, Helius RPC, Supabase, Google Fonts, image sources). Plan: walk a full sign-in / kommit / withdraw session, watch for CSP violation reports in browser console, then flip to enforcing `Content-Security-Policy` on the next deploy.
+- **Server-side form validation.** The `/build` form has zod client-side caps but no server-side write route. This is a v1.5+ requirement; the form currently mock-submits to `/build/submitted`. When real writes land, all server-side handlers must re-validate via zod or equivalent.
+- **Branch protection on `main`.** Requires GitHub Pro for private repos; enabled the moment the repo flips public via the `gh api` call queued in coordinator notes.
+- **Independent third-party security audit.** Gates any meaningful mainnet posture. Out of scope for v1 hackathon.
+
+## Recently closed (left here as historical record)
+
+- **Supabase function execute privileges.** Migration `0003_explicit_function_privs.sql` (committed `c40e36c`) declares `security invoker` explicit on `process_event` + 7 `_mat_*` helpers, revokes EXECUTE from public/anon/authenticated, and grants EXECUTE to `service_role` only. Anon callers to `/rpc/process_event` now fail at privilege resolution before any function body runs. Apply to a fresh Supabase project alongside 0001 + 0002 (see `SETUP.md`).
+- **Production security headers.** HSTS, X-Content-Type-Options nosniff, X-Frame-Options DENY, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy, and Content-Security-Policy-Report-Only are all live on the production deploy as of commit `6f81bca` (2026-05-07).
 
 See [`SECURITY.md`](SECURITY.md) for disclosure path. See [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program audit. The full-stack pass log lives at the workspace level (`SECURITY_HARDENING.md`); not in the public repo.
