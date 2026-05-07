@@ -7,7 +7,11 @@ import { cn } from "@/lib/cn";
 
 /**
  * Floating dev-only widget. Lets reviewers swap demo personas without UI digging.
- * `?as=lukas|julian|lina|anon` query-string also works (handled in AuthProvider).
+ *
+ * The whole component is gated behind `process.env.NODE_ENV !== "production"`
+ * at the layout mount site (app/layout.tsx) — Codex H2. The real Privy-backed
+ * AuthProvider intentionally ignores the legacy `?as=...` query param in
+ * production; persona switching is dev-only.
  */
 export function DemoControls() {
   const { user, role, switchUser, signOut, signIn } = useAuth();
