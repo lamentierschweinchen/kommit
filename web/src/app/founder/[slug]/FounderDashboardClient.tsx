@@ -7,22 +7,34 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BrutalSelect } from "@/components/common/BrutalSelect";
-import { PostUpdateEditor, type PendingUpdate } from "@/components/founder/PostUpdateEditor";
+import { PostUpdateEditor } from "@/components/founder/PostUpdateEditor";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { shortDate, daysBetween } from "@/lib/date-utils";
+import { shortDate, daysBetween, longDate } from "@/lib/date-utils";
 import { avatarUrl } from "@/lib/data/users";
 import type { Project, ProjectKommitter } from "@/lib/data/projects";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { findProjectPda } from "@/lib/kommit";
+import { PublicKey } from "@solana/web3.js";
+import type { RemoteUpdate } from "@/lib/api-types";
 
 type SortKey = "recent" | "kommitted" | "kommits";
 
 const PAGE_SIZE = 7;
 
 export function FounderDashboardClient({ project }: { project: Project }) {
-  const [pendingUpdates, setPendingUpdates] = useState<PendingUpdate[]>([]);
+  const [postedUpdates, setPostedUpdates] = useState<RemoteUpdate[]>([]);
   const [sort, setSort] = useState<SortKey>("recent");
   const [shown, setShown] = useState(PAGE_SIZE);
+
+  const projectPda = useMemo(() => {
+    if (!project.recipientWallet) return null;
+    try {
+      return findProjectPda(new PublicKey(project.recipientWallet)).toBase58();
+    } catch {
+      return null;
+    }
+  }, [project.recipientWallet]);
 
   const sortedKommitters = useMemo(() => sortKommitters(project.kommitters, sort), [project.kommitters, sort]);
   const visible = sortedKommitters.slice(0, shown);
@@ -98,27 +110,38 @@ export function FounderDashboardClient({ project }: { project: Project }) {
             <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
               Post an update
             </h2>
-            <PostUpdateEditor onPosted={(u) => setPendingUpdates((cur) => [u, ...cur])} />
+            {projectPda ? (
+              <PostUpdateEditor
+                projectPda={projectPda}
+                onPosted={(u) => setPostedUpdates((cur) => [u, ...cur])}
+              />
+            ) : (
+              <div className="bg-white border-[3px] border-black shadow-brutal p-6 max-w-3xl">
+                <p className="font-epilogue font-bold uppercase text-sm tracking-tight">
+                  This project isn&rsquo;t open for kommitments yet — posting is disabled until the on-chain account exists.
+                </p>
+              </div>
+            )}
 
-            {pendingUpdates.length > 0 ? (
+            {postedUpdates.length > 0 ? (
               <div className="mt-8 max-w-3xl">
                 <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-3">
-                  Just posted (in-memory · this session only)
+                  Just posted
                 </div>
                 <ul className="space-y-3">
-                  {pendingUpdates.map((u, i) => (
+                  {postedUpdates.map((u) => (
                     <li
-                      key={i}
+                      key={u.id}
                       className={cn(
                         "bg-white border-[3px] border-black p-4",
-                        u.isPivot ? "shadow-brutal-purple" : "shadow-brutal",
+                        u.is_pivot ? "shadow-brutal-purple" : "shadow-brutal",
                       )}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
-                          {u.atISO}
+                          {longDate(u.posted_at.slice(0, 10))}
                         </span>
-                        {u.isPivot ? (
+                        {u.is_pivot ? (
                           <span className="bg-primary text-white px-2 py-0.5 border-[2px] border-black uppercase text-[9px] font-epilogue font-black tracking-widest">
                             Pivot
                           </span>

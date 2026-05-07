@@ -6,6 +6,7 @@ import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
+import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidget";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ProjectCardSmall } from "@/components/project/ProjectCardSmall";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -168,7 +169,10 @@ export default function DashboardPage() {
               </section>
             </div>
 
-            <aside className="lg:pt-10 lg:border-t-[8px] lg:border-black">
+            <aside className="lg:pt-10 lg:border-t-[8px] lg:border-black space-y-6">
+              {commitments.length > 0 ? (
+                <RecentActivityWidget commitments={commitments} />
+              ) : null}
               <RightRail commitments={commitments} />
             </aside>
           </div>

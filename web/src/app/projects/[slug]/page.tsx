@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
-import { UpdatesList } from "@/components/project/UpdatesList";
+import { UpdatesPanel } from "@/components/project/UpdatesPanel";
+import { findProjectPda } from "@/lib/kommit";
+import { PublicKey } from "@solana/web3.js";
 import { KommittersList } from "@/components/project/KommittersList";
 import { UserPositionCard } from "@/components/project/UserPositionCard";
 import { RecentUpdatesMini } from "@/components/project/RecentUpdatesMini";
@@ -35,6 +37,15 @@ export default async function ProjectDetailPage({
   const { slug } = await params;
   const project = getProject(slug);
   if (!project) notFound();
+
+  let projectPda: string | null = null;
+  if (project.recipientWallet) {
+    try {
+      projectPda = findProjectPda(new PublicKey(project.recipientWallet)).toBase58();
+    } catch {
+      projectPda = null;
+    }
+  }
 
   return (
     <>
@@ -98,7 +109,11 @@ export default async function ProjectDetailPage({
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 Updates
               </h2>
-              <UpdatesList updates={project.updates} />
+              <UpdatesPanel
+                projectPda={projectPda}
+                projectSlug={project.slug}
+                fallback={project.updates}
+              />
             </section>
 
             <section>
@@ -123,7 +138,11 @@ export default async function ProjectDetailPage({
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
             <UserPositionCard project={project} />
-            <RecentUpdatesMini projectSlug={project.slug} updates={project.updates} />
+            <RecentUpdatesMini
+              projectSlug={project.slug}
+              projectPda={projectPda}
+              updates={project.updates}
+            />
           </aside>
         </div>
       </main>

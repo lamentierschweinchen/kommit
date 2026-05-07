@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { PublicKey } from "@solana/web3.js";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { daysBetween, shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
+import type { RemoteUpdate } from "@/lib/api-types";
+import { findProjectPda } from "@/lib/kommit";
 import { cn } from "@/lib/cn";
 
 export function CommitmentRow({
@@ -18,7 +21,40 @@ export function CommitmentRow({
   onWithdrawSuccess?: () => void;
 }) {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
+
+  useEffect(() => {
+    if (!project.recipientWallet || typeof window === "undefined") return;
+    let cancelled = false;
+    let pda: string;
+    try {
+      pda = findProjectPda(new PublicKey(project.recipientWallet)).toBase58();
+    } catch {
+      return;
+    }
+    const lastSeen = localStorage.getItem(`kommit:lastSeen:${pda}`);
+    fetch(`/api/projects/${pda}/updates`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fetch failed"))))
+      .then((j: { updates: RemoteUpdate[] }) => {
+        if (cancelled) return;
+        if (!lastSeen) {
+          // First-time visitor — count nothing as "new" so we don't blanket-pill
+          // every commitment after a P1.4 deploy. The pill becomes meaningful
+          // after the kommitter has visited at least once.
+          setNewCount(0);
+          return;
+        }
+        const n = j.updates.filter((u) => u.posted_at > lastSeen).length;
+        setNewCount(n);
+      })
+      .catch(() => {
+        if (!cancelled) setNewCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [project.recipientWallet]);
   const kommits = kommitsFor(commitment.kommittedUSD, commitment.sinceISO);
   const days = daysBetween(commitment.sinceISO);
   const founder = project.founders[0];
@@ -71,6 +107,11 @@ export function CommitmentRow({
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          {newCount > 0 ? (
+            <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              {newCount} New
+            </span>
+          ) : null}
           <button
             type="button"
             onClick={() => setWithdrawOpen(true)}
