@@ -188,6 +188,26 @@ export function CommitModal({
         </p>
       </div>
 
+      <div className="mt-4 border-[3px] border-black bg-white p-4">
+        <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
+          Things to know
+        </div>
+        <p className="text-sm font-medium text-gray-800 leading-relaxed">
+          Your principal stays withdrawable, but it&rsquo;s not insured. We park USDC
+          in audited lending protocols (Kamino in v0.5) — they earn the interest
+          that funds Kommit. If those protocols fail, principal can be at risk.{" "}
+          <a
+            href="https://github.com/lamentierschweinchen/kommit/blob/main/RISK.md"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-bold text-primary underline decoration-2 underline-offset-2 hover:bg-primary hover:text-white"
+          >
+            Read the risk surfaces
+          </a>{" "}
+          before you commit.
+        </p>
+      </div>
+
       <div className="mt-5">
         <button
           type="button"

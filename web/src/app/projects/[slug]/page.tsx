@@ -6,6 +6,7 @@ import { UpdatesList } from "@/components/project/UpdatesList";
 import { KommittersList } from "@/components/project/KommittersList";
 import { UserPositionCard } from "@/components/project/UserPositionCard";
 import { RecentUpdatesMini } from "@/components/project/RecentUpdatesMini";
+import { RoadmapCard } from "@/components/project/RoadmapCard";
 import { getProject, projectImageUrl, type Project } from "@/lib/data/projects";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD, formatNumber } from "@/lib/kommit-math";
@@ -110,6 +111,13 @@ export default async function ProjectDetailPage({
                   Showing 7 of {project.kommittersCount}
                 </p>
               ) : null}
+            </section>
+
+            <section>
+              <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+                What&rsquo;s next
+              </h2>
+              <RoadmapCard />
             </section>
           </div>
 

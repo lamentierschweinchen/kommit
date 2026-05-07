@@ -7,7 +7,8 @@ import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { shortDate } from "@/lib/date-utils";
+import { daysBetween, shortDate } from "@/lib/date-utils";
+import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import type { Project } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
 
@@ -87,20 +88,7 @@ export function PositionCard({
           Your position
         </div>
         {variant === "active" && committedUSD && sinceISO ? (
-          <>
-            <div className="font-epilogue font-black text-5xl md:text-6xl tracking-tighter">
-              {formatUSD(committedUSD)}
-              <span className="text-gray-400 text-xl ml-2">committed</span>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-5">
-              <span className="bg-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
-                Active since {shortDate(sinceISO)}
-              </span>
-              <span className="bg-primary text-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
-                {formatNumber(kommitsFor(committedUSD, sinceISO))} kommits
-              </span>
-            </div>
-          </>
+          <ActivePositionDisplay committedUSD={committedUSD} sinceISO={sinceISO} />
         ) : project.kommittersCount === 0 ? (
           <>
             <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
@@ -167,6 +155,51 @@ export function PositionCard({
         onOpenChange={setSignInOpen}
         title={`Sign in to back ${project.name}`}
       />
+    </>
+  );
+}
+
+/**
+ * Active-position display block. Pulled into its own component so the
+ * `useLiveKommits` hook runs unconditionally — React hooks can't sit inside
+ * a conditional branch in the parent.
+ */
+function ActivePositionDisplay({
+  committedUSD,
+  sinceISO,
+}: {
+  committedUSD: number;
+  sinceISO: string;
+}) {
+  const liveKommits = useLiveKommits(committedUSD, sinceISO);
+  const days = daysBetween(sinceISO);
+  // Until the visibility-effect mounts and triggers the first tick, show the
+  // SSR-pinned demo number so the chip never blanks (formatLiveKommits(0) on
+  // first paint would read as "0.00 kommits" for an active position).
+  const display = liveKommits > 0
+    ? formatLiveKommits(liveKommits)
+    : formatNumber(kommitsFor(committedUSD, sinceISO));
+
+  return (
+    <>
+      <div className="font-epilogue font-black text-5xl md:text-6xl tracking-tighter">
+        {formatUSD(committedUSD)}
+        <span className="text-gray-400 text-xl ml-2">committed</span>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-5">
+        <span className="bg-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
+          Active since {shortDate(sinceISO)}
+        </span>
+        <span
+          className="bg-primary text-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight tabular-nums"
+          aria-live="polite"
+        >
+          {display} kommits
+        </span>
+      </div>
+      <div className="mt-3 font-epilogue font-medium text-xs text-gray-500 tracking-tight">
+        {formatUSD(committedUSD)} × {days} {days === 1 ? "day" : "days"}
+      </div>
     </>
   );
 }

@@ -113,11 +113,14 @@ The off-chain data layer is in `app/web/src/app/api/webhook/helius/route.ts` (in
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0001_initial_schema.sql
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0002_event_identity.sql
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0003_explicit_function_privs.sql
+   psql "$SUPABASE_DB_URL" -f migrations/supabase/0004_founder_updates_engagement.sql
    ```
 
    0002 adds per-event identity columns (`instruction_index`, `event_index`) and the transactional `process_event` SQL function — required for the QA-fixed indexer (C3 + C4) to work; without it the webhook hits a missing function and returns 500 for every delivery.
 
    0003 locks `process_event` and the `_mat_*` materialize helpers to `service_role`-only EXECUTE (Codex Layer-9 finding M3, 2026-05-07). Anon / authenticated PostgREST callers can no longer hit `/rpc/process_event`. The webhook handler keeps working unchanged because it uses the Supabase admin client whose JWT carries `role=service_role`.
+
+   0004 adds `project_updates` + `update_reactions` + `update_comments` for the founder updates / reactions / comments retention loop (handoff 34 § P1.4, 2026-05-07). Read by anon (RLS allows select on `not hidden` rows); writes are service-role-only and routed through `/api/founder/updates`, `/api/updates/[id]/reactions`, `/api/updates/[id]/comments`. Sybil defense — only kommitters of the parent project can react/comment — is enforced in those API routes against the `commitments` table, not in RLS.
 
    (Alternative: paste into the Supabase SQL editor in order.)
 
