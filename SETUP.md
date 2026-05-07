@@ -112,9 +112,12 @@ The off-chain data layer is in `app/web/src/app/api/webhook/helius/route.ts` (in
    ```bash
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0001_initial_schema.sql
    psql "$SUPABASE_DB_URL" -f migrations/supabase/0002_event_identity.sql
+   psql "$SUPABASE_DB_URL" -f migrations/supabase/0003_explicit_function_privs.sql
    ```
 
    0002 adds per-event identity columns (`instruction_index`, `event_index`) and the transactional `process_event` SQL function — required for the QA-fixed indexer (C3 + C4) to work; without it the webhook hits a missing function and returns 500 for every delivery.
+
+   0003 locks `process_event` and the `_mat_*` materialize helpers to `service_role`-only EXECUTE (Codex Layer-9 finding M3, 2026-05-07). Anon / authenticated PostgREST callers can no longer hit `/rpc/process_event`. The webhook handler keeps working unchanged because it uses the Supabase admin client whose JWT carries `role=service_role`.
 
    (Alternative: paste into the Supabase SQL editor in order.)
 
