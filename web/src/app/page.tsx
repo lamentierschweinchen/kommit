@@ -223,30 +223,17 @@ export default function LandingPage() {
               Email or Google. We create an account for you in the background. Your money stays yours.
             </FAQItem>
             <FAQItem question="Where does my money actually go?">
-              Into an audited financial market that earns interest. Your money stays yours — withdraw
-              anytime. The interest funds the platform sustainably, which means no fees on you or
-              the teams you back.
-            </FAQItem>
-            <FAQItem question='What does "principal-protected" actually mean?'>
-              <p>
-                Your USDC stays withdrawable — any time, in full. We park it in audited lending
-                protocols (Kamino in v0.5); those protocols pay interest, which funds Kommit.
-              </p>
-              <p>
-                Principal-protected means we don&apos;t take fees from your deposit and don&apos;t
-                lock you in. It doesn&apos;t mean insured: if a lending protocol fails, principal
-                can be at risk. We name every protocol we use and document the risk surfaces
-                openly —{" "}
-                <a
-                  href="https://github.com/lamentierschweinchen/kommit/blob/main/RISK.md"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="font-bold text-primary underline decoration-2 underline-offset-2 hover:bg-primary hover:text-white"
-                >
-                  read RISK.md
-                </a>
-                .
-              </p>
+              Into audited yield protocols (currently Kamino). The interest funds the platform — no
+              fees on you or founders. Withdraw anytime.{" "}
+              <a
+                href="https://github.com/lamentierschweinchen/kommit/blob/main/RISK.md"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-bold text-primary underline decoration-2 underline-offset-2 hover:bg-primary hover:text-white"
+              >
+                Read how we handle funds and risks
+              </a>
+              .
             </FAQItem>
           </div>
         </section>
