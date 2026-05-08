@@ -1,5 +1,5 @@
 /**
- * @kommit/reader — open-source TypeScript SDK for reading Kommit conviction
+ * @kommitapp/reader — open-source TypeScript SDK for reading Kommit conviction
  * records on Solana.
  *
  * Public API:

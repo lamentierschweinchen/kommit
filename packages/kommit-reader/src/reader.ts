@@ -12,7 +12,7 @@
  * Reads are signing-free: the SDK constructs an `AnchorProvider` with a
  * dummy wallet whose `signTransaction` throws. If you accidentally try to
  * mutate state via this Program instance, you'll see the error
- * `read-only — @kommit/reader does not sign transactions`.
+ * `read-only — @kommitapp/reader does not sign transactions`.
  *
  * Bring your own RPC URL — Helius, Triton, Solana Labs public endpoints
  * (devnet `https://api.devnet.solana.com`), or any other JSON-RPC node.
@@ -34,15 +34,15 @@ import type { KommitRecord } from "./types";
  * sign anything. Any attempt to send a transaction through it throws.
  */
 export function getReadProgram(rpcUrl: string): Program<Kommit> {
-  if (!rpcUrl) throw new Error("@kommit/reader: rpcUrl is required");
+  if (!rpcUrl) throw new Error("@kommitapp/reader: rpcUrl is required");
   const connection = new Connection(rpcUrl, "confirmed");
   const dummyWallet = {
     publicKey: PublicKey.default,
     signTransaction: async () => {
-      throw new Error("read-only — @kommit/reader does not sign transactions");
+      throw new Error("read-only — @kommitapp/reader does not sign transactions");
     },
     signAllTransactions: async () => {
-      throw new Error("read-only — @kommit/reader does not sign transactions");
+      throw new Error("read-only — @kommitapp/reader does not sign transactions");
     },
   } as unknown as Wallet;
   const provider = new AnchorProvider(
@@ -95,7 +95,7 @@ export async function getKommitsForWallet(
  *                   if you have the recipient wallet but not the PDA.
  *
  * @example
- * import { findProjectPda, getKommittersForProject } from "@kommit/reader";
+ * import { findProjectPda, getKommittersForProject } from "@kommitapp/reader";
  * import { PublicKey } from "@solana/web3.js";
  *
  * const project = findProjectPda(new PublicKey(recipientWallet));

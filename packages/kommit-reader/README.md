@@ -1,4 +1,4 @@
-# `@kommit/reader`
+# `@kommitapp/reader`
 
 **An open-source TypeScript SDK for reading Kommit conviction records on Solana.** ~10 lines to integrate; no auth, no API key, no rate limit. MIT-licensed.
 
@@ -12,7 +12,7 @@ Every Kommit user has a public, soulbound, capital-weighted conviction history (
 ## Install
 
 ```bash
-npm install @kommit/reader @solana/web3.js
+npm install @kommitapp/reader @solana/web3.js
 ```
 
 Peer with `@coral-xyz/anchor@0.31.x` if you don't already have it:
@@ -24,7 +24,7 @@ npm install @coral-xyz/anchor@^0.31.1
 ## Example — read a wallet's conviction record
 
 ```ts
-import { getKommitsForWallet } from "@kommit/reader";
+import { getKommitsForWallet } from "@kommitapp/reader";
 
 const RPC = "https://api.devnet.solana.com";
 const wallet = "5x9Lk...kT2"; // any Solana wallet address
@@ -45,7 +45,7 @@ That's it. Replace `RPC` with your favorite RPC provider (Helius, Triton, etc.) 
 ## Example — read a project's cohort
 
 ```ts
-import { findProjectPda, getKommittersForProject } from "@kommit/reader";
+import { findProjectPda, getKommittersForProject } from "@kommitapp/reader";
 import { PublicKey } from "@solana/web3.js";
 
 const RPC = "https://api.devnet.solana.com";

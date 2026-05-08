@@ -1,5 +1,5 @@
 /**
- * Smoke test for `@kommit/reader`.
+ * Smoke test for `@kommitapp/reader`.
  *
  * Runs against the live devnet deployment (program
  * `GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3`). Verifies:
@@ -42,7 +42,7 @@ const pass = (msg: string) => {
 };
 
 async function run() {
-  console.log(`@kommit/reader smoke — RPC: ${RPC}`);
+  console.log(`@kommitapp/reader smoke — RPC: ${RPC}`);
   console.log(`program: ${KOMMIT_PROGRAM_ID.toBase58()}`);
   console.log("");
 

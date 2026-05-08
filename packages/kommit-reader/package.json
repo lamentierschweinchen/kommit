@@ -1,5 +1,5 @@
 {
-  "name": "@kommit/reader",
+  "name": "@kommitapp/reader",
   "version": "0.1.0",
   "description": "Open-source TypeScript SDK for reading Kommit conviction records on Solana — capital × time, soulbound, public.",
   "license": "MIT",

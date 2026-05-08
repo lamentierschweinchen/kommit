@@ -1,5 +1,5 @@
 /**
- * Public types for `@kommit/reader`.
+ * Public types for `@kommitapp/reader`.
  *
  * `KommitRecord` is the SDK-shaped projection of the on-chain `Commitment`
  * account — flat, integrators-friendly, all big numbers already coerced to

@@ -18,21 +18,21 @@ import { findProjectPda } from "@/lib/kommit";
 import { PublicKey } from "@solana/web3.js";
 import type { RemoteUpdate } from "@/lib/api-types";
 // kommit.now is the first integrator of its own public on-chain reader.
-// `@kommit/reader` is open-source (MIT) and `npm install`-able by any Solana
+// `@kommitapp/reader` is open-source (MIT) and `npm install`-able by any Solana
 // product that wants to gate features on real conviction. The cohort surface
 // below reads through `getKommittersForProject` exactly as the SDK README
 // documents — no internal shortcut, no internal-only field. If you're
 // reading this trying to understand the integration story, the SDK call is
 // at the bottom of `OnChainCohortSection` in this file.
 //
-//   npm install @kommit/reader
-//   import { getKommittersForProject } from "@kommit/reader";
+//   npm install @kommitapp/reader
+//   import { getKommittersForProject } from "@kommitapp/reader";
 //
 // Source: app/packages/kommit-reader/. Full README at the package root.
 import {
   getKommittersForProject,
   type KommitRecord,
-} from "@kommit/reader";
+} from "@kommitapp/reader";
 
 type SortKey = "recent" | "kommitted" | "kommits";
 
@@ -319,9 +319,9 @@ function FounderStat({
  * "On-chain cohort (live)" — the SDK consumer surface.
  *
  * Reads the project's full kommitter list directly from devnet via the
- * `@kommit/reader` open-source SDK. THIS surface is the production proof
+ * `@kommitapp/reader` open-source SDK. THIS surface is the production proof
  * that kommit.now is the first consumer of its own public reader: any
- * Solana product can `npm install @kommit/reader` and pull the same data
+ * Solana product can `npm install @kommitapp/reader` and pull the same data
  * the same way. The call site is plain — see the `useEffect` below.
  *
  * Behavior:
@@ -348,7 +348,7 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
     const rpcUrl =
       process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? "https://api.devnet.solana.com";
     // ↓↓↓ The integration call. Identical to what an external integrator
-    //     would write after `npm install @kommit/reader`. No private API,
+    //     would write after `npm install @kommitapp/reader`. No private API,
     //     no service-role key, no internal shortcut.
     getKommittersForProject(rpcUrl, projectPda)
       .then((r) => {
@@ -376,9 +376,9 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
         </h2>
         <span
           className="inline-flex items-center gap-2 bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2.5 py-1.5 border-[2px] border-black"
-          title="Reads through @kommit/reader on every render — open-source, MIT, npm-installable. See the source comment in this component."
+          title="Reads through @kommitapp/reader on every render — open-source, MIT, npm-installable. See the source comment in this component."
         >
-          via @kommit/reader
+          via @kommitapp/reader
         </span>
       </div>
       <p className="mb-6 font-epilogue font-medium text-sm text-gray-600 max-w-2xl">
@@ -390,7 +390,7 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
           rel="noreferrer"
           className="underline underline-offset-2 hover:text-black"
         >
-          @kommit/reader
+          @kommitapp/reader
         </a>{" "}
         SDK. Any Solana product can `npm install` it and read the same cohort
         the same way — gating discounts, beta access, allocation priority on
