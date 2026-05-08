@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { AuthGate } from "@/components/auth/AuthGate";
@@ -17,6 +17,22 @@ import { Icon, type IconName } from "@/components/common/Icon";
 import { findProjectPda } from "@/lib/kommit";
 import { PublicKey } from "@solana/web3.js";
 import type { RemoteUpdate } from "@/lib/api-types";
+// kommit.now is the first integrator of its own public on-chain reader.
+// `@kommit/reader` is open-source (MIT) and `npm install`-able by any Solana
+// product that wants to gate features on real conviction. The cohort surface
+// below reads through `getKommittersForProject` exactly as the SDK README
+// documents — no internal shortcut, no internal-only field. If you're
+// reading this trying to understand the integration story, the SDK call is
+// at the bottom of `OnChainCohortSection` in this file.
+//
+//   npm install @kommit/reader
+//   import { getKommittersForProject } from "@kommit/reader";
+//
+// Source: app/packages/kommit-reader/. Full README at the package root.
+import {
+  getKommittersForProject,
+  type KommitRecord,
+} from "@kommit/reader";
 
 type SortKey = "recent" | "kommitted" | "kommits";
 
@@ -205,6 +221,8 @@ export function FounderDashboardClient({ project }: { project: Project }) {
             )}
           </section>
 
+          <OnChainCohortSection projectPda={projectPda} />
+
           <YourCohortSection />
           </div>
           </AuthGate>
@@ -293,6 +311,182 @@ function FounderStat({
           {hint}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * "On-chain cohort (live)" — the SDK consumer surface.
+ *
+ * Reads the project's full kommitter list directly from devnet via the
+ * `@kommit/reader` open-source SDK. THIS surface is the production proof
+ * that kommit.now is the first consumer of its own public reader: any
+ * Solana product can `npm install @kommit/reader` and pull the same data
+ * the same way. The call site is plain — see the `useEffect` below.
+ *
+ * Behavior:
+ *   - In real auth mode: hits devnet RPC via the SDK and renders the cohort
+ *     ranked by lifetime kommits descending (the SDK sorts internally).
+ *   - In demo mode: still fires the SDK call but the persona project PDAs
+ *     usually have no on-chain rows yet, so the empty state is normal. The
+ *     mock-fed `#kommitters` section above is the demo storyteller; this
+ *     section is the integration story.
+ *   - Empty state explains the situation rather than hiding — composability
+ *     is the claim, the empty cohort is just "no commits flowed yet on
+ *     devnet."
+ */
+function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
+  const [records, setRecords] = useState<KommitRecord[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!projectPda) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const rpcUrl =
+      process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? "https://api.devnet.solana.com";
+    // ↓↓↓ The integration call. Identical to what an external integrator
+    //     would write after `npm install @kommit/reader`. No private API,
+    //     no service-role key, no internal shortcut.
+    getKommittersForProject(rpcUrl, projectPda)
+      .then((r) => {
+        if (!cancelled) setRecords(r);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPda]);
+
+  return (
+    <section
+      id="on-chain-cohort"
+      className="mt-20 pt-10 border-t-[8px] border-black"
+    >
+      <div className="flex items-end justify-between flex-wrap gap-4 mb-3">
+        <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+          On-chain cohort
+        </h2>
+        <span
+          className="inline-flex items-center gap-2 bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2.5 py-1.5 border-[2px] border-black"
+          title="Reads through @kommit/reader on every render — open-source, MIT, npm-installable. See the source comment in this component."
+        >
+          via @kommit/reader
+        </span>
+      </div>
+      <p className="mb-6 font-epilogue font-medium text-sm text-gray-600 max-w-2xl">
+        Live read of every kommitter on this project, fetched from devnet
+        through the open-source{" "}
+        <a
+          href="https://github.com/lamentierschweinchen/kommit/tree/main/app/packages/kommit-reader"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2 hover:text-black"
+        >
+          @kommit/reader
+        </a>{" "}
+        SDK. Any Solana product can `npm install` it and read the same cohort
+        the same way — gating discounts, beta access, allocation priority on
+        real on-chain conviction instead of token bags.
+      </p>
+
+      {!projectPda ? (
+        <OnChainCohortNotice
+          title="Project not yet on-chain"
+          body="This project's recipient wallet hasn't been published on devnet — once it does, the cohort will flow in here automatically."
+        />
+      ) : loading ? (
+        <OnChainCohortNotice
+          title="Reading devnet…"
+          body={`Calling getKommittersForProject(rpcUrl, "${projectPda.slice(0, 8)}…${projectPda.slice(-4)}")`}
+        />
+      ) : error ? (
+        <OnChainCohortNotice
+          title="Read failed"
+          body={`SDK error: ${error}. Empty cohort doesn't crash — the SDK returns Promise<KommitRecord[]>; this is a hard error.`}
+          tone="warn"
+        />
+      ) : records && records.length > 0 ? (
+        <OnChainCohortTable records={records} />
+      ) : (
+        <OnChainCohortNotice
+          title="No on-chain kommits yet"
+          body={`The SDK returned an empty array. Cohort populates as commits flow in on devnet (program ${"GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3".slice(0, 8)}…). The seed cohort above is mock data for demo purposes; this section is the real reader.`}
+        />
+      )}
+    </section>
+  );
+}
+
+function OnChainCohortNotice({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone?: "warn";
+}) {
+  return (
+    <div
+      className={cn(
+        "border-[3px] border-black p-6 max-w-3xl",
+        tone === "warn" ? "bg-secondary" : "bg-white",
+      )}
+    >
+      <h3 className="font-epilogue font-black uppercase text-base md:text-lg tracking-tight">
+        {title}
+      </h3>
+      <p className="mt-2 font-medium text-sm text-gray-700 leading-relaxed">
+        {body}
+      </p>
+    </div>
+  );
+}
+
+function OnChainCohortTable({ records }: { records: KommitRecord[] }) {
+  return (
+    <div className="space-y-3">
+      {records.map((r) => (
+        <article
+          key={r.commitmentPda}
+          className="bg-white border-[3px] border-black shadow-brutal p-5 grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_auto] gap-4 items-center"
+        >
+          <div className="min-w-0">
+            <div className="font-mono font-bold text-sm tracking-tight truncate">
+              {`${r.user.slice(0, 6)}…${r.user.slice(-4)}`}
+            </div>
+            <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest mt-0.5">
+              Backed since{" "}
+              {r.depositTs > 0
+                ? shortDate(new Date(r.depositTs * 1000).toISOString())
+                : "—"}
+            </div>
+          </div>
+          <div className="font-epilogue font-bold text-sm uppercase tracking-tight">
+            <span className="text-gray-500">Active</span>{" "}
+            <span className="font-black text-base">
+              {formatUSD(Number(r.principal) / 1_000_000)}
+            </span>
+          </div>
+          <div className="font-epilogue font-bold text-sm uppercase tracking-tight">
+            <span className="text-gray-500">Lifetime</span>{" "}
+            <span className="font-black text-base">
+              {formatNumber(Number(r.lifetimeScore / 1_000_000n))}
+            </span>
+          </div>
+          <span className="bg-primary text-white px-3 py-1.5 border-[2px] border-black uppercase text-xs font-epilogue font-black tracking-tight inline-flex max-w-fit">
+            {formatNumber(Number(r.lifetimeScore / 1_000_000n))} kommits
+          </span>
+        </article>
+      ))}
     </div>
   );
 }
