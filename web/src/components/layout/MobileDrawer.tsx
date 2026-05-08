@@ -18,9 +18,8 @@ const PUBLIC_ITEMS: Item[] = [
 ];
 
 const KOMMITTER_ITEMS: Item[] = [
-  { href: "/dashboard", label: "Overview", icon: "grid_view" },
-  { href: "/projects", label: "New kommit", icon: "add_circle" },
   { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
+  { href: "/projects", label: "Browse projects", icon: "explore" },
   { href: "/account", label: "Account", icon: "settings" },
 ];
 

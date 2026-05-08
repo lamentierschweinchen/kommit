@@ -62,3 +62,47 @@ export function formatLiveKommits(n: number): string {
     maximumFractionDigits: 2,
   });
 }
+
+/**
+ * Live-ticking SUM across many positions (dashboard top stat). One timer for
+ * the whole list — calling `useLiveKommits` in a `.map` would either violate
+ * rules-of-hooks (variable-length list) or burn N timers.
+ */
+export function useLiveKommitsTotal(
+  positions: Array<{ kommittedUSD: number; sinceISO: string }>,
+): number {
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const tick = () => setNow(Date.now());
+    const start = () => {
+      if (timer != null) return;
+      tick();
+      timer = setInterval(tick, 1000);
+    };
+    const stop = () => {
+      if (timer != null) {
+        clearInterval(timer);
+        timer = undefined;
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") start();
+      else stop();
+    };
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
+
+  let sum = 0;
+  for (const p of positions) {
+    const sinceMs = parseISODate(p.sinceISO).getTime();
+    const days = Math.max(0, (now - sinceMs) / 86_400_000);
+    sum += p.kommittedUSD * days;
+  }
+  return sum;
+}

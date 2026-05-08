@@ -1,23 +1,24 @@
 "use client";
 
 /**
- * Auth provider — switches between two implementations at module load.
+ * Auth provider — switches between two implementations based on demo mode.
  *
- *   NEXT_PUBLIC_MOCK_AUTH=1   → MockAuthProvider (USERS-keyed, ?as= query,
- *                               DemoControls switchUser actually mutates state)
- *   else (default)            → RealAuthProvider (Privy embedded Solana wallet)
+ *   demo mode (env NEXT_PUBLIC_KOMMIT_DEMO=1 or localStorage:kommit:demo=1)
+ *                              → MockAuthProvider (USERS-keyed, ?as= query,
+ *                                DemoControls switchUser actually mutates state)
+ *   else (production default)  → RealAuthProvider (Privy embedded Solana wallet)
  *
  * Both implementations expose the same `AuthState` API (`{ user, role,
  * isSignedIn, signIn, signOut, switchRole, switchUser }`) so consumers
  * compile unchanged.
  *
- * Mock mode exists to let reviewers QA the authed surfaces (dashboard,
- * account, founder console) without burning real email accounts. It must
- * never ship to production: the gate is set in `.env.local` for local dev
- * and is intentionally absent on Vercel. Per Codex H2, the DemoControls
- * widget is also gated by `NODE_ENV !== "production"` at the layout mount
- * site so even an accidental flip can't expose persona switching to real
- * users.
+ * The demo gate is the single canonical signal — any place that branches on
+ * "is mock auth active" should read `useDemoMode()` (React) or
+ * `isDemoMode()` (non-React). Same-site coexistence on kommit.now: real
+ * Privy users never set the localStorage flag, so they always see Real;
+ * demo visitors hit /demo to activate, then the rest of the app renders
+ * MockAuthProvider for them. Production builds without the flag set never
+ * surface persona-switcher UI.
  *
  * Privy hooks (real path) only work inside <PrivyProvider>; that wrapper
  * still mounts in mock mode but goes unused. SSR-safe via `"use client"`.
@@ -35,6 +36,7 @@ import {
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { USERS, type Role, type User } from "@/lib/data/users";
+import { getStoredPersonaId, setStoredPersonaId, useDemoMode } from "@/lib/demo-mode";
 
 type AuthState = {
   user: User | null;
@@ -48,12 +50,13 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-const MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === "1";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Compile-time constant — Next inlines `process.env.NEXT_PUBLIC_*` at
-  // build, so React's rules-of-hooks aren't violated within a single build.
-  return MOCK_AUTH ? (
+  // Runtime gate — env var is build-time inlined; localStorage is read
+  // client-side after mount. SSR + first-paint always run RealAuthProvider
+  // for non-env demo activations (a brief flash before localStorage flips
+  // the tree on the production demo path; acceptable for the demo flow).
+  const isDemo = useDemoMode();
+  return isDemo ? (
     <MockAuthProvider>{children}</MockAuthProvider>
   ) : (
     <RealAuthProvider>{children}</RealAuthProvider>
@@ -149,19 +152,29 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(DEFAULT_MOCK_USER_ID);
   const [activeRole, setActiveRole] = useState<Role>("kommitter");
 
-  // Hydrate from `?as=` on mount so reviewers can deep-link directly into a
-  // persona. Only meaningful in mock mode; the real provider ignores it.
+  // Hydrate from `?as=` query (deep links) OR localStorage (set by the
+  // /demo entry page or by switchUser → setStoredPersonaId). Query wins
+  // when both are present so `?as=julian` always overrides a saved Lukas.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const as = params.get("as");
     if (as === "anon") {
       setUserId(null);
+      setStoredPersonaId(null);
       return;
     }
     if (as && USERS[as]) {
       setUserId(as);
       const u = USERS[as];
+      setActiveRole(u.role === "founder" ? "founder" : "kommitter");
+      setStoredPersonaId(as);
+      return;
+    }
+    const stored = getStoredPersonaId();
+    if (stored && USERS[stored]) {
+      setUserId(stored);
+      const u = USERS[stored];
       setActiveRole(u.role === "founder" ? "founder" : "kommitter");
     }
   }, []);
@@ -172,11 +185,13 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
     setUserId(asUserId);
     const u = USERS[asUserId];
     if (u) setActiveRole(u.role === "founder" ? "founder" : "kommitter");
+    setStoredPersonaId(asUserId);
   }, []);
 
   const signOut = useCallback(() => {
     setUserId(null);
     setActiveRole("anon");
+    setStoredPersonaId(null);
   }, []);
 
   const switchRole = useCallback((role: Role) => setActiveRole(role), []);
@@ -185,6 +200,7 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
     if (USERS[id]) {
       setUserId(id);
       setActiveRole(USERS[id].role === "founder" ? "founder" : "kommitter");
+      setStoredPersonaId(id);
     }
   }, []);
 

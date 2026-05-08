@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import { authedFetch } from "@/lib/api-client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
+import { SignInModal } from "@/components/auth/SignInModal";
 import { REACTION_TOKENS, type ReactionToken } from "@/lib/api-types";
 
 const TOKEN_LABEL: Record<ReactionToken, string> = {
@@ -89,14 +90,23 @@ export function UpdateReactions({
   canReact: boolean;
   disabledReason?: string;
 }) {
-  const { user } = useAuth();
+  const { user, isSignedIn } = useAuth();
   const { error } = useToast();
   const [counts, setCounts] = useState<Record<string, number>>(initialCounts);
   const [mine, setMine] = useState<Set<ReactionToken>>(initialMine);
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const [signInOpen, setSignInOpen] = useState(false);
 
   async function toggle(token: ReactionToken) {
-    if (!canReact || pending.has(token)) return;
+    if (pending.has(token)) return;
+    // H1 — anon clicks fire SignIn instead of a no-op tooltip. Signed-in
+    // non-kommitters fall through to canReact gating + the existing tooltip
+    // ("Kommit to react.").
+    if (!isSignedIn) {
+      setSignInOpen(true);
+      return;
+    }
+    if (!canReact) return;
     const wasActive = mine.has(token);
     const nextMine = new Set(mine);
     if (wasActive) nextMine.delete(token);
@@ -144,40 +154,51 @@ export function UpdateReactions({
     }
   }
 
+  // Signed-in non-kommitter → disabled with tooltip. Anon → fully clickable
+  // (the click opens SignIn). The visual state mirrors disabled when canReact
+  // is false even for anon, so the cue is "needs auth+kommit" not "missing
+  // permission" — the click then opens SignIn for anon, no-op for non-kmtr.
+  const visuallyDisabled = !canReact;
+  const blocksClick = isSignedIn && !canReact;
+
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {REACTION_TOKENS.map((token) => {
-        const active = mine.has(token);
-        const count = counts[token] ?? 0;
-        return (
-          <button
-            key={token}
-            type="button"
-            disabled={!canReact}
-            title={!canReact ? disabledReason : undefined}
-            onClick={() => toggle(token)}
-            className={cn(
-              "relative inline-flex items-center gap-2 px-3 py-2 border-[3px] border-black font-epilogue font-black uppercase text-[11px] tracking-widest transition-transform select-none",
-              active
-                ? "bg-black text-white shadow-brutal-sm"
-                : "bg-white text-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px]",
-              !canReact && "opacity-50 cursor-not-allowed",
-            )}
-          >
-            <TokenGlyph token={token} active={active} />
-            <span>{TOKEN_LABEL[token]}</span>
-            <span
+    <>
+      <div className="flex items-center gap-2 flex-wrap">
+        {REACTION_TOKENS.map((token) => {
+          const active = mine.has(token);
+          const count = counts[token] ?? 0;
+          return (
+            <button
+              key={token}
+              type="button"
+              disabled={blocksClick}
+              title={visuallyDisabled ? disabledReason : undefined}
+              onClick={() => toggle(token)}
               className={cn(
-                "ml-1 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1 border-[2px] border-black font-epilogue font-black text-[10px] tracking-tight",
-                active ? "bg-white text-black" : "bg-secondary text-black",
+                "relative inline-flex items-center gap-2 px-3 py-2 border-[3px] border-black font-epilogue font-black uppercase text-[11px] tracking-widest transition-transform select-none",
+                active
+                  ? "bg-black text-white shadow-brutal-sm"
+                  : "bg-white text-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px]",
+                visuallyDisabled && "opacity-50",
+                blocksClick && "cursor-not-allowed",
               )}
             >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
+              <TokenGlyph token={token} active={active} />
+              <span>{TOKEN_LABEL[token]}</span>
+              <span
+                className={cn(
+                  "ml-1 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1 border-[2px] border-black font-epilogue font-black text-[10px] tracking-tight",
+                  active ? "bg-white text-black" : "bg-secondary text-black",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <SignInModal open={signInOpen} onOpenChange={setSignInOpen} />
+    </>
   );
 }
 

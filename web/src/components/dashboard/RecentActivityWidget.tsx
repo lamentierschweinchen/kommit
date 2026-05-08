@@ -8,6 +8,7 @@ import { getProject, type Project } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
 import type { RemoteUpdate } from "@/lib/api-types";
 import { relativeTime } from "@/lib/date-utils";
+import { authedFetch } from "@/lib/api-client";
 
 type Activity = {
   update: RemoteUpdate;
@@ -45,7 +46,7 @@ export function RecentActivityWidget({
       projects.map(async (project) => {
         try {
           const pda = findProjectPda(new PublicKey(project.recipientWallet!)).toBase58();
-          const r = await fetch(`/api/projects/${pda}/updates`);
+          const r = await authedFetch(`/api/projects/${pda}/updates`);
           if (!r.ok) return [] as Activity[];
           const j = (await r.json()) as { updates: RemoteUpdate[] };
           return j.updates.slice(0, limit).map((u) => ({ update: u, project }));

@@ -6,6 +6,8 @@ import { Modal } from "@/components/common/Modal";
 import { Icon } from "@/components/common/Icon";
 import { useToast } from "@/components/common/ToastProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDemoMode } from "@/lib/demo-mode";
+import { truncateAddress } from "@/lib/wallet-display";
 
 /**
  * Deposit / faucet UX (Pass 2 dispatch).
@@ -29,6 +31,7 @@ export function DepositModal({
 }) {
   const { user } = useAuth();
   const { confirm } = useToast();
+  const isDemo = useDemoMode();
   const [copied, setCopied] = useState(false);
 
   const wallet = user?.wallet ?? "";
@@ -45,6 +48,26 @@ export function DepositModal({
     }
   };
 
+  if (isDemo) {
+    return (
+      <Modal open={open} onOpenChange={onOpenChange} title="Demo cohort" shadow="default">
+        <p className="mt-4 text-base font-medium text-gray-800 leading-relaxed border-l-[4px] border-primary pl-4">
+          The demo cohort comes pre-funded — you can kommit and withdraw freely
+          while you walk the demo. The faucet flow ships on the live product.
+        </p>
+        <div className="mt-7">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
+          >
+            Got it
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="Get test funds" shadow="default">
       <p className="mt-4 text-base font-medium text-gray-800 leading-relaxed border-l-[4px] border-primary pl-4">
@@ -57,8 +80,11 @@ export function DepositModal({
           Your wallet
         </div>
         <div className="bg-gray-100 border-[3px] border-black p-4 flex items-center justify-between gap-3">
-          <code className="font-mono text-sm md:text-base text-black break-all min-w-0">
-            {wallet || "—"}
+          <code
+            className="font-mono text-sm md:text-base text-black min-w-0 truncate"
+            title={wallet || undefined}
+          >
+            {wallet ? truncateAddress(wallet) : "—"}
           </code>
           <button
             type="button"

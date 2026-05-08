@@ -168,9 +168,14 @@ function ProjectHero({ project }: { project: Project }) {
           >
             {project.sector}
           </span>
-          {project.state === "just-listed" ? (
+          {project.state === "just-listed" && project.recipientWallet ? (
             <span className="inline-block bg-secondary text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
               Just listed
+            </span>
+          ) : null}
+          {project.state === "just-listed" && !project.recipientWallet ? (
+            <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              Launching soon
             </span>
           ) : null}
         </div>

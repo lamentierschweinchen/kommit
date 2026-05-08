@@ -1,21 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { USERS } from "@/lib/data/users";
+import { USERS, avatarUrl } from "@/lib/data/users";
+import { useDemoMode, deactivateDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/cn";
 
 /**
- * Floating dev-only widget. Lets reviewers swap demo personas without UI digging.
- *
- * The whole component is gated behind `process.env.NODE_ENV !== "production"`
- * at the layout mount site (app/layout.tsx) — Codex H2. The real Privy-backed
- * AuthProvider intentionally ignores the legacy `?as=...` query param in
- * production; persona switching is dev-only.
+ * Floating persona-switcher for the demo deploy. Renders ONLY when demo
+ * mode is active (env flag locally, or localStorage flag on production
+ * after a visitor enters via /demo). Self-gating via useDemoMode keeps the
+ * widget out of the real-auth tree without the layout having to branch.
  */
 export function DemoControls() {
+  const isDemo = useDemoMode();
   const { user, role, switchUser, signOut, signIn } = useAuth();
   const [open, setOpen] = useState(false);
+
+  if (!isDemo) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-[90] print:hidden">
@@ -23,20 +26,36 @@ export function DemoControls() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "bg-black text-white border-[3px] border-black px-3 py-2 shadow-brutal-green",
+          "bg-black text-white border-[3px] border-black pl-2 pr-3 py-2 shadow-brutal-green",
           "font-epilogue font-black uppercase text-[10px] tracking-widest",
           "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform",
+          "flex items-center gap-2",
         )}
         aria-expanded={open}
+        aria-label={`Demo mode — ${user?.displayName ?? "Anon"} · ${role}`}
       >
-        DEMO · {user ? user.displayName.split(" ")[0] : "Anon"}{" "}
+        {user ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={avatarUrl(user.avatarSeed, 60)}
+            alt=""
+            className="w-6 h-6 border-[2px] border-secondary object-cover grayscale"
+          />
+        ) : (
+          <span className="w-6 h-6 border-[2px] border-secondary inline-flex items-center justify-center bg-white text-black text-[10px]">
+            ?
+          </span>
+        )}
+        <span>
+          DEMO · {user ? user.displayName.split(" ")[0] : "Anon"}
+        </span>
         <span className="text-secondary">
           ({role === "founder" ? "Founder" : role === "kommitter" ? "Kommitter" : "Out"})
         </span>
       </button>
 
       {open ? (
-        <div className="mt-2 w-64 bg-white border-[3px] border-black shadow-brutal p-3 space-y-2">
+        <div className="mt-2 w-72 bg-white border-[3px] border-black shadow-brutal p-3 space-y-2">
           <div className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 mb-1">
             Switch persona
           </div>
@@ -49,12 +68,20 @@ export function DemoControls() {
                 setOpen(false);
               }}
               className={cn(
-                "w-full text-left flex items-center justify-between gap-2 px-3 py-2 border-[2px] border-black",
+                "w-full text-left flex items-center gap-3 px-2 py-2 border-[2px] border-black",
                 "font-epilogue font-bold uppercase text-xs tracking-tight",
-                user?.id === u.id ? "bg-primary text-white" : "bg-white text-black hover:bg-gray-100",
+                user?.id === u.id
+                  ? "bg-primary text-white"
+                  : "bg-white text-black hover:bg-gray-100",
               )}
             >
-              <span>{u.displayName}</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl(u.avatarSeed, 60)}
+                alt=""
+                className="w-7 h-7 border-[2px] border-black object-cover grayscale shrink-0"
+              />
+              <span className="flex-1 truncate normal-case tracking-tight">{u.displayName}</span>
               <span className="text-[9px] tracking-widest opacity-80">
                 {u.role === "founder" ? "FNDR" : "KMTR"}
               </span>
@@ -80,6 +107,26 @@ export function DemoControls() {
           >
             Reset to Lukas
           </button>
+          <div className="pt-2 mt-2 border-t-[2px] border-black space-y-1">
+            <Link
+              href="/demo"
+              className="block text-center font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 hover:text-black"
+              onClick={() => setOpen(false)}
+            >
+              About this demo
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                deactivateDemoMode();
+                setOpen(false);
+                window.location.assign("/");
+              }}
+              className="w-full font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 hover:text-black"
+            >
+              Exit demo →
+            </button>
+          </div>
         </div>
       ) : null}
     </div>

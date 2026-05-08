@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
@@ -13,6 +14,9 @@ import { parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import type { Project } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
+import { useDemoMode } from "@/lib/demo-mode";
+import { getDemoBalance, simulateCommit } from "@/lib/demo-engagement";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 // USDC has 6 decimals on Solana. Mirror of `tx.ts:USDC_DECIMALS`; kept local
 // so this UI module doesn't reach into the tx layer just for the constant.
@@ -44,6 +48,22 @@ export function CommitModal({
   const [submitting, setSubmitting] = useState(false);
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
+  const isDemo = useDemoMode();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Available USDC balance — H3. Demo personas carry a localStorage-backed
+  // simulated balance; production reads on-chain (TODO once a balance hook
+  // lands). Show as a small line above the amount input.
+  const [availableUSD, setAvailableUSD] = useState<number | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    if (isDemo && user?.wallet) {
+      setAvailableUSD(getDemoBalance(user.wallet));
+    } else {
+      setAvailableUSD(null);
+    }
+  }, [open, isDemo, user?.wallet]);
 
   useEffect(() => {
     if (open) setRaw("100.00");
@@ -65,9 +85,16 @@ export function CommitModal({
   const displayUSD = parseFloat(raw) || 0;
 
   const isOnChain = !!project.recipientWallet;
-  const walletReady = !!client;
+  const walletReady = isDemo ? !!user?.wallet : !!client;
+  const overBalance =
+    isDemo && availableUSD !== null && displayUSD > availableUSD;
   const submitDisabled =
-    !isOnChain || !walletReady || parsedBaseUnits === 0n || !!validationError || submitting;
+    !isOnChain ||
+    !walletReady ||
+    parsedBaseUnits === 0n ||
+    !!validationError ||
+    overBalance ||
+    submitting;
 
   const submitHelp = !isOnChain
     ? "This project isn't open for kommitments yet."
@@ -75,21 +102,59 @@ export function CommitModal({
       ? "Sign in to kommit."
       : validationError && raw.trim().length > 0
         ? validationError
-        : null;
+        : overBalance
+          ? `Over your available balance of ${formatUSD(availableUSD ?? 0)}.`
+          : null;
 
   const handleSubmit = async () => {
+    // Demo mode — short-circuit to localStorage simulation, no network or
+    // signing call. Mirrors the engagement-loop demo intercept; keeps the
+    // commit/withdraw flow intact for visitors who don't have a real wallet.
+    if (isDemo) {
+      if (!user?.wallet || displayUSD <= 0) return;
+      setSubmitting(true);
+      // Brief simulated latency so the UI doesn't feel instant + uncanny.
+      await new Promise((r) => setTimeout(r, 350));
+      simulateCommit({
+        wallet: user.wallet,
+        projectSlug: project.slug,
+        principalUSD: displayUSD,
+      });
+      onOpenChange(false);
+      setSubmitting(false);
+      setTimeout(
+        () =>
+          confirm("Kommit confirmed.", `Backed ${project.name} with ${formatUSD(displayUSD)}.`, {
+            recoveryLabel: "View dashboard",
+            onRecover: () => router.push("/dashboard"),
+          }),
+        220,
+      );
+      onSuccess?.();
+      return;
+    }
+
     if (!client || !project.recipientWallet) return;
     setSubmitting(true);
     try {
       await commitToProject(client, new PublicKey(project.recipientWallet), raw);
       onOpenChange(false);
       setSubmitting(false);
-      setTimeout(() => confirm("Kommit confirmed."), 220);
+      setTimeout(
+        () =>
+          confirm("Kommit confirmed.", `Backed ${project.name} with ${formatUSD(displayUSD)}.`, {
+            recoveryLabel: "View dashboard",
+            onRecover: () => router.push("/dashboard"),
+          }),
+        220,
+      );
       onSuccess?.();
     } catch (e) {
+      // C2: never sign-out or hard-navigate on tx error. Stay on the page,
+      // surface the toast, let the user retry. The modal stays open so the
+      // user can correct + resubmit.
       setSubmitting(false);
       const mapped = mapAnchorError(e);
-      // Always log raw for debugging; never show it to the user.
       // eslint-disable-next-line no-console
       console.warn("commit failed:", e);
       if (mapped.kind === "user_cancel") return;
@@ -121,9 +186,16 @@ export function CommitModal({
       </div>
 
       <div className="mt-6">
-        <label className="block font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-          Amount
-        </label>
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <label className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
+            Amount
+          </label>
+          {availableUSD !== null ? (
+            <span className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
+              Available <span className="text-black">{formatUSD(availableUSD)}</span>
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-stretch border-[3px] border-black bg-white shadow-brutal focus-within:translate-x-[-2px] focus-within:translate-y-[-2px] focus-within:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] transition-all">
           <span className="px-4 flex items-center font-epilogue font-black text-3xl text-gray-400">
             $

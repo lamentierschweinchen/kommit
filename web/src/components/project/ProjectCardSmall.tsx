@@ -12,8 +12,17 @@ import { SECTOR_CHIP_CLASS } from "@/lib/data/sectors";
  * Tuned for ~280-380px column width (3 across in a single-column dashboard at md/lg).
  */
 export function ProjectCardSmall({ project }: { project: Project }) {
+  const isLaunchingSoon =
+    project.state === "just-listed" && !project.recipientWallet;
   return (
-    <Link href={`/projects/${project.slug}`} className="block group">
+    <Link href={`/projects/${project.slug}`} className="block group relative">
+      {isLaunchingSoon ? (
+        <div className="absolute -top-2 left-3 z-20">
+          <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-0.5 border-[2px] border-black shadow-brutal-sm">
+            Launching soon
+          </span>
+        </div>
+      ) : null}
       <article
         className={cn(
           "bg-white border-[3px] border-black shadow-brutal h-full transition-shadow duration-300",

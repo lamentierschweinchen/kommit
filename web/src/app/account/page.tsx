@@ -14,6 +14,7 @@ import { useToast } from "@/components/common/ToastProvider";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { GoogleGlyph } from "@/components/common/GoogleGlyph";
+import { truncateAddress } from "@/lib/wallet-display";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -93,7 +94,8 @@ export default function AccountPage() {
 
             <Row
               label="Wallet"
-              value={user?.wallet ?? "—"}
+              value={user?.wallet ? truncateAddress(user.wallet) : "—"}
+              valueTitle={user?.wallet}
               valueClass="font-mono"
               hint="Your account address. Your money lives here."
               actionLabel="Copy"
@@ -234,6 +236,7 @@ export default function AccountPage() {
 function Row({
   label,
   value,
+  valueTitle,
   hint,
   actionLabel,
   actionIcon,
@@ -242,6 +245,9 @@ function Row({
 }: {
   label: string;
   value: string;
+  /** Optional `title` attribute for the value — used to expose the full
+   *  address on hover when `value` is a truncated form. */
+  valueTitle?: string;
   hint?: string;
   actionLabel: string;
   actionIcon?: IconName;
@@ -259,6 +265,7 @@ function Row({
             "mt-1 font-epilogue font-black text-xl md:text-2xl tracking-tight break-all",
             valueClass,
           )}
+          title={valueTitle}
         >
           {value}
         </div>

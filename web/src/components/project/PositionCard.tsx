@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Tape } from "@/components/common/Tape";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
@@ -56,8 +55,6 @@ export function PositionCard({
   if (variant === "graduated" && graduatedRecord) {
     return (
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
-        <Tape color="black" size="md" rotation={12} className="absolute -top-3 -right-3" />
-        <Tape color="secondary" size="md" rotation={-12} className="absolute -bottom-3 -left-3" />
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your record
         </div>
@@ -81,9 +78,6 @@ export function PositionCard({
   return (
     <>
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
-        <Tape color="black" size="md" rotation={12} className="absolute -top-3 -right-3" />
-        <Tape color="secondary" size="md" rotation={-12} className="absolute -bottom-3 -left-3" />
-
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your position
         </div>
@@ -109,28 +103,41 @@ export function PositionCard({
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <button
-            type="button"
-            onClick={handleKommitClick}
-            className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
-          >
-            <Icon name="add" size="sm" />
-            Kommit
-          </button>
-          <button
-            type="button"
-            onClick={() => (isSignedIn ? setWithdrawOpen(true) : setSignInOpen(true))}
-            disabled={variant !== "active"}
-            // Pass-2 P1 #11: disabled visual demoted (no offset shadow, grey border,
-            // lower fill opacity). Stops the WITHDRAW button reading as pressable
-            // when the user has no position.
-            className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none disabled:border-gray-300"
-          >
-            <Icon name="remove" size="sm" />
-            Withdraw
-          </button>
-        </div>
+        {!project.recipientWallet ? (
+          <div className="mt-6 grid grid-cols-1 gap-3">
+            <button
+              type="button"
+              disabled
+              className="bg-secondary text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-90"
+            >
+              <Icon name="info" size="sm" />
+              Launching soon
+            </button>
+            <p className="text-center font-epilogue font-medium text-xs text-gray-600">
+              Kommitments open when {project.name} goes live.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mt-6">
+            <button
+              type="button"
+              onClick={handleKommitClick}
+              className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
+            >
+              <Icon name="add" size="sm" />
+              Kommit
+            </button>
+            <button
+              type="button"
+              onClick={() => (isSignedIn ? setWithdrawOpen(true) : setSignInOpen(true))}
+              disabled={variant !== "active"}
+              className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none disabled:border-gray-300"
+            >
+              <Icon name="remove" size="sm" />
+              Withdraw
+            </button>
+          </div>
+        )}
 
       </div>
 
@@ -145,6 +152,7 @@ export function PositionCard({
           open={withdrawOpen}
           onOpenChange={setWithdrawOpen}
           projectName={project.name}
+          projectSlug={project.slug}
           committedUSD={committedUSD}
           recipientWallet={project.recipientWallet}
           onSuccess={onTxSuccess}
@@ -172,34 +180,39 @@ function ActivePositionDisplay({
   sinceISO: string;
 }) {
   const liveKommits = useLiveKommits(committedUSD, sinceISO);
-  const days = daysBetween(sinceISO);
   // Until the visibility-effect mounts and triggers the first tick, show the
-  // SSR-pinned demo number so the chip never blanks (formatLiveKommits(0) on
-  // first paint would read as "0.00 kommits" for an active position).
+  // SSR-pinned demo number so the headline never reads "0.00".
   const display = liveKommits > 0
     ? formatLiveKommits(liveKommits)
     : formatNumber(kommitsFor(committedUSD, sinceISO));
 
   return (
     <>
-      <div className="font-epilogue font-black text-5xl md:text-6xl tracking-tighter">
-        {formatUSD(committedUSD)}
-        <span className="text-gray-400 text-xl ml-2">committed</span>
+      <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-1">
+        Your kommits
+      </div>
+      <div
+        className="font-epilogue font-black text-5xl md:text-6xl tracking-tighter tabular-nums"
+        aria-live="polite"
+      >
+        {display}
       </div>
       <div className="flex flex-wrap gap-2 mt-5">
         <span className="bg-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
           Active since {shortDate(sinceISO)}
         </span>
-        <span
-          className="bg-primary text-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight tabular-nums"
-          aria-live="polite"
-        >
-          {display} kommits
+        <span className="bg-primary text-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
+          {formatUSD(committedUSD)} currently committed
         </span>
       </div>
-      <div className="mt-3 font-epilogue font-medium text-xs text-gray-500 tracking-tight">
-        {formatUSD(committedUSD)} × {days} {days === 1 ? "day" : "days"}
-      </div>
+      <p className="mt-5 text-sm font-medium text-gray-700 leading-relaxed">
+        <span className="font-epilogue font-bold uppercase text-[11px] tracking-widest text-black">
+          How this number grows.
+        </span>{" "}
+        Every dollar committed accrues kommits over time (capital × time). Add
+        or withdraw and the rate adjusts. Your score never resets — it&rsquo;s
+        your verifiable record of conviction.
+      </p>
     </>
   );
 }

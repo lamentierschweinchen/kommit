@@ -56,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <ToastProvider>
               {children}
-              {process.env.NODE_ENV !== "production" ? <DemoControls /> : null}
+              {/* Self-gates via useDemoMode — renders only when the demo
+                  env flag or the localStorage flag set by /demo is on. */}
+              <DemoControls />
             </ToastProvider>
           </AuthProvider>
         </ProvidersMount>
