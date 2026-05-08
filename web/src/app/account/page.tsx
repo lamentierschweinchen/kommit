@@ -94,7 +94,7 @@ export default function AccountPage() {
 
             <Row
               label="Wallet"
-              value={user?.wallet ? truncateAddress(user.wallet, 6, 6) : "—"}
+              value={user?.wallet ? truncateAddress(user.wallet) : "—"}
               valueTitle={user?.wallet}
               valueClass="font-mono"
               hint="Your account address. Your money lives here."

@@ -62,7 +62,7 @@ export function DepositModal({
             className="font-mono text-sm md:text-base text-black min-w-0 truncate"
             title={wallet || undefined}
           >
-            {wallet ? truncateAddress(wallet, 6, 6) : "—"}
+            {wallet ? truncateAddress(wallet) : "—"}
           </code>
           <button
             type="button"

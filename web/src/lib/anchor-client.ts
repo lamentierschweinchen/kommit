@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { AnchorProvider, Program, type Idl, type Wallet } from "@coral-xyz/anchor";
 import { PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { useWallets, type ConnectedStandardSolanaWallet } from "@privy-io/react-auth/solana";
-import { useSolanaConnection } from "@/components/providers";
+import { SOLANA_CHAIN, useSolanaConnection } from "@/components/providers";
 import idl from "@/lib/idl/kommit.json";
 import { KOMMIT_PROGRAM_ID, type Kommit } from "@/lib/kommit";
 
@@ -40,7 +40,14 @@ function adaptWallet(privyWallet: ConnectedStandardSolanaWallet): Wallet {
       tx instanceof VersionedTransaction
         ? tx.serialize()
         : tx.serialize({ requireAllSignatures: false, verifySignatures: false });
-    const { signedTransaction } = await privyWallet.signTransaction({ transaction: bytes });
+    // Pass `chain` explicitly — Privy's standard-wallet signTransaction
+    // looks the chain up against `config.solana.rpcs`. Without it the SDK
+    // falls back to solana:mainnet, which we don't configure (devnet only
+    // for v0.1).
+    const { signedTransaction } = await privyWallet.signTransaction({
+      transaction: bytes,
+      chain: SOLANA_CHAIN,
+    });
     if (tx instanceof VersionedTransaction) {
       return VersionedTransaction.deserialize(signedTransaction) as T;
     }
