@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { USERS, avatarUrl } from "@/lib/data/users";
 import { useDemoMode, deactivateDemoMode } from "@/lib/demo-mode";
+import { useVisaMode } from "@/lib/visa-mode";
 import { cn } from "@/lib/cn";
 
 /**
@@ -15,10 +16,13 @@ import { cn } from "@/lib/cn";
  */
 export function DemoControls() {
   const isDemo = useDemoMode();
+  const isVisa = useVisaMode();
   const { user, role, switchUser, signOut, signIn } = useAuth();
   const [open, setOpen] = useState(false);
 
-  if (!isDemo) return null;
+  // Hide entirely in visa mode — the persona-switcher chrome would leak
+  // crypto vocabulary ("DEMO · Lukas · Kommitter") into the recorded flow.
+  if (!isDemo || isVisa) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-[90] print:hidden">

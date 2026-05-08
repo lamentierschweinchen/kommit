@@ -8,6 +8,7 @@ import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
 import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
+import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import type { Commitment } from "@/lib/data/commitments";
 import type { RemoteUpdate } from "@/lib/api-types";
 import { findProjectPda } from "@/lib/kommit";
@@ -63,6 +64,8 @@ export function CommitmentRow({
     liveKommits > 0
       ? formatLiveKommits(liveKommits)
       : formatNumber(kommitsFor(commitment.kommittedUSD, commitment.sinceISO));
+  const isVisa = useVisaMode();
+  const moneyLabel = isVisa ? formatEUR(commitment.kommittedUSD) : formatUSD(commitment.kommittedUSD);
   const founder = project.founders[0];
 
   return (
@@ -120,7 +123,7 @@ export function CommitmentRow({
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
-              {formatUSD(commitment.kommittedUSD)} committed
+              {moneyLabel} committed
             </span>
             <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
               Since {shortDate(commitment.sinceISO)}
@@ -138,7 +141,7 @@ export function CommitmentRow({
             onClick={() => setWithdrawOpen(true)}
             className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
           >
-            Withdraw
+            {isVisa ? "Withdraw to card" : "Withdraw"}
           </button>
         </div>
       </article>

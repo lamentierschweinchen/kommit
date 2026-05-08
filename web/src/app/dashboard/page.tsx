@@ -19,6 +19,7 @@ import { formatNumber, formatUSD } from "@/lib/kommit-math";
 import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance } from "@/lib/demo-engagement";
+import { useVisaMode, formatEUR, getStoredCardLast4 } from "@/lib/visa-mode";
 import { Icon } from "@/components/common/Icon";
 import { DepositModal } from "@/components/account/DepositModal";
 
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   const activeUSD = commitments.reduce((acc, c) => acc + c.kommittedUSD, 0);
   const liveTotalKommits = useLiveKommitsTotal(commitments);
   const isDemo = useDemoMode();
+  const isVisa = useVisaMode();
   const [availableUSD, setAvailableUSD] = useState<number | null>(null);
   useEffect(() => {
     if (!isSignedIn || !user?.wallet) {
@@ -78,6 +80,12 @@ export default function DashboardPage() {
     if (isDemo) setAvailableUSD(getDemoBalance(user.wallet));
     else setAvailableUSD(null); // TODO: live USDC balance via wallet machinery
   }, [isSignedIn, user?.wallet, isDemo, refreshKey]);
+
+  const cardLast4 = isVisa ? getStoredCardLast4() : null;
+  // In visa mode the dashboard reads in EUR. The kommit *score* stays
+  // unitless (kommits are kommits), but every dollar amount converts to a
+  // EUR display; the localStorage positions are still keyed in USDC.
+  const fmtMoney = (usdc: number) => (isVisa ? formatEUR(usdc) : formatUSD(usdc));
 
   const recommendedSlugs = ["cadence", "forge-health", "verity-books"];
   const recommended = recommendedSlugs
@@ -95,11 +103,31 @@ export default function DashboardPage() {
             anonBody="Your kommitments, kommits, and recent updates from teams you back. Nothing here for visitors."
           >
           <div className="px-6 md:px-12">
+          {isVisa ? (
+            <div className="mt-8 mb-4 flex items-center justify-between flex-wrap gap-2">
+              <span className="inline-block bg-secondary text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+                Sandbox preview
+              </span>
+              <Link
+                href="/visa-demo"
+                className="font-epilogue font-bold uppercase tracking-widest text-[10px] text-gray-500 hover:text-black"
+              >
+                Exit demo →
+              </Link>
+            </div>
+          ) : null}
           <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
-            <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-              Your kommits
-            </h1>
-            {isSignedIn ? (
+            <div>
+              <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+                Your kommits
+              </h1>
+              {isVisa && cardLast4 ? (
+                <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
+                  Card on file · ending in {cardLast4}
+                </p>
+              ) : null}
+            </div>
+            {isSignedIn && !isVisa ? (
               <button
                 type="button"
                 onClick={() => setDepositOpen(true)}
@@ -108,6 +136,14 @@ export default function DashboardPage() {
                 <Icon name="add" size="sm" />
                 Deposit
               </button>
+            ) : isSignedIn && isVisa ? (
+              <Link
+                href="/visa-demo"
+                className="bg-secondary text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
+              >
+                <Icon name="add" size="sm" />
+                Add to your kommit
+              </Link>
             ) : null}
           </section>
 
@@ -124,8 +160,8 @@ export default function DashboardPage() {
               live
             />
             <StatCard
-              label="Active committed"
-              value={formatUSD(activeUSD)}
+              label={isVisa ? "Currently committed" : "Active committed"}
+              value={fmtMoney(activeUSD)}
               hint={
                 commitments.length > 0
                   ? `across ${commitments.length} project${commitments.length === 1 ? "" : "s"}`
@@ -135,13 +171,17 @@ export default function DashboardPage() {
               }
             />
             <StatCard
-              label="Available to kommit"
-              value={availableUSD !== null ? formatUSD(availableUSD) : "—"}
+              label={isVisa ? "Available on card" : "Available to kommit"}
+              value={availableUSD !== null ? fmtMoney(availableUSD) : "—"}
               hint={
                 availableUSD !== null
-                  ? isDemo
-                    ? "demo cohort · pre-funded"
-                    : "USDC in your wallet"
+                  ? isVisa
+                    ? cardLast4
+                      ? `card ending in ${cardLast4}`
+                      : "ready to charge"
+                    : isDemo
+                      ? "demo cohort · pre-funded"
+                      : "USDC in your wallet"
                   : "Deposit to fund your kommits"
               }
             />
