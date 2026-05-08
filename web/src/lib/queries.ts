@@ -17,18 +17,17 @@ import { type Kommit, findProjectPda } from "@/lib/kommit";
 import { PROJECTS, type Project } from "@/lib/data/projects";
 import { LUKAS_COMMITMENTS, type Commitment } from "@/lib/data/commitments";
 import { USERS } from "@/lib/data/users";
-
-const MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === "1";
+import { isDemoMode } from "@/lib/demo-mode";
 
 /**
- * In mock-auth mode, the seeded users carry placeholder wallets that are
- * valid-format base58 pubkeys but not registered on-chain — calling Anchor
- * with them would just return empty result sets. Short-circuit to mock
- * fixtures so the dashboard renders something substantive for QA. Real auth
- * always passes through the on-chain reads.
+ * In demo mode, the seeded users carry valid-format base58 pubkeys that
+ * aren't registered on-chain — calling Anchor with them would just return
+ * empty result sets. Short-circuit to mock fixtures so the dashboard
+ * renders something substantive. Real auth always passes through to
+ * on-chain reads.
  */
 function mockCommitmentsFor(wallet: string): Commitment[] | null {
-  if (!MOCK_AUTH) return null;
+  if (!isDemoMode()) return null;
   // Match against the USERS table by wallet field; only Lukas has a populated
   // demo portfolio (other mock users seed empty for now).
   const lukas = USERS.lukas;
@@ -128,8 +127,8 @@ export async function getCommitmentForUserAndProject(
   const project = PROJECTS.find((p) => p.slug === projectSlug);
   if (!project?.recipientWallet) return null;
 
-  // Mock-auth fast path — match by slug against the seeded LUKAS_COMMITMENTS.
-  if (MOCK_AUTH) {
+  // Demo-mode fast path — match by slug against the seeded LUKAS_COMMITMENTS.
+  if (isDemoMode()) {
     const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
     const mock = mockCommitmentsFor(walletStr);
     if (mock !== null) return mock.find((c) => c.projectSlug === projectSlug) ?? null;

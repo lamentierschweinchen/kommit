@@ -5,6 +5,7 @@ import { useToast } from "@/components/common/ToastProvider";
 import { Tape } from "@/components/common/Tape";
 import { useExportWallet, useWallets } from "@privy-io/react-auth/solana";
 import { Icon } from "@/components/common/Icon";
+import { useDemoMode } from "@/lib/demo-mode";
 
 /**
  * Export private key — wired to Privy's secure export UI.
@@ -26,9 +27,35 @@ export function ExportKeyModal({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const isDemo = useDemoMode();
   const { exportWallet } = useExportWallet();
   const { wallets } = useWallets();
   const { error: toastError } = useToast();
+
+  if (isDemo) {
+    return (
+      <Modal
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Not in demo"
+        shadow="default"
+      >
+        <p className="mt-5 text-base font-medium text-gray-800 leading-relaxed border-l-[4px] border-primary pl-4">
+          Demo personas don&rsquo;t carry real keys. On the live product this opens
+          Privy&rsquo;s secure export window for your actual wallet.
+        </p>
+        <div className="mt-7">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
+          >
+            Got it
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   const handleShowKey = async () => {
     const wallet = wallets[0];

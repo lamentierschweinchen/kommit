@@ -7,16 +7,19 @@
  *      We verify the token via @privy-io/server-auth, look up the user, and
  *      return the linked Solana wallet address.
  *
- *   2. Local dev mock — when `NEXT_PUBLIC_MOCK_AUTH=1` AND `NODE_ENV !==
- *      "production"`, we accept an `x-mock-wallet: <wallet>` header and
- *      trust it as the caller. This mirrors the existing mock-auth path
- *      in `@/lib/queries.ts` (`MOCK_AUTH` gate, line 21) and lets the
- *      P1.4 API routes function under the demo persona switcher without
- *      requiring a real Privy session for every E2E click.
+ *   2. Local dev mock — when `NEXT_PUBLIC_KOMMIT_DEMO=1` AND
+ *      `VERCEL_ENV !== "production"`, we accept an `x-mock-wallet: <wallet>`
+ *      header and trust it as the caller. This is for local API testing
+ *      (curl + dev server). The browser-side demo flow on production never
+ *      hits these routes — `authedFetch` short-circuits to a localStorage
+ *      simulator (`@/lib/demo-engagement`) — so this server-mock path is
+ *      dead in production deploys regardless of env flags.
  *
- * The mock path is gated by BOTH env flags so a leaked
- * `NEXT_PUBLIC_MOCK_AUTH=1` on a production deploy still fails closed (the
- * NODE_ENV check is the canonical "is this production" signal Vercel sets).
+ * Belt-and-suspenders: both gates must be true. `VERCEL_ENV` is set by
+ * Vercel based on deployment type (production / preview / development),
+ * not env vars — so even if someone accidentally copied
+ * NEXT_PUBLIC_KOMMIT_DEMO=1 to production env, the request still fails
+ * closed.
  */
 
 import "server-only";
@@ -25,8 +28,8 @@ import type { NextRequest } from "next/server";
 import { PrivyClient } from "@privy-io/server-auth";
 
 const MOCK_AUTH_ENABLED =
-  process.env.NEXT_PUBLIC_MOCK_AUTH === "1" &&
-  process.env.NODE_ENV !== "production";
+  process.env.NEXT_PUBLIC_KOMMIT_DEMO === "1" &&
+  process.env.VERCEL_ENV !== "production";
 
 let privyClient: PrivyClient | null = null;
 function getPrivyClient(): PrivyClient {

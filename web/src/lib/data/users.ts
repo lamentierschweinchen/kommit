@@ -43,6 +43,22 @@ export const USERS: Record<string, User> = {
     wallet: "83EDkAQhmpeTQW6mmBwc6RctS5S99324tvsq1oJVAqC4",
     ownsProject: "margin-house",
   },
+  maya: {
+    id: "maya",
+    displayName: "Maya Okonkwo",
+    role: "kommitter",
+    avatarSeed: 32,
+    email: "maya@example.com",
+    wallet: "HjTDMvHr3tuyoBuQweq4zoJjY1E5zNfJbt9ncgQujJoq",
+  },
+  theo: {
+    id: "theo",
+    displayName: "Theo Reinhardt",
+    role: "kommitter",
+    avatarSeed: 45,
+    email: "theo@example.com",
+    wallet: "CG4uVkhn77jnCHjuTgSKeZVE8Bzbn6TM5TnJ7s2mYCPo",
+  },
 };
 
 export function getUser(id: string): User | undefined {

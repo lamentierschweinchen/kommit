@@ -6,6 +6,7 @@ import { Modal } from "@/components/common/Modal";
 import { Icon } from "@/components/common/Icon";
 import { useToast } from "@/components/common/ToastProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDemoMode } from "@/lib/demo-mode";
 import { truncateAddress } from "@/lib/wallet-display";
 
 /**
@@ -30,6 +31,7 @@ export function DepositModal({
 }) {
   const { user } = useAuth();
   const { confirm } = useToast();
+  const isDemo = useDemoMode();
   const [copied, setCopied] = useState(false);
 
   const wallet = user?.wallet ?? "";
@@ -45,6 +47,26 @@ export function DepositModal({
       confirm("Copy failed — long-press to select.");
     }
   };
+
+  if (isDemo) {
+    return (
+      <Modal open={open} onOpenChange={onOpenChange} title="Demo cohort" shadow="default">
+        <p className="mt-4 text-base font-medium text-gray-800 leading-relaxed border-l-[4px] border-primary pl-4">
+          The demo cohort comes pre-funded — you can kommit and withdraw freely
+          while you walk the demo. The faucet flow ships on the live product.
+        </p>
+        <div className="mt-7">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
+          >
+            Got it
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="Get test funds" shadow="default">

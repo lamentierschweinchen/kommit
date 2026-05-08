@@ -7,6 +7,8 @@ import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
 import { Icon } from "@/components/common/Icon";
 import { GoogleGlyph } from "@/components/common/GoogleGlyph";
+import { useDemoMode } from "@/lib/demo-mode";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 /**
  * Pass 2: each method button delegates to Privy. Privy's `login({ loginMethods })`
@@ -33,6 +35,8 @@ export function SignInModal({
   title?: string;
 }) {
   const router = useRouter();
+  const isDemo = useDemoMode();
+  const { signIn: demoSignIn } = useAuth();
   const { authenticated } = usePrivy();
   const { confirm, error } = useToast();
   const { login } = useLogin({
@@ -67,6 +71,41 @@ export function SignInModal({
   const startLogin = (method: "email" | "google" | "passkey") => {
     login({ loginMethods: [method] });
   };
+
+  if (isDemo) {
+    return (
+      <Modal open={open} onOpenChange={onOpenChange} title={title}>
+        <p className="mt-6 text-base font-medium text-gray-800 leading-relaxed border-l-[4px] border-primary pl-4">
+          You&rsquo;re in the demo. Pick a persona to walk the protected pages —
+          on the live product these buttons go through Privy email / Google /
+          passkey instead.
+        </p>
+        <div className="mt-7 grid grid-cols-1 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              demoSignIn("lukas");
+              onOpenChange(false);
+              router.push("/dashboard");
+            }}
+            className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center justify-center gap-3"
+          >
+            Sign in as Lukas (kommitter)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onOpenChange(false);
+              router.push("/demo");
+            }}
+            className="w-full bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center justify-center gap-3"
+          >
+            Pick a different persona
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={title}>

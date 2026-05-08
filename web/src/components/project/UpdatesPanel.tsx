@@ -7,6 +7,7 @@ import { UpdateReactions, loadMine } from "@/components/project/UpdateReactions"
 import { UpdateComments } from "@/components/project/UpdateComments";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getCommitmentForUserAndProject } from "@/lib/queries";
+import { authedFetch } from "@/lib/api-client";
 import type { RemoteUpdate } from "@/lib/api-types";
 
 /**
@@ -62,7 +63,7 @@ export function UpdatesPanel({
     if (!projectPda) return;
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/projects/${projectPda}/updates`)
+    authedFetch(`/api/projects/${projectPda}/updates`, { mockWallet: user?.wallet ?? null })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((j: { updates: RemoteUpdate[] }) => {
         if (!cancelled) setUpdates(j.updates);
@@ -74,7 +75,7 @@ export function UpdatesPanel({
     return () => {
       cancelled = true;
     };
-  }, [projectPda]);
+  }, [projectPda, user?.wallet]);
 
   // P1.5: stamp lastSeen for this project on mount so the dashboard "N NEW"
   // pill resets after a kommitter visits the page.

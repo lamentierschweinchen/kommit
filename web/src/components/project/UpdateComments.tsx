@@ -36,7 +36,7 @@ export function UpdateComments({
     if (!open || loaded || loading) return;
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/updates/${updateId}/comments`)
+    authedFetch(`/api/updates/${updateId}/comments`)
       .then((r) => r.json())
       .then((j: { comments?: RemoteComment[] }) => {
         if (cancelled) return;
