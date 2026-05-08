@@ -15,6 +15,9 @@ import { Icon } from "@/components/common/Icon";
 import { useDemoMode } from "@/lib/demo-mode";
 import { simulateWithdraw } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useVisaMode, formatEUR, getStoredCardLast4 } from "@/lib/visa-mode";
+import { visaDemo } from "@/lib/visa-demo-client";
+import { findProjectPda } from "@/lib/kommit";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -71,8 +74,10 @@ export function WithdrawModal({
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
   const isDemo = useDemoMode();
+  const isVisa = useVisaMode();
   const { user } = useAuth();
   const router = useRouter();
+  const cardLast4 = isVisa ? getStoredCardLast4() : null;
 
   useEffect(() => {
     if (open) setRaw(presetDecimals[0] ?? "0");
@@ -112,6 +117,53 @@ export function WithdrawModal({
         : null;
 
   const handleSubmit = async () => {
+    // Visa path: route the withdraw through the offramp client (stub or
+    // live). Position state is mutated server-side (or by the stub which
+    // calls simulateWithdraw under the hood); we only render UI here.
+    if (isVisa) {
+      if (!projectSlug || !recipientWallet || parsedBaseUnits === 0n || overMax) return;
+      setSubmitting(true);
+      let projectPda: string;
+      try {
+        projectPda = findProjectPda(new PublicKey(recipientWallet)).toBase58();
+      } catch {
+        setSubmitting(false);
+        toastError("Couldn't reach this project right now.", "Try again in a moment.");
+        return;
+      }
+      const amountUSDC = Math.round(displayUSD * 1_000_000);
+      const res = await visaDemo.offramp({
+        amountUSDC,
+        projectPda,
+        projectSlug,
+        cardLast4: cardLast4 ?? "0000",
+      });
+      setSubmitting(false);
+      if (!res.ok) {
+        toastError(
+          "Couldn't return your funds.",
+          "The payout failed — please retry in a moment.",
+          { recoveryLabel: "Try again", onRecover: () => void handleSubmit() },
+        );
+        return;
+      }
+      onOpenChange(false);
+      setTimeout(
+        () =>
+          confirm(
+            `${formatEUR(displayUSD)} returned to your card`,
+            `Card ending in ${res.payoutId ? cardLast4 ?? "0000" : "0000"}.`,
+            {
+              recoveryLabel: "View dashboard",
+              onRecover: () => router.push("/dashboard"),
+            },
+          ),
+        220,
+      );
+      onSuccess?.();
+      return;
+    }
+
     // Demo path mirrors CommitModal's: localStorage simulation + same toast +
     // recovery action; no Anchor / Privy call.
     if (isDemo) {
@@ -173,25 +225,31 @@ export function WithdrawModal({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={`Withdraw from ${projectName}`}
+      title={isVisa ? `Return funds from ${projectName} to your card` : `Withdraw from ${projectName}`}
       shadow="default"
     >
+      {isVisa && cardLast4 ? (
+        <p className="mt-3 font-epilogue font-medium text-sm text-gray-700 leading-relaxed border-l-[4px] border-primary pl-4">
+          Funds return to your card ending in <span className="font-black text-black">{cardLast4}</span>.
+          Sandbox payout — not a real charge reversal.
+        </p>
+      ) : null}
       <div className="mt-6 bg-gray-100 border-[3px] border-black p-4">
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
           Currently committed
         </div>
         <div className="mt-1 font-epilogue font-black text-4xl md:text-5xl tracking-tighter">
-          {formatUSD(committedUSD)}
+          {isVisa ? formatEUR(committedUSD) : formatUSD(committedUSD)}
         </div>
       </div>
 
       <div className="mt-6">
         <label className="block font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-          Withdraw amount
+          {isVisa ? "Amount to return" : "Withdraw amount"}
         </label>
         <div className="flex items-stretch border-[3px] border-black bg-white shadow-brutal focus-within:translate-x-[-2px] focus-within:translate-y-[-2px] focus-within:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] transition-all">
           <span className="px-4 flex items-center font-epilogue font-black text-3xl text-gray-400">
-            $
+            {isVisa ? "€" : "$"}
           </span>
           <input
             type="text"
@@ -250,12 +308,14 @@ export function WithdrawModal({
           {submitting ? (
             <>
               <Icon name="progress_activity" className="font-bold animate-spin" />
-              Signing…
+              {isVisa ? "Returning to your card…" : "Signing…"}
             </>
           ) : (
             <>
               <Icon name="arrow_forward" className="font-bold rotate-180" />
-              Withdraw {formatUSD(displayUSD)}
+              {isVisa
+                ? `Return ${formatEUR(displayUSD)} to card`
+                : `Withdraw ${formatUSD(displayUSD)}`}
             </>
           )}
         </button>

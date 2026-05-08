@@ -15,11 +15,14 @@ import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 import { truncateAddress } from "@/lib/wallet-display";
+import { useVisaMode, getStoredCardLast4 } from "@/lib/visa-mode";
 
 export default function AccountPage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { confirm } = useToast();
+  const isVisa = useVisaMode();
+  const cardLast4 = isVisa ? getStoredCardLast4() : null;
 
   const [exportOpen, setExportOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
@@ -64,7 +67,7 @@ export default function AccountPage() {
                 Manage how you sign in and where we reach you. Notifications live on your dashboard.
               </p>
             </div>
-            {user ? (
+            {user && !isVisa ? (
               <button
                 type="button"
                 onClick={() => setDepositOpen(true)}
@@ -92,16 +95,28 @@ export default function AccountPage() {
               onAction={() => setChangeEmailOpen(true)}
             />
 
-            <Row
-              label="Wallet"
-              value={user?.wallet ? truncateAddress(user.wallet) : "—"}
-              valueTitle={user?.wallet}
-              valueClass="font-mono"
-              hint="Your account address. Your money lives here."
-              actionLabel="Copy"
-              actionIcon="content_copy"
-              onAction={handleCopyWallet}
-            />
+            {isVisa ? (
+              <Row
+                label="Card on file"
+                value={cardLast4 ? `•••• •••• •••• ${cardLast4}` : "—"}
+                valueClass="font-mono"
+                hint="Sandbox card. Charges and payouts in this preview don't move real funds."
+                actionLabel="Update"
+                actionIcon="edit_note"
+                onAction={() => router.push("/visa-demo")}
+              />
+            ) : (
+              <Row
+                label="Wallet"
+                value={user?.wallet ? truncateAddress(user.wallet) : "—"}
+                valueTitle={user?.wallet}
+                valueClass="font-mono"
+                hint="Your account address. Your money lives here."
+                actionLabel="Copy"
+                actionIcon="content_copy"
+                onAction={handleCopyWallet}
+              />
+            )}
 
             {/* Sign-in methods — audit fix #12: status pill treatment */}
             <article className="bg-white border-[3px] border-black shadow-brutal p-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-center">
@@ -126,6 +141,7 @@ export default function AccountPage() {
             </article>
           </section>
 
+          {!isVisa ? (
           <section className="mt-20 pt-10 border-t-[8px] border-black max-w-3xl">
             <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
               Advanced
@@ -177,6 +193,7 @@ export default function AccountPage() {
               </article>
             </div>
           </section>
+          ) : null}
 
           <section className="mt-16 pt-10 border-t-[8px] border-black max-w-3xl">
             <button
