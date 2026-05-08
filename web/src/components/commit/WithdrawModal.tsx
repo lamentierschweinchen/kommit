@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
@@ -11,6 +12,9 @@ import { formatUSD } from "@/lib/kommit-math";
 import { formatTokenAmount, parseTokenAmount, validateAmount } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/common/Icon";
+import { useDemoMode } from "@/lib/demo-mode";
+import { simulateWithdraw } from "@/lib/demo-engagement";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -34,6 +38,7 @@ export function WithdrawModal({
   open,
   onOpenChange,
   projectName,
+  projectSlug,
   committedUSD,
   recipientWallet,
   onSuccess,
@@ -44,6 +49,8 @@ export function WithdrawModal({
   committedUSD: number;
   /** On-chain recipient wallet for the project. If absent, submit is disabled. */
   recipientWallet?: string;
+  /** Slug used to address the position in the demo store. */
+  projectSlug?: string;
   onSuccess?: () => void;
 }) {
   // The committed amount arrives as a JS number (queries.ts converts it for
@@ -63,6 +70,9 @@ export function WithdrawModal({
   const [submitting, setSubmitting] = useState(false);
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
+  const isDemo = useDemoMode();
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (open) setRaw(presetDecimals[0] ?? "0");
@@ -85,7 +95,7 @@ export function WithdrawModal({
   const displayUSD = parseFloat(raw) || 0;
 
   const isOnChain = !!recipientWallet;
-  const walletReady = !!client;
+  const walletReady = isDemo ? !!user?.wallet : !!client;
   const submitDisabled =
     !isOnChain ||
     !walletReady ||
@@ -102,13 +112,45 @@ export function WithdrawModal({
         : null;
 
   const handleSubmit = async () => {
+    // Demo path mirrors CommitModal's: localStorage simulation + same toast +
+    // recovery action; no Anchor / Privy call.
+    if (isDemo) {
+      if (!user?.wallet || !projectSlug || parsedBaseUnits === 0n || overMax) return;
+      setSubmitting(true);
+      await new Promise((r) => setTimeout(r, 350));
+      simulateWithdraw({
+        wallet: user.wallet,
+        projectSlug,
+        amountUSD: displayUSD,
+      });
+      onOpenChange(false);
+      setSubmitting(false);
+      setTimeout(
+        () =>
+          confirm("Withdraw confirmed.", `Returned ${formatUSD(displayUSD)} from ${projectName}.`, {
+            recoveryLabel: "View dashboard",
+            onRecover: () => router.push("/dashboard"),
+          }),
+        220,
+      );
+      onSuccess?.();
+      return;
+    }
+
     if (!client || !recipientWallet || parsedBaseUnits === 0n || overMax) return;
     setSubmitting(true);
     try {
       await withdrawFromProject(client, new PublicKey(recipientWallet), raw);
       onOpenChange(false);
       setSubmitting(false);
-      setTimeout(() => confirm("Withdraw confirmed."), 220);
+      setTimeout(
+        () =>
+          confirm("Withdraw confirmed.", `Returned ${formatUSD(displayUSD)} from ${projectName}.`, {
+            recoveryLabel: "View dashboard",
+            onRecover: () => router.push("/dashboard"),
+          }),
+        220,
+      );
       onSuccess?.();
     } catch (e) {
       setSubmitting(false);

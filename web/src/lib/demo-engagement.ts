@@ -26,12 +26,25 @@
  */
 
 import type { RemoteComment, RemoteUpdate } from "@/lib/api-types";
+import type { Commitment } from "@/lib/data/commitments";
 
 const NS = "demo:v1:";
 
 const KEY_UPDATES = `${NS}updates`; // Record<projectPda, RemoteUpdate[]>
 const KEY_REACTIONS = `${NS}reactions`; // Record<updateId, Record<emoji, number>>
 const KEY_COMMENTS = `${NS}comments`; // Record<updateId, RemoteComment[]>
+const KEY_POSITIONS = `${NS}positions`; // Record<wallet, Record<slug, StoredPosition>>
+const KEY_BALANCES = `${NS}balances`; // Record<wallet, number>
+const KEY_SEEDED = `${NS}seeded`; // marker — has activate-time seed run?
+
+/** Each persona starts with this much simulated USDC available to kommit. */
+export const DEMO_DEFAULT_BALANCE_USD = 5000;
+
+type StoredPosition = {
+  kommittedUSD: number;
+  sinceISO: string;
+  pivotedAtISO?: string;
+};
 
 function readStore<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -183,6 +196,11 @@ export async function demoFetch(
       is_graduation: !!body.is_graduation,
       posted_at: nowISO(),
     };
+    appendDemoActivity({
+      kind: "post-update",
+      wallet: callerWallet,
+      label: update.title.slice(0, 60),
+    });
     return jsonResponse({ update: appendUpdate(update) }, 201);
   }
 
@@ -206,6 +224,13 @@ export async function demoFetch(
     const emoji = body?.emoji ? String(body.emoji) : "";
     if (!emoji) return jsonResponse({ error: "invalid-body" }, 400);
     bumpReaction(updateId, emoji, method === "POST" ? 1 : -1);
+    if (method === "POST") {
+      appendDemoActivity({
+        kind: "react",
+        wallet: callerWallet,
+        label: `${emoji} on an update`,
+      });
+    }
     return jsonResponse({ ok: true });
   }
 
@@ -228,6 +253,11 @@ export async function demoFetch(
         posted_at: nowISO(),
       };
       appendComment(updateId, comment);
+      appendDemoActivity({
+        kind: "comment",
+        wallet: callerWallet,
+        label: text.slice(0, 60),
+      });
       return jsonResponse({ comment }, 201);
     }
   }
@@ -259,6 +289,238 @@ export function seedDemoUpdates(projectPda: string, seed: RemoteUpdate[]) {
   writeAllUpdates(all);
 }
 
+// ---- Positions (commit/withdraw simulation) --------------------------------
+
+function readAllPositions(): Record<string, Record<string, StoredPosition>> {
+  return readStore<Record<string, Record<string, StoredPosition>>>(KEY_POSITIONS, {});
+}
+
+function writeAllPositions(all: Record<string, Record<string, StoredPosition>>) {
+  writeStore(KEY_POSITIONS, all);
+}
+
+/**
+ * Read the demo-mode positions for a wallet. Returned shape matches the
+ * `Commitment` rows the dashboard already consumes, so swapping this in for
+ * the on-chain read in queries.ts is a one-line change.
+ */
+export function getDemoPositions(wallet: string): Commitment[] {
+  if (!wallet) return [];
+  const byWallet = readAllPositions()[wallet] ?? {};
+  return Object.entries(byWallet).map(([projectSlug, p]) => ({
+    projectSlug,
+    kommittedUSD: p.kommittedUSD,
+    sinceISO: p.sinceISO,
+    ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
+  }));
+}
+
+/** Single-position lookup for the project detail page's UserPositionCard. */
+export function getDemoPosition(
+  wallet: string,
+  projectSlug: string,
+): Commitment | null {
+  if (!wallet) return null;
+  const p = readAllPositions()[wallet]?.[projectSlug];
+  if (!p) return null;
+  return {
+    projectSlug,
+    kommittedUSD: p.kommittedUSD,
+    sinceISO: p.sinceISO,
+    ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
+  };
+}
+
+/**
+ * Simulate a kommit. Tops up an existing position (preserving sinceISO so
+ * the lifetime kommit accrual isn't reset) or creates a new one. Debits the
+ * persona's available USDC balance.
+ */
+export function simulateCommit(args: {
+  wallet: string;
+  projectSlug: string;
+  principalUSD: number;
+}): Commitment {
+  const { wallet, projectSlug, principalUSD } = args;
+  const all = readAllPositions();
+  if (!all[wallet]) all[wallet] = {};
+  const existing = all[wallet][projectSlug];
+  if (existing) {
+    existing.kommittedUSD = round2(existing.kommittedUSD + principalUSD);
+  } else {
+    all[wallet][projectSlug] = {
+      kommittedUSD: round2(principalUSD),
+      sinceISO: nowISO().slice(0, 10),
+    };
+  }
+  writeAllPositions(all);
+  setDemoBalance(wallet, getDemoBalance(wallet) - principalUSD);
+  appendDemoActivity({ kind: "commit", wallet, projectSlug, amountUSD: principalUSD });
+  const pos = all[wallet][projectSlug];
+  return {
+    projectSlug,
+    kommittedUSD: pos.kommittedUSD,
+    sinceISO: pos.sinceISO,
+  };
+}
+
+/**
+ * Simulate a withdraw. Decrements the position; if it hits zero the
+ * position is removed. Credits the persona's balance.
+ */
+export function simulateWithdraw(args: {
+  wallet: string;
+  projectSlug: string;
+  amountUSD: number;
+}): Commitment | null {
+  const { wallet, projectSlug, amountUSD } = args;
+  const all = readAllPositions();
+  const pos = all[wallet]?.[projectSlug];
+  if (!pos) return null;
+  const next = round2(Math.max(0, pos.kommittedUSD - amountUSD));
+  if (next <= 0) {
+    delete all[wallet][projectSlug];
+    if (Object.keys(all[wallet]).length === 0) delete all[wallet];
+  } else {
+    pos.kommittedUSD = next;
+  }
+  writeAllPositions(all);
+  setDemoBalance(wallet, getDemoBalance(wallet) + amountUSD);
+  appendDemoActivity({ kind: "withdraw", wallet, projectSlug, amountUSD });
+  return next > 0
+    ? { projectSlug, kommittedUSD: next, sinceISO: pos.sinceISO }
+    : null;
+}
+
+// ---- Balances --------------------------------------------------------------
+
+function readAllBalances(): Record<string, number> {
+  return readStore<Record<string, number>>(KEY_BALANCES, {});
+}
+
+export function getDemoBalance(wallet: string): number {
+  if (!wallet) return 0;
+  const all = readAllBalances();
+  return all[wallet] ?? DEMO_DEFAULT_BALANCE_USD;
+}
+
+function setDemoBalance(wallet: string, amount: number) {
+  if (!wallet) return;
+  const all = readAllBalances();
+  all[wallet] = round2(Math.max(0, amount));
+  writeStore(KEY_BALANCES, all);
+}
+
+// ---- Activity log ----------------------------------------------------------
+
+const KEY_ACTIVITY = `${NS}activity`;
+
+export type DemoActivityEntry = {
+  kind: "commit" | "withdraw" | "post-update" | "react" | "comment";
+  wallet: string;
+  projectSlug?: string;
+  amountUSD?: number;
+  atISO: string;
+  /** Optional human label — set when the entry needs a one-line description
+   *  the activity feed can render without re-deriving from project data. */
+  label?: string;
+};
+
+function appendDemoActivity(entry: Omit<DemoActivityEntry, "atISO">) {
+  const log = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
+  log.unshift({ ...entry, atISO: nowISO() });
+  writeStore(KEY_ACTIVITY, log.slice(0, 200));
+}
+
+export function getDemoActivity(wallet: string, limit = 50): DemoActivityEntry[] {
+  if (!wallet) return [];
+  const log = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
+  return log.filter((e) => e.wallet === wallet).slice(0, limit);
+}
+
+// ---- One-time activation seed ---------------------------------------------
+
+/**
+ * Idempotently seed the demo cohort state. Called by the /demo entry page
+ * after `activateDemoMode()` so visitors land in a populated world: Lukas
+ * has his portfolio, every project has its update history, and personas
+ * carry default balances.
+ */
+export function seedDemoCohort(args: {
+  lukasWallet: string;
+  lukasCommitments: Commitment[];
+  projectUpdates: Array<{
+    pda: string;
+    authorWallet: string;
+    seed: Array<{ atISO: string; title: string; body: string; isPivot?: boolean; isGraduation?: boolean }>;
+  }>;
+}) {
+  if (typeof window === "undefined") return;
+  const already = window.localStorage.getItem(KEY_SEEDED);
+  if (already === "1") return;
+
+  // Seed Lukas's portfolio.
+  const positions = readAllPositions();
+  positions[args.lukasWallet] = {};
+  for (const c of args.lukasCommitments) {
+    positions[args.lukasWallet][c.projectSlug] = {
+      kommittedUSD: c.kommittedUSD,
+      sinceISO: c.sinceISO,
+      ...(c.pivotedAtISO ? { pivotedAtISO: c.pivotedAtISO } : {}),
+    };
+  }
+  writeAllPositions(positions);
+
+  // Seed every project's update history into the API-shape store, with
+  // deterministic IDs so reactions persist across reloads.
+  const allUpdates = readAllUpdates();
+  for (const p of args.projectUpdates) {
+    if ((allUpdates[p.pda]?.length ?? 0) > 0) continue;
+    allUpdates[p.pda] = p.seed.map((u, i) => ({
+      id: stableId(p.pda, u.atISO, i),
+      project_pda: p.pda,
+      author_wallet: p.authorWallet,
+      title: u.title,
+      body: u.body,
+      is_pivot: !!u.isPivot,
+      is_graduation: !!u.isGraduation,
+      // Rendered via longDate(slice(0,10)) — pad to ISO so slicing matches.
+      posted_at: `${u.atISO}T12:00:00.000Z`,
+    }));
+  }
+  writeAllUpdates(allUpdates);
+
+  try {
+    window.localStorage.setItem(KEY_SEEDED, "1");
+  } catch {
+    /* non-fatal */
+  }
+}
+
+function stableId(pda: string, atISO: string, idx: number): string {
+  // FNV-1a 32-bit on (pda + atISO + idx) → format as a UUID-ish string. The
+  // API route accepts any string for update_id; reactions/comments key off
+  // it. Stable across reloads because the inputs are stable.
+  const seed = `${pda}|${atISO}|${idx}`;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  const hex = h.toString(16).padStart(8, "0");
+  // Build a v4-ish UUID — passes the regex on the real /api/updates/[id]/* routes.
+  const a = hex;
+  const b = hex.slice(0, 4);
+  const c = "4" + hex.slice(1, 4);
+  const d = "8" + hex.slice(1, 4);
+  const e = (hex + hex).slice(0, 12);
+  return `${a}-${b}-${c}-${d}-${e}`;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 /** Reset all demo engagement state. Useful for the "fresh demo" affordance. */
 export function clearDemoEngagement() {
   if (typeof window === "undefined") return;
@@ -266,6 +528,10 @@ export function clearDemoEngagement() {
     window.localStorage.removeItem(KEY_UPDATES);
     window.localStorage.removeItem(KEY_REACTIONS);
     window.localStorage.removeItem(KEY_COMMENTS);
+    window.localStorage.removeItem(KEY_POSITIONS);
+    window.localStorage.removeItem(KEY_BALANCES);
+    window.localStorage.removeItem(KEY_ACTIVITY);
+    window.localStorage.removeItem(KEY_SEEDED);
   } catch {
     /* non-fatal */
   }

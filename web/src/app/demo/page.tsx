@@ -2,12 +2,37 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { PublicKey } from "@solana/web3.js";
 import { useRouter, useSearchParams } from "next/navigation";
 import { activateDemoMode, deactivateDemoMode, useDemoMode } from "@/lib/demo-mode";
-import { clearDemoEngagement } from "@/lib/demo-engagement";
+import { clearDemoEngagement, seedDemoCohort } from "@/lib/demo-engagement";
+import { findProjectPda } from "@/lib/kommit";
 import { USERS, avatarUrl } from "@/lib/data/users";
+import { LUKAS_COMMITMENTS } from "@/lib/data/commitments";
+import { PROJECTS } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
 import { cn } from "@/lib/cn";
+
+/**
+ * Build the seed payload for the demo cohort. Pulls from the static seed
+ * (`data/projects.ts` + `data/commitments.ts`) so swapping either source
+ * naturally flows through to the demo without per-project plumbing.
+ */
+function buildCohortSeed() {
+  const lukas = USERS.lukas;
+  return {
+    lukasWallet: lukas.wallet,
+    lukasCommitments: LUKAS_COMMITMENTS,
+    projectUpdates: PROJECTS.filter((p) => !!p.recipientWallet).map((p) => {
+      const author = Object.values(USERS).find((u) => u.ownsProject === p.slug);
+      return {
+        pda: findProjectPda(new PublicKey(p.recipientWallet!)).toBase58(),
+        authorWallet: author?.wallet ?? "",
+        seed: p.updates,
+      };
+    }),
+  };
+}
 
 const PERSONA_BLURBS: Record<string, string> = {
   lukas: "Kommitter with a portfolio across Climate, Bio, and Edu projects.",
@@ -57,6 +82,10 @@ function DemoEntry() {
     if (typeof window === "undefined") return;
     setPickedPersona(personaId);
     activateDemoMode(personaId ?? undefined);
+    // Idempotent seed — populates Lukas's portfolio + every project's update
+    // history into demo-engagement state so reactions/comments work on
+    // seeded updates and the dashboard shows real data on first paint.
+    seedDemoCohort(buildCohortSeed());
     // CSR navigation — fast, no SSR flash. Anon goes to /, persona goes to dashboard.
     if (personaId) {
       const u = USERS[personaId];

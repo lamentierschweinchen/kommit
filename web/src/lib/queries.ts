@@ -15,24 +15,22 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import idl from "@/lib/idl/kommit.json";
 import { type Kommit, findProjectPda } from "@/lib/kommit";
 import { PROJECTS, type Project } from "@/lib/data/projects";
-import { LUKAS_COMMITMENTS, type Commitment } from "@/lib/data/commitments";
-import { USERS } from "@/lib/data/users";
+import { type Commitment } from "@/lib/data/commitments";
 import { isDemoMode } from "@/lib/demo-mode";
+import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
 
 /**
- * In demo mode, the seeded users carry valid-format base58 pubkeys that
- * aren't registered on-chain — calling Anchor with them would just return
- * empty result sets. Short-circuit to mock fixtures so the dashboard
- * renders something substantive. Real auth always passes through to
- * on-chain reads.
+ * Demo-mode reads short-circuit Anchor entirely: the persona wallets aren't
+ * on-chain, but the /demo entry page seeded localStorage with Lukas's
+ * portfolio (and balances, and project updates) so simulateCommit /
+ * simulateWithdraw mutations show up here without round-tripping a
+ * non-existent on-chain account.
+ *
+ * Real auth always passes through to the Anchor read path below.
  */
-function mockCommitmentsFor(wallet: string): Commitment[] | null {
+function demoCommitmentsFor(wallet: string): Commitment[] | null {
   if (!isDemoMode()) return null;
-  // Match against the USERS table by wallet field; only Lukas has a populated
-  // demo portfolio (other mock users seed empty for now).
-  const lukas = USERS.lukas;
-  if (lukas && wallet === lukas.wallet) return LUKAS_COMMITMENTS;
-  return [];
+  return getDemoPositions(wallet);
 }
 
 const RPC_URL =
@@ -92,7 +90,7 @@ export async function getCommitmentsForUser(
   userWallet: PublicKey | string,
 ): Promise<Commitment[]> {
   const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
-  const mock = mockCommitmentsFor(walletStr);
+  const mock = demoCommitmentsFor(walletStr);
   if (mock !== null) return mock;
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
   const program = getReadProgram();
@@ -124,15 +122,16 @@ export async function getCommitmentForUserAndProject(
   userWallet: PublicKey | string,
   projectSlug: string,
 ): Promise<Commitment | null> {
-  const project = PROJECTS.find((p) => p.slug === projectSlug);
-  if (!project?.recipientWallet) return null;
-
-  // Demo-mode fast path — match by slug against the seeded LUKAS_COMMITMENTS.
+  // Demo-mode fast path runs first — applies to all projects (including
+  // pre-launch ones with no recipientWallet) since the demo cohort doesn't
+  // touch the on-chain account.
   if (isDemoMode()) {
     const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
-    const mock = mockCommitmentsFor(walletStr);
-    if (mock !== null) return mock.find((c) => c.projectSlug === projectSlug) ?? null;
+    return getDemoPosition(walletStr, projectSlug);
   }
+
+  const project = PROJECTS.find((p) => p.slug === projectSlug);
+  if (!project?.recipientWallet) return null;
 
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
   const projectPda = findProjectPda(new PublicKey(project.recipientWallet));

@@ -39,7 +39,7 @@ export function ProjectCard({ project }: { project: Project }) {
         {isOpeningSoon ? (
           <div className="absolute -top-3 left-6 z-20">
             <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
-              Opening soon
+              Launching soon
             </span>
           </div>
         ) : null}

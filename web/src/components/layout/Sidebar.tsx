@@ -37,10 +37,12 @@ export function Sidebar({
           { href: "/account", label: "Account", icon: "settings" },
         ]
       : [
-          { href: "/dashboard", label: "Overview", icon: "grid_view" },
-          { href: "/projects", label: "New kommit", icon: "add_circle" },
-          { href: "/dashboard#withdraw", label: "Withdraw", icon: "payments" },
-          { href: "/dashboard#kommits", label: "Your kommits", icon: "workspace_premium" },
+          // M2: drop separate "Withdraw" + "Overview" sidebar items — both
+          // collapsed into the consolidated "Your kommits" dashboard
+          // (transaction history, top stats, per-position cards). M1: "New
+          // kommit" reads as a transaction; the destination is just /projects.
+          { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
+          { href: "/projects", label: "Browse projects", icon: "explore" },
           { href: "/account", label: "Account", icon: "settings" },
         ];
 

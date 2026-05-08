@@ -5,6 +5,7 @@ import { authedFetch } from "@/lib/api-client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { Icon } from "@/components/common/Icon";
+import { SignInModal } from "@/components/auth/SignInModal";
 import { cn } from "@/lib/cn";
 import { relativeTime } from "@/lib/date-utils";
 import type { RemoteComment } from "@/lib/api-types";
@@ -23,7 +24,7 @@ export function UpdateComments({
   canComment: boolean;
   disabledReason?: string;
 }) {
-  const { user } = useAuth();
+  const { user, isSignedIn } = useAuth();
   const { error, confirm } = useToast();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -31,6 +32,7 @@ export function UpdateComments({
   const [comments, setComments] = useState<RemoteComment[]>([]);
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
 
   useEffect(() => {
     if (!open || loaded || loading) return;
@@ -53,7 +55,12 @@ export function UpdateComments({
   }, [open, loaded, loading, updateId, error]);
 
   async function submit() {
-    if (!canComment || submitting || !body.trim()) return;
+    if (submitting || !body.trim()) return;
+    if (!isSignedIn) {
+      setSignInOpen(true);
+      return;
+    }
+    if (!canComment) return;
     setSubmitting(true);
     try {
       const res = await authedFetch(`/api/updates/${updateId}/comments`, {
@@ -143,11 +150,20 @@ export function UpdateComments({
               rows={3}
               value={body}
               onChange={(e) => setBody(e.target.value.slice(0, MAX_COMMENT_LEN))}
-              placeholder={canComment ? "Add a comment…" : disabledReason ?? "Kommit to comment."}
-              disabled={!canComment || submitting}
+              placeholder={
+                !isSignedIn
+                  ? "Sign in to comment."
+                  : canComment
+                    ? "Add a comment…"
+                    : disabledReason ?? "Kommit to comment."
+              }
+              onFocus={() => {
+                if (!isSignedIn) setSignInOpen(true);
+              }}
+              disabled={isSignedIn && (!canComment || submitting)}
               className={cn(
                 "w-full bg-white border-[3px] border-black p-3 font-medium text-sm leading-relaxed focus:outline-none focus:shadow-brutal",
-                !canComment && "bg-gray-100 cursor-not-allowed opacity-70",
+                isSignedIn && !canComment && "bg-gray-100 cursor-not-allowed opacity-70",
               )}
             />
             <div className="mt-2 flex items-center justify-between gap-3 flex-wrap">
@@ -157,15 +173,22 @@ export function UpdateComments({
               <button
                 type="button"
                 onClick={submit}
-                disabled={!canComment || submitting || !body.trim()}
+                disabled={
+                  isSignedIn ? !canComment || submitting || !body.trim() : false
+                }
                 className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none"
               >
-                {submitting ? "Posting…" : "Post comment"}
+                {!isSignedIn
+                  ? "Sign in to comment"
+                  : submitting
+                    ? "Posting…"
+                    : "Post comment"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
+      <SignInModal open={signInOpen} onOpenChange={setSignInOpen} />
     </div>
   );
 }

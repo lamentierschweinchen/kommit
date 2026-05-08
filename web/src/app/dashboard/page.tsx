@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
 import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidget";
+import { ActivityHistory } from "@/components/dashboard/ActivityHistory";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ProjectCardSmall } from "@/components/project/ProjectCardSmall";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -14,8 +15,10 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { getCommitmentsForUser } from "@/lib/queries";
 import { getProject, PROJECTS } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
-import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { shortDate } from "@/lib/date-utils";
+import { formatNumber, formatUSD } from "@/lib/kommit-math";
+import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
+import { useDemoMode } from "@/lib/demo-mode";
+import { getDemoBalance } from "@/lib/demo-engagement";
 import { Icon } from "@/components/common/Icon";
 import { DepositModal } from "@/components/account/DepositModal";
 
@@ -64,11 +67,17 @@ export default function DashboardPage() {
   }, [isSignedIn, user?.wallet, refreshKey]);
 
   const activeUSD = commitments.reduce((acc, c) => acc + c.kommittedUSD, 0);
-  const lifetimeKommits = commitments.reduce(
-    (acc, c) => acc + kommitsFor(c.kommittedUSD, c.sinceISO),
-    0,
-  );
-  const earliest = commitments.map((c) => c.sinceISO).sort()[0];
+  const liveTotalKommits = useLiveKommitsTotal(commitments);
+  const isDemo = useDemoMode();
+  const [availableUSD, setAvailableUSD] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isSignedIn || !user?.wallet) {
+      setAvailableUSD(null);
+      return;
+    }
+    if (isDemo) setAvailableUSD(getDemoBalance(user.wallet));
+    else setAvailableUSD(null); // TODO: live USDC balance via wallet machinery
+  }, [isSignedIn, user?.wallet, isDemo, refreshKey]);
 
   const recommendedSlugs = ["cadence", "forge-health", "verity-books"];
   const recommended = recommendedSlugs
@@ -88,7 +97,7 @@ export default function DashboardPage() {
           <div className="px-6 md:px-12">
           <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-              Overview
+              Your kommits
             </h1>
             {isSignedIn ? (
               <button
@@ -102,7 +111,18 @@ export default function DashboardPage() {
             ) : null}
           </section>
 
-          <section className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+          <section className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+            <StatCard
+              label="Lifetime kommits"
+              value={
+                liveTotalKommits > 0
+                  ? formatLiveKommits(liveTotalKommits)
+                  : formatNumber(0)
+              }
+              hint="non-transferable · yours forever"
+              accent
+              live
+            />
             <StatCard
               label="Active committed"
               value={formatUSD(activeUSD)}
@@ -115,15 +135,15 @@ export default function DashboardPage() {
               }
             />
             <StatCard
-              label="Lifetime kommits"
-              value={formatNumber(lifetimeKommits)}
-              hint="non-transferable · yours forever"
-              accent
-            />
-            <StatCard
-              label="Kommitting since"
-              value={earliest ? shortDate(earliest) : "—"}
-              hint={earliest ? earliest.slice(0, 4) : ""}
+              label="Available to kommit"
+              value={availableUSD !== null ? formatUSD(availableUSD) : "—"}
+              hint={
+                availableUSD !== null
+                  ? isDemo
+                    ? "demo cohort · pre-funded"
+                    : "USDC in your wallet"
+                  : "Deposit to fund your kommits"
+              }
             />
           </section>
 
@@ -156,6 +176,15 @@ export default function DashboardPage() {
                   </div>
                 )}
               </section>
+
+              {isSignedIn && user?.wallet && isDemo ? (
+                <section className="pt-10 border-t-[8px] border-black">
+                  <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+                    Activity
+                  </h2>
+                  <ActivityHistory wallet={user.wallet} />
+                </section>
+              ) : null}
 
               <section className="pt-10 border-t-[8px] border-black">
                 <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
@@ -238,11 +267,13 @@ function StatCard({
   value,
   hint,
   accent,
+  live,
 }: {
   label: string;
   value: string;
   hint?: string;
   accent?: boolean;
+  live?: boolean;
 }) {
   return (
     <div className="bg-white border-[3px] border-black shadow-brutal p-6">
@@ -250,7 +281,8 @@ function StatCard({
         {label}
       </div>
       <div
-        className={`mt-2 font-epilogue font-black text-4xl md:text-5xl tracking-tighter ${accent ? "text-primary" : ""}`}
+        className={`mt-2 font-epilogue font-black text-4xl md:text-5xl tracking-tighter ${accent ? "text-primary" : ""} ${live ? "tabular-nums" : ""}`}
+        aria-live={live ? "polite" : undefined}
       >
         {value}
       </div>

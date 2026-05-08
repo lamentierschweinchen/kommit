@@ -20,7 +20,7 @@ export type ToastItem = {
   variant: ToastVariant;
   title: string;
   description?: string;
-  /** Optional recovery button label. Errors only. */
+  /** Optional recovery button label — error variant uses it for retry, confirmation uses it for follow-up actions like "View dashboard". */
   recoveryLabel?: string;
   /** Optional secondary recovery (e.g. "Different method"). Errors only. */
   secondaryLabel?: string;
@@ -28,14 +28,12 @@ export type ToastItem = {
   onSecondary?: () => void;
 };
 
+type ToastOptions = Pick<ToastItem, "recoveryLabel" | "secondaryLabel" | "onRecover" | "onSecondary">;
+
 type ToastContextValue = {
   toast: (t: Omit<ToastItem, "id">) => void;
-  confirm: (title: string, description?: string) => void;
-  error: (
-    title: string,
-    description?: string,
-    options?: Pick<ToastItem, "recoveryLabel" | "secondaryLabel" | "onRecover" | "onSecondary">,
-  ) => void;
+  confirm: (title: string, description?: string, options?: ToastOptions) => void;
+  error: (title: string, description?: string, options?: ToastOptions) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -63,7 +61,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   const confirm = useCallback<ToastContextValue["confirm"]>(
-    (title, description) => toast({ variant: "confirmation", title, description }),
+    (title, description, options) =>
+      toast({ variant: "confirmation", title, description, ...(options ?? {}) }),
     [toast],
   );
 
@@ -100,13 +99,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 // the confirmation timer state — using finite values is the reliable form.
 // 24h = "effectively persistent" for the error variant.
 const CONFIRM_DURATION_MS = 4000;
+// Confirmation toasts that ship a recovery action (e.g. "View dashboard"
+// after a kommit) get longer than 4s so the user has time to read + click.
+const CONFIRM_WITH_ACTION_DURATION_MS = 8000;
 const ERROR_DURATION_MS = 24 * 60 * 60 * 1000;
 
 function ToastItemView({ item, onClose }: { item: ToastItem; onClose: () => void }) {
   const isError = item.variant === "error";
+  const hasAction = !!(item.recoveryLabel || item.secondaryLabel);
+  const duration = isError
+    ? ERROR_DURATION_MS
+    : hasAction
+      ? CONFIRM_WITH_ACTION_DURATION_MS
+      : CONFIRM_DURATION_MS;
   return (
     <RadixToast.Root
-      duration={isError ? ERROR_DURATION_MS : CONFIRM_DURATION_MS}
+      duration={duration}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}

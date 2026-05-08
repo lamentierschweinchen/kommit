@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PublicKey } from "@solana/web3.js";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { daysBetween, shortDate } from "@/lib/date-utils";
+import { shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
+import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import type { Commitment } from "@/lib/data/commitments";
 import type { RemoteUpdate } from "@/lib/api-types";
 import { findProjectPda } from "@/lib/kommit";
+import { authedFetch } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 
 export function CommitmentRow({
@@ -34,7 +37,7 @@ export function CommitmentRow({
       return;
     }
     const lastSeen = localStorage.getItem(`kommit:lastSeen:${pda}`);
-    fetch(`/api/projects/${pda}/updates`)
+    authedFetch(`/api/projects/${pda}/updates`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fetch failed"))))
       .then((j: { updates: RemoteUpdate[] }) => {
         if (cancelled) return;
@@ -55,8 +58,11 @@ export function CommitmentRow({
       cancelled = true;
     };
   }, [project.recipientWallet]);
-  const kommits = kommitsFor(commitment.kommittedUSD, commitment.sinceISO);
-  const days = daysBetween(commitment.sinceISO);
+  const liveKommits = useLiveKommits(commitment.kommittedUSD, commitment.sinceISO);
+  const kommitsDisplay =
+    liveKommits > 0
+      ? formatLiveKommits(liveKommits)
+      : formatNumber(kommitsFor(commitment.kommittedUSD, commitment.sinceISO));
   const founder = project.founders[0];
 
   return (
@@ -75,35 +81,50 @@ export function CommitmentRow({
             </span>
           </div>
         ) : null}
-        <div className="flex items-center gap-4">
+        {/* H5 — project name + image area links to the public page; the
+            inner action buttons stop propagation so withdraw still works. */}
+        <Link
+          href={`/projects/${project.slug}`}
+          className="flex items-center gap-4 group"
+          aria-label={`View ${project.name}`}
+        >
           <div className="w-16 h-16 bg-gray-900 border-[3px] border-black shrink-0 relative overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={projectImageUrl(project.imageSeed, 200, 200)}
               alt=""
-              className="w-full h-full object-cover opacity-60"
+              className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
             />
             <span className="absolute inset-0 flex items-center justify-center font-epilogue font-black text-white text-xs mix-blend-difference">
               {project.name.slice(0, 3).toUpperCase()}
             </span>
           </div>
           <div>
-            <div className="font-epilogue font-black uppercase text-lg tracking-tight">
+            <div className="font-epilogue font-black uppercase text-lg tracking-tight group-hover:underline">
               {project.name}
             </div>
             <div className="text-sm font-medium text-gray-700">{project.pitch}</div>
             <div className="text-xs text-gray-500 mt-0.5">by {founder.name}</div>
           </div>
-        </div>
-        <div className="font-epilogue font-bold text-sm uppercase tracking-tight space-y-1">
-          <div>
-            Committed <span className="font-black text-base">{formatUSD(commitment.kommittedUSD)}</span>
+        </Link>
+        {/* H2 — kommits as the headline number; committed USD + since date drop to secondary chips. */}
+        <div>
+          <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+            Kommits
           </div>
-          <div className="text-gray-500">
-            Since {shortDate(commitment.sinceISO)} · <span className="font-black text-black">{formatNumber(kommits)} kommits</span>
+          <div
+            className="mt-1 font-epilogue font-black text-3xl md:text-4xl tracking-tighter tabular-nums"
+            aria-live="polite"
+          >
+            {kommitsDisplay}
           </div>
-          <div className="text-gray-400 text-xs normal-case font-medium tracking-normal">
-            {formatUSD(commitment.kommittedUSD)} × {days} {days === 1 ? "day" : "days"}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
+              {formatUSD(commitment.kommittedUSD)} committed
+            </span>
+            <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
+              Since {shortDate(commitment.sinceISO)}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -125,6 +146,7 @@ export function CommitmentRow({
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
         projectName={project.name}
+        projectSlug={project.slug}
         committedUSD={commitment.kommittedUSD}
         recipientWallet={project.recipientWallet}
         onSuccess={onWithdrawSuccess}
