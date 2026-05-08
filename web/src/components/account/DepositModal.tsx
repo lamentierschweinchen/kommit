@@ -6,6 +6,7 @@ import { Modal } from "@/components/common/Modal";
 import { Icon } from "@/components/common/Icon";
 import { useToast } from "@/components/common/ToastProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { truncateAddress } from "@/lib/wallet-display";
 
 /**
  * Deposit / faucet UX (Pass 2 dispatch).
@@ -57,8 +58,11 @@ export function DepositModal({
           Your wallet
         </div>
         <div className="bg-gray-100 border-[3px] border-black p-4 flex items-center justify-between gap-3">
-          <code className="font-mono text-sm md:text-base text-black break-all min-w-0">
-            {wallet || "—"}
+          <code
+            className="font-mono text-sm md:text-base text-black min-w-0 truncate"
+            title={wallet || undefined}
+          >
+            {wallet ? truncateAddress(wallet, 6, 6) : "—"}
           </code>
           <button
             type="button"

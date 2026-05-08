@@ -21,10 +21,11 @@ import { USERS } from "@/lib/data/users";
 const MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === "1";
 
 /**
- * In mock-auth mode, the seeded users carry placeholder wallet strings (e.g.
- * `5x9...kT2`) that are not valid base58 Solana addresses. Detect them up-
- * front and return mock fixtures so the dashboard renders something
- * substantive for QA. Real auth always passes through the on-chain reads.
+ * In mock-auth mode, the seeded users carry placeholder wallets that are
+ * valid-format base58 pubkeys but not registered on-chain — calling Anchor
+ * with them would just return empty result sets. Short-circuit to mock
+ * fixtures so the dashboard renders something substantive for QA. Real auth
+ * always passes through the on-chain reads.
  */
 function mockCommitmentsFor(wallet: string): Commitment[] | null {
   if (!MOCK_AUTH) return null;
