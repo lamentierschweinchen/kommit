@@ -12,6 +12,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",
     "@hookform/resolvers": "3.9.1",
+    "@kommitapp/reader": "file:../packages/kommit-reader",
     "@privy-io/react-auth": "3.23.1",
     "@privy-io/server-auth": "1.32.5",
     "@radix-ui/react-checkbox": "1.1.4",

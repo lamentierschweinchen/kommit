@@ -1,0 +1,63 @@
+{
+  "name": "@kommitapp/reader",
+  "version": "0.1.0",
+  "description": "Open-source TypeScript SDK for reading Kommit conviction records on Solana — capital × time, soulbound, public.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lamentierschweinchen/kommit.git",
+    "directory": "app/packages/kommit-reader"
+  },
+  "homepage": "https://github.com/lamentierschweinchen/kommit/tree/main/app/packages/kommit-reader",
+  "bugs": {
+    "url": "https://github.com/lamentierschweinchen/kommit/issues"
+  },
+  "keywords": [
+    "solana",
+    "kommit",
+    "anchor",
+    "conviction",
+    "reputation",
+    "sybil-resistance",
+    "composable",
+    "soulbound",
+    "sdk"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src/idl/kommit.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./idl/kommit.json": "./src/idl/kommit.json",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "ts-node --transpile-only tests/reader.test.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
