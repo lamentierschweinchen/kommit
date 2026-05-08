@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Tape } from "@/components/common/Tape";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
@@ -56,8 +55,6 @@ export function PositionCard({
   if (variant === "graduated" && graduatedRecord) {
     return (
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
-        <Tape color="black" size="md" rotation={12} className="absolute -top-3 -right-3" />
-        <Tape color="secondary" size="md" rotation={-12} className="absolute -bottom-3 -left-3" />
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your record
         </div>
@@ -81,9 +78,6 @@ export function PositionCard({
   return (
     <>
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
-        <Tape color="black" size="md" rotation={12} className="absolute -top-3 -right-3" />
-        <Tape color="secondary" size="md" rotation={-12} className="absolute -bottom-3 -left-3" />
-
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your position
         </div>
