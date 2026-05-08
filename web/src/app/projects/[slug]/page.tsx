@@ -16,18 +16,7 @@ import { shortDate } from "@/lib/date-utils";
 import { cn } from "@/lib/cn";
 import { Tape } from "@/components/common/Tape";
 import { Icon } from "@/components/common/Icon";
-
-const SECTOR_BG: Record<string, string> = {
-  Climate: "bg-primary text-white",
-  Fintech: "bg-white text-black",
-  Bio: "bg-white text-black",
-  Health: "bg-secondary text-black",
-  Edu: "bg-secondary text-black",
-  Consumer: "bg-primary text-white",
-  "Creator tools": "bg-secondary text-black",
-  Media: "bg-white text-black",
-  Community: "bg-secondary text-black",
-};
+import { SECTOR_CHIP_CLASS } from "@/lib/data/sectors";
 
 export default async function ProjectDetailPage({
   params,
@@ -173,8 +162,8 @@ function ProjectHero({ project }: { project: Project }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={cn(
-              "inline-block font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm",
-              SECTOR_BG[project.sector] ?? "bg-white text-black",
+              "inline-block font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] shadow-brutal-sm",
+              SECTOR_CHIP_CLASS,
             )}
           >
             {project.sector}

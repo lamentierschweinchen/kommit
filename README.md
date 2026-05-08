@@ -8,7 +8,7 @@ Built for the [Solana Frontier hackathon](https://solana.com/frontier) (May 2026
 >
 > See [`SECURITY.md`](SECURITY.md) for disclosure path and known limitations, [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program audit, and [`RECOVERY.md`](RECOVERY.md) for program-upgrade-keypair recovery.
 
-**Live demo:** [kommit-lilac.vercel.app](https://kommit-lilac.vercel.app) (devnet)
+**Live demo:** [kommit.now](https://kommit.now) (devnet)
 
 ---
 

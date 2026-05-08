@@ -5,6 +5,7 @@ import { HeroRotatingWord } from "@/components/landing/HeroRotatingWord";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { StatePill } from "@/components/common/Tape";
 import { PROJECTS } from "@/lib/data/projects";
+import { formatUSD, formatNumber, kommitsFor } from "@/lib/kommit-math";
 import { Icon } from "@/components/common/Icon";
 
 export default function LandingPage() {
@@ -48,25 +49,11 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex-1 min-w-0 w-full max-w-md relative shrink-0">
-              {/* Audit #16: drop the 100% YOURS / 0% LOCKED tape labels — subhead carries the meaning */}
-              <div className="aspect-square bg-gray-100 border-[3px] border-black shadow-brutal-lg relative overflow-hidden flex items-center justify-center">
-                <div
-                  className="absolute w-[150%] h-[150%] opacity-20 -rotate-12 animate-[spin_60s_linear_infinite]"
-                  style={{
-                    backgroundImage: "radial-gradient(circle, #000 1.5px, transparent 1.5px)",
-                    backgroundSize: "24px 24px",
-                  }}
-                  aria-hidden
-                />
-                <div className="relative z-10 grid grid-cols-2 gap-4 w-3/4 h-3/4">
-                  <div className="bg-primary border-[3px] border-black shadow-brutal animate-pulse" />
-                  <div className="bg-secondary border-[3px] border-black shadow-brutal rounded-full" />
-                  <div className="bg-black border-[3px] border-black shadow-brutal-purple rounded-tl-[50px] rounded-br-[50px]" />
-                  <div className="bg-white border-[3px] border-black shadow-brutal flex items-center justify-center">
-                    <Icon name="deployed_code" size="xl" />
-                  </div>
-                </div>
-              </div>
+              {/* Pass-2 audit cleanup: replaced the abstract shape collage with a
+                  stylized "live platform" panel. The hero now hints at what the
+                  product actually shows — real project totals, ticking up. The
+                  numbers come from PROJECTS so they stay accurate as data grows. */}
+              <HeroLivePanel />
             </div>
           </div>
         </section>
@@ -184,7 +171,10 @@ export default function LandingPage() {
           <h2 className="font-epilogue font-black uppercase text-3xl md:text-4xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-12">
             FAQ
           </h2>
-          <div className="space-y-4 max-w-4xl">
+          {/* Pass-2 P1 #7: FAQ section now spans the full section grid like
+              HOW IT WORKS / WHAT KOMMITS UNLOCK above. Reading-column constraint
+              for the answer prose lives inside FAQItem. */}
+          <div className="space-y-4">
             <FAQItem
               question="What's the problem you're solving?"
               defaultOpen
@@ -240,6 +230,96 @@ export default function LandingPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+/**
+ * Hero "LIVE" panel — replaces the abstract shape collage. Shows three live
+ * platform metrics derived from PROJECTS: total kommitters, total kommitted
+ * USD, sum of all kommits across the cohort. Numbers update naturally as
+ * the seed data grows.
+ *
+ * The visual is a stat strip stacked in the brutal frame — same composition
+ * grammar as the dashboard stat strip, so the hero communicates "this is
+ * what the product is" without spoiling a specific surface.
+ */
+function HeroLivePanel() {
+  const totalKommitters = PROJECTS.reduce((acc, p) => acc + p.kommittersCount, 0);
+  const totalUSD = PROJECTS.reduce((acc, p) => acc + p.totalKommittedUSD, 0);
+  const projectCount = PROJECTS.length;
+  // Aggregate kommits across all kommitters of all projects, computed live
+  // from each kommitter's USD × days held. Caps the hero figure at a clean
+  // round value so first paint isn't a long animated number.
+  const totalKommits = PROJECTS.reduce((acc, p) => {
+    return (
+      acc +
+      p.kommitters.reduce((kAcc, k) => kAcc + kommitsFor(k.kommittedUSD, k.sinceISO), 0)
+    );
+  }, 0);
+
+  return (
+    <div className="aspect-square bg-white border-[3px] border-black shadow-brutal-lg relative overflow-hidden flex flex-col justify-between p-6 md:p-8">
+      {/* Subtle dotted backdrop, masked low so it doesn't compete with the numbers */}
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, #000 1.5px, transparent 1.5px)",
+          backgroundSize: "24px 24px",
+        }}
+        aria-hidden
+      />
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="inline-flex items-center gap-2 bg-secondary border-[2px] border-black px-3 py-1 shadow-brutal-sm">
+          <span className="w-2 h-2 rounded-full bg-black animate-pulse" aria-hidden />
+          <span className="font-epilogue font-black uppercase text-[10px] tracking-widest">
+            Live
+          </span>
+        </div>
+        <span className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
+          {projectCount} active
+        </span>
+      </div>
+
+      <div className="relative z-10 space-y-4 md:space-y-5">
+        <Stat
+          label="Kommitted"
+          value={formatUSD(totalUSD, { compact: totalUSD >= 10_000 })}
+        />
+        <Stat label="Kommitters" value={formatNumber(totalKommitters)} />
+        <Stat label="Kommits" value={formatNumber(totalKommits)} accent />
+      </div>
+
+      <div className="relative z-10 font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 text-center">
+        Real teams · Real backers · Real money never locks
+      </div>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="border-[2px] border-black bg-gray-100 p-3 shadow-brutal-sm flex items-baseline justify-between gap-3">
+      <span className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
+        {label}
+      </span>
+      <span
+        className={
+          accent
+            ? "font-epilogue font-black text-2xl md:text-3xl tracking-tighter text-primary"
+            : "font-epilogue font-black text-2xl md:text-3xl tracking-tighter"
+        }
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -309,7 +389,7 @@ function FAQItem({
         </span>
         <Icon name="add" size="lg" className="faq-icon transition-transform" />
       </summary>
-      <div className="px-6 pb-6 -mt-1 text-base font-medium text-gray-800 leading-relaxed space-y-5">
+      <div className="px-6 pb-6 -mt-1 text-base font-medium text-gray-800 leading-relaxed space-y-5 max-w-3xl">
         {children}
       </div>
     </details>

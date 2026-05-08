@@ -4,18 +4,7 @@ import { avatarUrl } from "@/lib/data/users";
 import { formatUSD, formatNumber } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { cn } from "@/lib/cn";
-
-const SECTOR_BG: Record<string, string> = {
-  Climate: "bg-primary text-white",
-  Fintech: "bg-white text-black",
-  Bio: "bg-white text-black",
-  Health: "bg-secondary text-black",
-  Edu: "bg-secondary text-black",
-  Consumer: "bg-primary text-white",
-  "Creator tools": "bg-secondary text-black",
-  Media: "bg-white text-black",
-  Community: "bg-secondary text-black",
-};
+import { SECTOR_CHIP_CLASS } from "@/lib/data/sectors";
 
 /**
  * Browse / featured grid card.
@@ -90,8 +79,8 @@ export function ProjectCard({ project }: { project: Project }) {
           </h3>
           <div
             className={cn(
-              "absolute top-3 right-3 z-20 font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm",
-              SECTOR_BG[project.sector] ?? "bg-white text-black",
+              "absolute top-3 right-3 z-20 font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] shadow-brutal-sm",
+              SECTOR_CHIP_CLASS,
             )}
           >
             {project.sector}
