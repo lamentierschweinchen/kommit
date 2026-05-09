@@ -1,7 +1,7 @@
 {
   "cluster": "devnet",
   "decimals": 6,
-  "mint": "",
-  "mintAuthority": "",
-  "createdAt": null
+  "mint": "6fLKTA1JSjvT8RyMZJ8HyYnmSJhNcd9nEHQxkjeWzxS6",
+  "mintAuthority": "HAfdgWUomZ1mtGrUB12D5Cw8qVB2tQu65qvdEwzJq4M1",
+  "createdAt": "2026-05-09T17:58:20.868Z"
 }
