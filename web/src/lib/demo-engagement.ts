@@ -27,6 +27,7 @@
 
 import type { RemoteComment, RemoteUpdate } from "@/lib/api-types";
 import type { Commitment } from "@/lib/data/commitments";
+import { isDemoFrozen } from "@/lib/demo-mode";
 
 const NS = "demo:v1:";
 
@@ -100,6 +101,7 @@ function writeAllUpdates(updates: Record<string, RemoteUpdate[]>) {
 }
 
 function appendUpdate(update: RemoteUpdate): RemoteUpdate {
+  if (isDemoFrozen()) return update;
   const all = readAllUpdates();
   const list = all[update.project_pda] ?? [];
   // Newest first to match the real route's ORDER BY posted_at DESC.
@@ -124,6 +126,7 @@ function writeAllReactions(reactions: Record<string, Record<string, number>>) {
 }
 
 function bumpReaction(updateId: string, emoji: string, delta: 1 | -1) {
+  if (isDemoFrozen()) return;
   const all = readAllReactions();
   const counts = all[updateId] ?? {};
   const next = Math.max(0, (counts[emoji] ?? 0) + delta);
@@ -152,6 +155,7 @@ function writeAllComments(all: Record<string, RemoteComment[]>) {
 }
 
 function appendComment(updateId: string, comment: RemoteComment) {
+  if (isDemoFrozen()) return;
   const all = readAllComments();
   all[updateId] = [...(all[updateId] ?? []), comment];
   writeAllComments(all);
@@ -342,6 +346,13 @@ export function simulateCommit(args: {
   principalUSD: number;
 }): Commitment {
   const { wallet, projectSlug, principalUSD } = args;
+  if (isDemoFrozen()) {
+    // Frozen: return the existing position unchanged so callers don't break.
+    const existing = readAllPositions()[wallet]?.[projectSlug];
+    return existing
+      ? { projectSlug, kommittedUSD: existing.kommittedUSD, sinceISO: existing.sinceISO }
+      : { projectSlug, kommittedUSD: 0, sinceISO: nowISO().slice(0, 10) };
+  }
   const all = readAllPositions();
   if (!all[wallet]) all[wallet] = {};
   const existing = all[wallet][projectSlug];
@@ -374,6 +385,12 @@ export function simulateWithdraw(args: {
   amountUSD: number;
 }): Commitment | null {
   const { wallet, projectSlug, amountUSD } = args;
+  if (isDemoFrozen()) {
+    const existing = readAllPositions()[wallet]?.[projectSlug];
+    return existing
+      ? { projectSlug, kommittedUSD: existing.kommittedUSD, sinceISO: existing.sinceISO }
+      : null;
+  }
   const all = readAllPositions();
   const pos = all[wallet]?.[projectSlug];
   if (!pos) return null;
@@ -406,6 +423,7 @@ export function getDemoBalance(wallet: string): number {
 
 function setDemoBalance(wallet: string, amount: number) {
   if (!wallet) return;
+  if (isDemoFrozen()) return;
   const all = readAllBalances();
   all[wallet] = round2(Math.max(0, amount));
   writeStore(KEY_BALANCES, all);
@@ -427,6 +445,7 @@ export type DemoActivityEntry = {
 };
 
 function appendDemoActivity(entry: Omit<DemoActivityEntry, "atISO">) {
+  if (isDemoFrozen()) return;
   const log = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
   log.unshift({ ...entry, atISO: nowISO() });
   writeStore(KEY_ACTIVITY, log.slice(0, 200));
