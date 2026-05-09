@@ -18,6 +18,7 @@ import { PROJECTS, type Project } from "@/lib/data/projects";
 import { type Commitment } from "@/lib/data/commitments";
 import { isDemoMode } from "@/lib/demo-mode";
 import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
+import { isSandboxOverlayActive } from "@/lib/sandbox-overlay";
 
 /**
  * Demo-mode reads short-circuit Anchor entirely: the persona wallets aren't
@@ -31,6 +32,47 @@ import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
 function demoCommitmentsFor(wallet: string): Commitment[] | null {
   if (!isDemoMode()) return null;
   return getDemoPositions(wallet);
+}
+
+/**
+ * Lane B sandbox overlay (handoff 49 item 8): when a real-Privy user has
+ * been through the visa-demo card-mock flow, their simulated commit lives
+ * in localStorage under their Privy wallet. This helper surfaces those
+ * positions so the dashboard read merges them with on-chain commits.
+ *
+ * Returns [] when the overlay flag is off (or in demo mode — that path
+ * already returns the localStorage view via demoCommitmentsFor).
+ */
+function sandboxOverlayCommitmentsFor(wallet: string): Commitment[] {
+  if (isDemoMode()) return [];
+  if (!isSandboxOverlayActive()) return [];
+  return getDemoPositions(wallet);
+}
+
+/** Merge an on-chain commitment list with localStorage simulated overlays.
+ *  Same project = sum kommittedUSD, retain earlier sinceISO. */
+function mergeCommitments(
+  onChain: Commitment[],
+  overlay: Commitment[],
+): Commitment[] {
+  if (overlay.length === 0) return onChain;
+  const bySlug = new Map<string, Commitment>();
+  for (const c of onChain) bySlug.set(c.projectSlug, c);
+  for (const o of overlay) {
+    const existing = bySlug.get(o.projectSlug);
+    if (!existing) {
+      bySlug.set(o.projectSlug, o);
+      continue;
+    }
+    const earlier = existing.sinceISO < o.sinceISO ? existing.sinceISO : o.sinceISO;
+    bySlug.set(o.projectSlug, {
+      ...existing,
+      kommittedUSD: existing.kommittedUSD + o.kommittedUSD,
+      sinceISO: earlier,
+      pivotedAtISO: existing.pivotedAtISO ?? o.pivotedAtISO,
+    });
+  }
+  return Array.from(bySlug.values());
 }
 
 const RPC_URL =
@@ -111,7 +153,7 @@ export async function getCommitmentsForUser(
       sinceISO: unixToISO(depositTs),
     });
   }
-  return out;
+  return mergeCommitments(out, sandboxOverlayCommitmentsFor(walletStr));
 }
 
 /**
@@ -122,16 +164,21 @@ export async function getCommitmentForUserAndProject(
   userWallet: PublicKey | string,
   projectSlug: string,
 ): Promise<Commitment | null> {
+  const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
+
   // Demo-mode fast path runs first — applies to all projects (including
   // pre-launch ones with no recipientWallet) since the demo cohort doesn't
   // touch the on-chain account.
   if (isDemoMode()) {
-    const walletStr = typeof userWallet === "string" ? userWallet : userWallet.toBase58();
     return getDemoPosition(walletStr, projectSlug);
   }
 
   const project = PROJECTS.find((p) => p.slug === projectSlug);
-  if (!project?.recipientWallet) return null;
+  if (!project?.recipientWallet) {
+    // Even without on-chain wiring, a sandbox-overlay user may have a
+    // simulated position from the visa-demo card-mock flow.
+    return isSandboxOverlayActive() ? getDemoPosition(walletStr, projectSlug) : null;
+  }
 
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
   const projectPda = findProjectPda(new PublicKey(project.recipientWallet));
@@ -140,15 +187,27 @@ export async function getCommitmentForUserAndProject(
   // Single-account fetch by computed PDA — cheaper than memcmp.
   const { findCommitmentPda } = await import("@/lib/kommit");
   const commitmentPda = findCommitmentPda(userKey, projectPda);
+  let onChain: Commitment | null = null;
   try {
     const account = await program.account.commitment.fetch(commitmentPda);
-    return {
+    onChain = {
       projectSlug,
       kommittedUSD: baseUnitsToUSD(BigInt(account.principal.toString())),
       sinceISO: unixToISO(Number(account.depositTs)),
     };
   } catch {
-    // Account doesn't exist — user has no position in this project.
-    return null;
+    onChain = null;
   }
+
+  if (!isSandboxOverlayActive()) return onChain;
+
+  const overlay = getDemoPosition(walletStr, projectSlug);
+  if (!overlay) return onChain;
+  if (!onChain) return overlay;
+  return {
+    projectSlug,
+    kommittedUSD: onChain.kommittedUSD + overlay.kommittedUSD,
+    sinceISO: onChain.sinceISO < overlay.sinceISO ? onChain.sinceISO : overlay.sinceISO,
+    pivotedAtISO: onChain.pivotedAtISO ?? overlay.pivotedAtISO,
+  };
 }

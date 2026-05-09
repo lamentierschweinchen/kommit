@@ -1,0 +1,41 @@
+{
+  "cluster": "devnet",
+  "projects": [
+    {
+      "slug": "caldera",
+      "recipientWallet": "2MTDgF6QCzeP6dRHgnXhuDe6CRvJpRvXFiRB58nggSYf",
+      "projectPda": "9zDCNrq5VEcgKLYrCPy4FpMimnzM7NNHTBRuvdym79Dh",
+      "createdAt": "2026-05-09T17:58:32.287Z"
+    },
+    {
+      "slug": "lighthouse-labs",
+      "recipientWallet": "CrzjJvptBHguV2P2qKseffmadvoph6G8AKJcBGkaZgTP",
+      "projectPda": "ErEvgX9P4pU5QD1rtE38j9FXBGkhvgVJFy7cb6Tc6Znn",
+      "createdAt": "2026-05-09T17:58:33.088Z"
+    },
+    {
+      "slug": "aurora",
+      "recipientWallet": "752PgsRvqaJRua2xi4y26gd4FpzMxVievoaUAkXZS7P9",
+      "projectPda": "4hKdjBG8rqaEZHZv7KHMpjpBnxk2cHwvTuzntXShW7HH",
+      "createdAt": "2026-05-09T17:58:34.390Z"
+    },
+    {
+      "slug": "quire-chess",
+      "recipientWallet": "CwUTvyvfbWLZwAXbGh5pS97guMiq5ryoX13prZ7Sng5Y",
+      "projectPda": "Gp3CdaD4pFjgwSpQ7n3oz85MRcKmDnmdR1T3nsgWjXoD",
+      "createdAt": "2026-05-09T17:58:34.822Z"
+    },
+    {
+      "slug": "frame-studio",
+      "recipientWallet": "Az9kH1Xh7NoY757qgPMf1xDSwZyN1vwBMUvgazfeDwww",
+      "projectPda": "CDxuUCK3YVuG8spcA3vpwsbf9cqnpP6w3M1o2Co8zq6s",
+      "createdAt": "2026-05-09T17:58:35.492Z"
+    },
+    {
+      "slug": "beacon-sci",
+      "recipientWallet": "4M2EMLiBcnjXd5v7CWRYvrXwyBLwxtPUXuwSPSxhVqxk",
+      "projectPda": "7xrvbzVQyUPA2oDojqyj69pBKKVVPyvYXbQrKo7Xw2fV",
+      "createdAt": "2026-05-09T17:58:35.994Z"
+    }
+  ]
+}

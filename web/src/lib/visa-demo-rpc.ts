@@ -55,6 +55,33 @@ export function getDevnetConnection(): Connection {
   return cachedConnection;
 }
 
+/** Devnet genesis hash — same value reported by `solana cluster-version
+ *  --url devnet`. Used as the cluster-confinement gate (Codex Pass 1 M3):
+ *  we refuse to mint or transfer from any RPC whose genesis differs. */
+export const DEVNET_GENESIS_HASH = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
+
+let cachedClusterCheck: Promise<boolean> | null = null;
+
+/** Returns true iff the configured RPC is devnet. Caches the result for
+ *  the lifetime of the Node process — genesis hash doesn't change. Failures
+ *  to reach the RPC are NOT cached so a transient outage doesn't lock the
+ *  route into a "wrong cluster" state. */
+export async function isDevnetCluster(): Promise<boolean> {
+  if (cachedClusterCheck) return cachedClusterCheck;
+  const promise = (async () => {
+    try {
+      const genesis = await getDevnetConnection().getGenesisHash();
+      return genesis === DEVNET_GENESIS_HASH;
+    } catch (e) {
+      // Don't cache the failure; let the next call retry.
+      cachedClusterCheck = null;
+      throw e;
+    }
+  })();
+  cachedClusterCheck = promise;
+  return promise;
+}
+
 /** Lamport balance of an arbitrary devnet wallet. */
 export async function getLamports(wallet: PublicKey): Promise<number> {
   return getDevnetConnection().getBalance(wallet, "confirmed");
