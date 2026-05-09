@@ -17,6 +17,29 @@
  * The fee-payer keypair must already be funded with at least ~0.01 SOL on
  * devnet to pay rent for the new Mint account. Use scripts/setup-visa-fee-payer.mjs
  * if it isn't yet.
+ *
+ * --- Codex Pass 1 hardenings ---
+ *
+ * L2 (empty-JSON recovery): if `sandbox-mint.json` exists but has empty
+ * `mint`/`mintAuthority` fields, REFUSE to silently create a fresh mint.
+ * That state is indistinguishable from "operator accidentally cleared a
+ * healthy file" and a silent re-create orphans the previous mint along
+ * with anyone holding sandbox-token balances on it. Recovery options:
+ *
+ *   - Restore a known mint pubkey:
+ *       MINT=<base58> KOMMIT_DEVNET_FEE_PAYER_SECRET=<…> node scripts/setup-sandbox-mint.mjs
+ *   - Confirm fresh-mint creation (orphans the old one):
+ *       FORCE=1 KOMMIT_DEVNET_FEE_PAYER_SECRET=<…> node scripts/setup-sandbox-mint.mjs
+ *
+ * The very first run on a fresh repo also requires `FORCE=1` (the file
+ * ships with empty fields by design) — this is a one-time speed bump in
+ * exchange for never silently double-minting on accidents thereafter.
+ *
+ * M3 (cluster confinement): before any side-effecting RPC call, fetch
+ * `getGenesisHash()` and verify it matches the devnet genesis hash
+ * (`EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`). A mis-pointed
+ * `NEXT_PUBLIC_HELIUS_RPC_URL` (e.g. mainnet) would otherwise mint a real
+ * SPL token and write `cluster: "devnet"` to JSON regardless.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
@@ -33,6 +56,11 @@ const RPC_URL =
 const SECRET = process.env.KOMMIT_DEVNET_FEE_PAYER_SECRET;
 const DECIMALS = 6;
 const FORCE = process.env.FORCE === "1";
+const MINT_OVERRIDE = process.env.MINT?.trim();
+
+/** Devnet genesis hash. Same value the `solana-test-validator` ships with;
+ *  cross-check via `solana cluster-version --url devnet` if in doubt. */
+const DEVNET_GENESIS_HASH = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 
 function loadFeePayer() {
   if (!SECRET) {
@@ -65,15 +93,24 @@ function loadFeePayer() {
   return Keypair.fromSecretKey(bytes);
 }
 
-function readExistingMint() {
-  if (!existsSync(MINT_JSON_PATH)) return null;
+/** Inspect the on-disk JSON. Returns one of:
+ *   { state: "absent" }                       — file does not exist
+ *   { state: "corrupt", error }               — file exists but JSON.parse threw
+ *   { state: "populated", mint }              — has a non-empty mint pubkey
+ *   { state: "empty" }                        — exists, parses, but mint field empty/missing
+ */
+function inspectMintJson() {
+  if (!existsSync(MINT_JSON_PATH)) return { state: "absent" };
+  let json;
   try {
-    const json = JSON.parse(readFileSync(MINT_JSON_PATH, "utf8"));
-    if (typeof json?.mint === "string" && json.mint.length > 0) return json.mint;
-  } catch {
-    /* fall through — treat as missing */
+    json = JSON.parse(readFileSync(MINT_JSON_PATH, "utf8"));
+  } catch (e) {
+    return { state: "corrupt", error: e?.message ?? String(e) };
   }
-  return null;
+  if (typeof json?.mint === "string" && json.mint.length > 0) {
+    return { state: "populated", mint: json.mint };
+  }
+  return { state: "empty" };
 }
 
 function writeMintJson(args) {
@@ -91,13 +128,66 @@ function writeMintJson(args) {
 
 const conn = new Connection(RPC_URL, "confirmed");
 
+// M3: cluster confinement. Refuse to do anything if the RPC isn't devnet.
+async function assertDevnet() {
+  let genesis;
+  try {
+    genesis = await conn.getGenesisHash();
+  } catch (e) {
+    console.error(`Could not read genesis hash from ${RPC_URL}:`, e?.message ?? e);
+    process.exit(1);
+  }
+  if (genesis !== DEVNET_GENESIS_HASH) {
+    console.error(
+      `RPC ${RPC_URL} is not devnet (genesis ${genesis} != ${DEVNET_GENESIS_HASH}).`,
+    );
+    console.error(
+      "Refusing to create a sandbox mint outside devnet. Unset NEXT_PUBLIC_HELIUS_RPC_URL",
+    );
+    console.error("or point it at a devnet RPC and re-run.");
+    process.exit(1);
+  }
+}
+
+await assertDevnet();
+
+const inspection = inspectMintJson();
+
+// ---------- Recovery mode: restore a known mint pubkey without re-creating. ----------
+if (MINT_OVERRIDE) {
+  let mintPubkey;
+  try {
+    mintPubkey = new PublicKey(MINT_OVERRIDE);
+  } catch (e) {
+    console.error(`MINT=${MINT_OVERRIDE} is not a valid base58 pubkey:`, e?.message ?? e);
+    process.exit(1);
+  }
+  let info;
+  try {
+    info = await getMint(conn, mintPubkey);
+  } catch (e) {
+    console.error(`Mint ${MINT_OVERRIDE} not found on devnet:`, e?.message ?? e);
+    process.exit(1);
+  }
+  writeMintJson({
+    mint: mintPubkey.toBase58(),
+    decimals: info.decimals,
+    mintAuthority: info.mintAuthority?.toBase58() ?? "",
+  });
+  console.log("Restored sandbox mint from MINT= override.");
+  console.log(`  mint:           ${mintPubkey.toBase58()}`);
+  console.log(`  decimals:       ${info.decimals}`);
+  console.log(`  mintAuthority:  ${info.mintAuthority?.toBase58() ?? "(none)"}`);
+  console.log(`  written to:     ${MINT_JSON_PATH}`);
+  process.exit(0);
+}
+
 if (!FORCE) {
-  const existing = readExistingMint();
-  if (existing) {
+  if (inspection.state === "populated") {
     try {
-      const info = await getMint(conn, new PublicKey(existing));
+      const info = await getMint(conn, new PublicKey(inspection.mint));
       console.log("Existing sandbox mint is healthy. No action.");
-      console.log(`  mint:           ${existing}`);
+      console.log(`  mint:           ${inspection.mint}`);
       console.log(`  decimals:       ${info.decimals}`);
       console.log(`  mintAuthority:  ${info.mintAuthority?.toBase58() ?? "(none)"}`);
       console.log(`  supply:         ${info.supply.toString()}`);
@@ -106,11 +196,49 @@ if (!FORCE) {
       process.exit(0);
     } catch (e) {
       console.warn(
-        `sandbox-mint.json points at ${existing}, but the on-chain mint isn't readable:`,
+        `sandbox-mint.json points at ${inspection.mint}, but the on-chain mint isn't readable:`,
         e?.message ?? e,
       );
-      console.warn("Falling through to create a new one.");
+      console.warn(
+        "Refusing to silently create a replacement — that mint may exist on a different",
+      );
+      console.warn(
+        "RPC. Re-run with FORCE=1 to mint a fresh one, or MINT=<pubkey> to restore.",
+      );
+      process.exit(1);
     }
+  }
+
+  // L2: empty/corrupt → fail fast unless FORCE=1 / MINT= specified.
+  if (inspection.state === "empty") {
+    console.error("sandbox-mint.json exists but has no mint pubkey set.");
+    console.error(
+      "Refusing to silently create a fresh mint — an empty file is",
+    );
+    console.error(
+      "indistinguishable from an accidentally cleared healthy one, and",
+    );
+    console.error(
+      "creating a replacement would orphan any sandbox-token balances on the",
+    );
+    console.error("previous mint.");
+    console.error("");
+    console.error("Recovery options:");
+    console.error(
+      "  - Restore a known mint:  MINT=<pubkey> node scripts/setup-sandbox-mint.mjs",
+    );
+    console.error(
+      "  - Confirm fresh creation: FORCE=1 node scripts/setup-sandbox-mint.mjs",
+    );
+    process.exit(1);
+  }
+
+  if (inspection.state === "corrupt") {
+    console.error(`sandbox-mint.json is unreadable: ${inspection.error}`);
+    console.error(
+      "Restore from git history, or re-run with FORCE=1 to overwrite (creates a fresh mint).",
+    );
+    process.exit(1);
   }
 }
 

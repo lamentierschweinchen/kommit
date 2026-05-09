@@ -18,7 +18,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { PublicKey } from "@solana/web3.js";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useKommitProgram } from "@/lib/anchor-client";
@@ -26,8 +25,11 @@ import { useToast } from "@/components/common/ToastProvider";
 import { authedFetch } from "@/lib/api-client";
 import { commitToProject } from "@/lib/tx";
 import { mapAnchorError } from "@/lib/anchor-errors";
-import { PROJECTS } from "@/lib/data/projects";
 import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
+import {
+  getSandboxProjects,
+  isSandboxProjectsConfigured,
+} from "@/lib/sandbox-projects";
 import { Icon } from "@/components/common/Icon";
 import { SolscanLink } from "@/components/sandbox/SolscanLink";
 import { cn } from "@/lib/cn";
@@ -51,10 +53,14 @@ export default function SandboxOnChainPage() {
   const client = useKommitProgram();
   const { confirm, error: toastError } = useToast();
 
-  const eligibleProjects = useMemo(
-    () => PROJECTS.filter((p) => !!p.recipientWallet),
-    [],
-  );
+  // Codex Pass 1 H1 closure: the picker pulls from sandbox-projects.json
+  // (fresh on-chain Project PDAs whose escrows are uninitialized at deploy
+  // time) instead of the static PROJECTS catalog. The legacy catalog wallets
+  // resolve to PDAs whose escrow ATAs are already locked to the production
+  // USDC mint — committing the sandbox SPL mint into those escrows would
+  // fail Anchor's `token::mint = usdc_mint` constraint mid-tx.
+  const eligibleProjects = useMemo(() => getSandboxProjects(), []);
+  const sandboxConfigured = useMemo(() => isSandboxProjectsConfigured(), []);
   const [projectSlug, setProjectSlug] = useState<string>(
     eligibleProjects[0]?.slug ?? "",
   );
@@ -88,6 +94,8 @@ export default function SandboxOnChainPage() {
             "Sandbox can't sponsor gas right now. Try again in a moment.",
           "mint-not-configured":
             "Sandbox mint isn't set up. Operator needs to run the setup script.",
+          "wrong-cluster":
+            "Sandbox is misconfigured (RPC isn't devnet). Operator needs to fix the env.",
           "rate-limit": "Please wait a moment before requesting more.",
           rpc: "Couldn't reach the network. Try again in a moment.",
           auth: "Sign in to receive devnet funds.",
@@ -127,19 +135,19 @@ export default function SandboxOnChainPage() {
   const canCommit =
     isSignedIn &&
     !!client &&
-    !!project?.recipientWallet &&
+    !!project &&
     !!sandboxMint &&
     !!airdropResult &&
     amountUSD > 0 &&
     amountUSD <= (airdropResult?.tokenBalanceUSD ?? 0);
 
   const handleCommit = useCallback(async () => {
-    if (!client || !project?.recipientWallet || !sandboxMint) return;
+    if (!client || !project || !sandboxMint) return;
     setCommitting(true);
     try {
       const { signature } = await commitToProject(
         client,
-        new PublicKey(project.recipientWallet),
+        project.recipientWallet,
         amountUSD.toString(),
         sandboxMint,
       );
@@ -344,7 +352,9 @@ export default function SandboxOnChainPage() {
               </div>
             ) : (
               <p className="font-epilogue text-sm text-gray-600">
-                No projects with on-chain wallets are currently configured.
+                {sandboxConfigured
+                  ? "No sandbox projects available right now."
+                  : "Sandbox not configured. Operator must run scripts/setup-sandbox-projects.mjs and commit the resulting sandbox-projects.json."}
               </p>
             )}
           </Step>
