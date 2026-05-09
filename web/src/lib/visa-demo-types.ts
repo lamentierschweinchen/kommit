@@ -27,7 +27,19 @@ export type SandboxCard = {
 
 export type PreFundResponse =
   | { ok: true; lamports: number }
-  | { ok: false; error: "auth" | "rpc" | "rate-limit" };
+  | { ok: false; error: "auth" | "rpc" | "rate-limit" | "demo-api-disabled" };
+
+// ---- Idempotency -----------------------------------------------------------
+
+/**
+ * Codex H1: client-generated UUID per user-initiated kommit/withdraw click.
+ * Server keys a short-lived dedup map by `${wallet}:${idempotencyKey}` and
+ * returns the prior result on duplicate (no second Helio call, no second
+ * memo). Frontend reuses the same key for in-flight retries (button
+ * double-click, network jitter), generates a fresh `crypto.randomUUID()`
+ * for the next user-initiated action.
+ */
+export type IdempotencyKey = string;
 
 // ---- Onramp ----------------------------------------------------------------
 
@@ -40,8 +52,8 @@ export type OnrampRequest = {
   /** Project slug — stub uses this to key the simulated position so the
    *  dashboard renders the new commit without round-tripping the chain. */
   projectSlug: string;
-  /** Optional override; server uses live FX otherwise. */
-  fxRate?: number;
+  /** Codex H1 — see IdempotencyKey above. Required. */
+  idempotencyKey: IdempotencyKey;
 };
 
 export type OnrampResponse =
@@ -51,20 +63,33 @@ export type OnrampResponse =
       amountUSDC: number;
       /** EUR → USDC rate used. For display ("Charged €50 at 1.087 EUR/USDC"). */
       fxRate: number;
-      /** Solana devnet transaction signature for the commit. */
-      commitTxHash: string;
+      /**
+       * Solana devnet **Memo-program** signature for sandbox traceability.
+       * Cosmetic — actual on-chain commit (the Anchor `commit` instruction)
+       * is executed client-side via the existing program calls in the live
+       * product flow. The visa-demo path uses a Memo tx as the
+       * Solscan-traceable artifact for the submission video. (Codex I1.)
+       */
+      memoTxHash: string;
       /** Card last-4 for the success toast continuity. */
       cardLast4: string;
     }
   | {
       ok: false;
-      error: "card-rejected" | "onramp-failed" | "commit-failed" | "rate-limit";
+      error:
+        | "card-rejected"
+        | "onramp-failed"
+        | "commit-failed"
+        | "rate-limit"
+        | "idempotency-conflict"
+        | "demo-api-disabled";
     };
 
 // ---- Offramp ---------------------------------------------------------------
 
 export type OfframpRequest = {
-  /** USDC base units to withdraw + payout. */
+  /** USDC base units to withdraw + payout. Server bounds-checks: integer,
+   *  finite, [1, MAX_DEMO_USDC_BASE]. (Codex H2.) */
   amountUSDC: number;
   /** PDA the withdraw is pulled from (i.e. the project account). */
   projectPda: string;
@@ -72,6 +97,8 @@ export type OfframpRequest = {
   projectSlug: string;
   /** Card last-4 — passes through for display continuity in the success toast. */
   cardLast4: string;
+  /** Codex H1 — see IdempotencyKey above. Required. */
+  idempotencyKey: IdempotencyKey;
 };
 
 export type OfframpResponse =
@@ -79,12 +106,26 @@ export type OfframpResponse =
       ok: true;
       /** EUR amount actually credited back. */
       amountEUR: number;
-      /** Solana devnet withdraw signature. */
-      withdrawTxHash: string;
+      /**
+       * Solana devnet **Memo-program** signature for sandbox traceability.
+       * Cosmetic — actual on-chain withdraw (the Anchor `withdraw`
+       * instruction) is executed client-side via the existing program calls
+       * in the live product flow. The visa-demo path uses a Memo tx as
+       * the Solscan-traceable artifact for the submission video. (Codex I1.)
+       */
+      memoTxHash: string;
       /** Sandbox payout reference (Helio / Mercuryo handle). */
       payoutId: string;
     }
-  | { ok: false; error: "withdraw-failed" | "offramp-failed" | "rate-limit" };
+  | {
+      ok: false;
+      error:
+        | "withdraw-failed"
+        | "offramp-failed"
+        | "rate-limit"
+        | "idempotency-conflict"
+        | "demo-api-disabled";
+    };
 
 // ---- Client surface --------------------------------------------------------
 

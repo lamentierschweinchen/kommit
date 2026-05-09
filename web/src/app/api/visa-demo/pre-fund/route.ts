@@ -28,6 +28,7 @@ import {
 } from "@/lib/visa-demo-rpc";
 import { isFeePayerConfigured } from "@/lib/visa-demo-fee-payer";
 import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
+import { isVisaApiEnabled } from "@/lib/visa-demo-mode";
 import type { PreFundResponse } from "@/lib/visa-demo-types";
 
 export const runtime = "nodejs";
@@ -36,7 +37,7 @@ const THRESHOLD_LAMPORTS = 5_000_000;   // 0.005 SOL — above this, skip
 const GAS_GRANT_LAMPORTS = 10_000_000;  // 0.01 SOL — covers many commits
 const RATE_LIMIT_MS = 60_000;           // 1 pre-fund per wallet per 60s
 
-type PreFundErrorCode = "auth" | "rpc" | "rate-limit";
+type PreFundErrorCode = "auth" | "rpc" | "rate-limit" | "demo-api-disabled";
 
 function jsonError(error: PreFundErrorCode, status: number): NextResponse {
   const body: PreFundResponse = { ok: false, error };
@@ -44,6 +45,14 @@ function jsonError(error: PreFundErrorCode, status: number): NextResponse {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // 0. Server-side feature gate (Codex M1). Independent of the FE
+  //    NEXT_PUBLIC_VISA_SANDBOX flag. Must come BEFORE auth so a disabled
+  //    deploy doesn't burn an auth roundtrip + log auth-success messages
+  //    for traffic the route is configured to refuse.
+  if (!isVisaApiEnabled()) {
+    return jsonError("demo-api-disabled", 503);
+  }
+
   // 1. Auth.
   const authed = await requireCallerWallet(req);
   if (authed instanceof Response) {

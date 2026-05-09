@@ -88,7 +88,11 @@ async function onramp(req: OnrampRequest): Promise<OnrampResponse> {
     return { ok: false, error: "card-rejected" };
   }
 
-  const fxRate = req.fxRate ?? STUB_FX_RATE;
+  // Codex M3: stub mirrors the live route — server-derived fxRate only.
+  // Accepting an `idempotencyKey` matches the live route shape but the
+  // stub doesn't dedup (it's in-memory and unauthenticated; downstream
+  // pages use the localStorage simulation for state).
+  const fxRate = STUB_FX_RATE;
   const amountUSDC = req.amountEUR * fxRate; // dollar amount, not base units yet
   const amountUSDCBase = Math.round(amountUSDC * 1_000_000);
 
@@ -103,7 +107,7 @@ async function onramp(req: OnrampRequest): Promise<OnrampResponse> {
     ok: true,
     amountUSDC: amountUSDCBase,
     fxRate,
-    commitTxHash: fakeTxHash("5x9"),
+    memoTxHash: fakeTxHash("5x9"), // Codex I1
     cardLast4: lastFour(req.card.number),
   };
 }
@@ -124,7 +128,7 @@ async function offramp(req: OfframpRequest): Promise<OfframpResponse> {
   return {
     ok: true,
     amountEUR,
-    withdrawTxHash: fakeTxHash("9p3"),
+    memoTxHash: fakeTxHash("9p3"), // Codex I1
     payoutId: `stub-payout-${Date.now()}`,
   };
 }

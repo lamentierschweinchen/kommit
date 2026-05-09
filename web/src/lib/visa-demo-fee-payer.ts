@@ -28,44 +28,50 @@ import "server-only";
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 
+import { readSecret } from "@/lib/server-env";
+
+const SECRET_NAME = "KOMMIT_DEVNET_FEE_PAYER_SECRET";
+
 let cached: Keypair | null = null;
 
 export function getFeePayer(): Keypair {
   if (cached) return cached;
-  const secret = process.env.KOMMIT_DEVNET_FEE_PAYER_SECRET;
+  const secret = readSecret(SECRET_NAME);
   if (!secret) {
     throw new Error(
-      "KOMMIT_DEVNET_FEE_PAYER_SECRET not set — visa-demo routes are non-functional. See web/src/lib/visa-demo-fee-payer.ts for setup steps.",
+      `${SECRET_NAME} not set (or empty after trim) — visa-demo routes are non-functional. See web/src/lib/visa-demo-fee-payer.ts for setup steps.`,
     );
   }
   // Accept either base58 (compact) or JSON-array (Solana CLI keygen output).
   // CLI format is a 64-byte JSON array; base58 is shorter and what we
-  // recommend in .env.example.
+  // recommend in .env.example. `readSecret` already trimmed whitespace
+  // (Codex L3) so both branches see clean input.
   let bytes: Uint8Array;
   try {
-    if (secret.trim().startsWith("[")) {
+    if (secret.startsWith("[")) {
       bytes = new Uint8Array(JSON.parse(secret));
     } else {
-      bytes = bs58.decode(secret.trim());
+      bytes = bs58.decode(secret);
     }
   } catch (e) {
     throw new Error(
-      `KOMMIT_DEVNET_FEE_PAYER_SECRET could not be decoded (expected base58 or JSON array): ${
+      `${SECRET_NAME} could not be decoded (expected base58 or JSON array): ${
         e instanceof Error ? e.message : String(e)
       }`,
     );
   }
   if (bytes.length !== 64) {
     throw new Error(
-      `KOMMIT_DEVNET_FEE_PAYER_SECRET must decode to 64 bytes (Solana ed25519 keypair); got ${bytes.length}`,
+      `${SECRET_NAME} must decode to 64 bytes (Solana ed25519 keypair); got ${bytes.length}`,
     );
   }
   cached = Keypair.fromSecretKey(bytes);
   return cached;
 }
 
-/** True iff the env var is set; lets routes return a clean "not configured"
- *  error instead of throwing on missing setup. */
+/** True iff the env var is set AND non-empty after trim. Lets routes
+ *  return a clean "not configured" error instead of throwing on missing
+ *  setup. (Codex L3 — empty-after-trim now correctly reads as unset.) */
 export function isFeePayerConfigured(): boolean {
-  return !!process.env.KOMMIT_DEVNET_FEE_PAYER_SECRET;
+  return readSecret(SECRET_NAME) !== null;
 }

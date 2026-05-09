@@ -24,9 +24,13 @@
 
 import "server-only";
 
-const HELIO_BASE_URL =
-  process.env.HELIO_BASE_URL ?? "https://api.dev.hel.io"; // sandbox
-const HELIO_API_KEY = process.env.HELIO_API_KEY;
+import { readSecret } from "@/lib/server-env";
+
+// Trimmed once at module load — Codex L3.
+// `readSecret` returns null on unset OR empty-after-trim, which is the
+// signal we use to flip into mock-fallback mode.
+const HELIO_BASE_URL = readSecret("HELIO_BASE_URL") ?? "https://api.dev.hel.io"; // sandbox
+const HELIO_API_KEY = readSecret("HELIO_API_KEY");
 
 const STUB_FX_RATE = 1.087; // EUR → USDC; mirror visa-demo-stub.ts
 

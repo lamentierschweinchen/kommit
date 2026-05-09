@@ -17,6 +17,10 @@
  * reconstruct sandbox demo activity. Real `commit` / `withdraw` Anchor
  * instructions are NOT fired in this flow — that's v1 work where Privy
  * server-side signing or a delegated-commit instruction lands.
+ *
+ * NAMING (Codex I1): downstream API responses surface this hash as
+ * `memoTxHash` — never `commitTxHash` or `withdrawTxHash` — to keep the
+ * sandbox-vs-real-Anchor distinction honest in the wire format.
  */
 
 import "server-only";
