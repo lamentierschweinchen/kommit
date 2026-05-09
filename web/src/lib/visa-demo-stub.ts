@@ -15,6 +15,13 @@
  * (`@/lib/demo-engagement.simulateCommit`) without round-tripping the
  * chain. `chargeStatus` returns `completed` immediately so the polling
  * loop on the success page resolves in dev.
+ *
+ * Persistence: charges are written to sessionStorage so they survive the
+ * hard `window.location.assign()` redirect from /visa-demo to
+ * /visa-demo/success. A pure module-scoped Map would be empty after the
+ * navigation re-evaluates the stub module, causing chargeStatus to
+ * 404 the chargeId we just minted. SessionStorage is per-origin and
+ * lives until the tab closes — exactly the lifetime we need.
  */
 
 import {
@@ -55,19 +62,56 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// In-memory map of synthetic chargeId → {projectSlug, amountUSDC,
-// idempotencyKey, kommitterWallet}. Written by `onramp` and read by
-// `chargeStatus` to fake the webhook completion path.
-const stubCharges = new Map<
-  string,
-  {
-    projectSlug: string;
-    projectPda: string;
-    amountUSDCBase: number;
-    idempotencyKey: string;
-    kommitterWallet: string;
+// Synthetic chargeId → record. Persisted in sessionStorage so the record
+// survives the hard `window.location.assign()` redirect from /visa-demo
+// to /visa-demo/success. Without persistence, the stub's onramp populates
+// a module-scoped Map; the navigation re-evaluates the module and
+// chargeStatus then 404s the chargeId we just minted.
+type StubCharge = {
+  projectSlug: string;
+  projectPda: string;
+  amountUSDCBase: number;
+  idempotencyKey: string;
+  kommitterWallet: string;
+  /**
+   * Sentinel for the "first chargeStatus read fires simulateCommit" gate.
+   * Replaces the previous `kommitterWallet.startsWith("simulated:")` mutation.
+   */
+  simulated?: boolean;
+};
+
+const STUB_CHARGES_KEY = "kommit:visa:stubCharges";
+
+function loadStubCharges(): Record<string, StubCharge> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.sessionStorage.getItem(STUB_CHARGES_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
   }
->();
+}
+
+function saveStubCharges(map: Record<string, StubCharge>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(STUB_CHARGES_KEY, JSON.stringify(map));
+  } catch {
+    // sessionStorage may be disabled — fall through, chargeStatus will 404.
+  }
+}
+
+function getStubCharge(chargeId: string): StubCharge | undefined {
+  return loadStubCharges()[chargeId];
+}
+
+function setStubCharge(chargeId: string, entry: StubCharge): void {
+  const map = loadStubCharges();
+  map[chargeId] = entry;
+  saveStubCharges(map);
+}
 
 // ---- Stub routes -----------------------------------------------------------
 
@@ -84,8 +128,12 @@ async function onramp(req: OnrampRequest): Promise<OnrampResponse> {
   const amountUSDCBase = Math.round(amountUSDC * 1_000_000);
   const chargeId = `stub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  // Stash the would-be charge state so chargeStatus can resolve it.
-  stubCharges.set(chargeId, {
+  // Stash the would-be charge state so chargeStatus can resolve it
+  // *after* the hard `window.location.assign(hostedUrl)` redirect. The
+  // navigation re-evaluates this module, so a module-scoped Map would be
+  // empty by the time chargeStatus runs — sessionStorage is the right
+  // lifetime here.
+  setStubCharge(chargeId, {
     projectSlug: req.projectSlug,
     projectPda: req.projectPda,
     amountUSDCBase,
@@ -115,21 +163,22 @@ async function chargeStatus(
   chargeId: string,
 ): Promise<ChargeStatusResponse> {
   await delay(300);
-  const entry = stubCharges.get(chargeId);
+  const entry = getStubCharge(chargeId);
   if (!entry) {
     return { ok: false, error: "not-found" };
   }
   // First read: simulate the localStorage position so the dashboard
   // renders the new commit. Idempotent on chargeId — once we've fired
-  // the simulation, leave the entry in place so subsequent polls return
-  // the same "completed" payload.
-  if (!entry.kommitterWallet.startsWith("simulated:")) {
+  // the simulation, leave the entry in place (with `simulated: true`) so
+  // subsequent polls return the same "completed" payload without
+  // double-writing the kommit position.
+  if (!entry.simulated) {
     simulateCommit({
       wallet: getVisaDemoWallet(),
       projectSlug: entry.projectSlug,
       principalUSD: entry.amountUSDCBase / 1_000_000,
     });
-    entry.kommitterWallet = `simulated:${entry.kommitterWallet}`;
+    setStubCharge(chargeId, { ...entry, simulated: true });
   }
   return {
     ok: true,
