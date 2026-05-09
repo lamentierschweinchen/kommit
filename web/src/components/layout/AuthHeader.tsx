@@ -12,7 +12,7 @@ import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 
-const PUBLIC_ROUTES = ["/", "/about", "/build", "/build/submitted"];
+const PUBLIC_ROUTES = ["/", "/app", "/about", "/build", "/build/submitted"];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((r) => pathname === r);
@@ -24,7 +24,22 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
 ];
 
-export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
+/**
+ * Lane A architecture rollout: `/` is now the coming-soon waitlist; the
+ * functional landing lives at `/app`. Product surfaces (dashboard, project
+ * detail, projects browser, founder dashboard, etc.) pass `homeHref="/app"`
+ * so the wordmark routes back to the live product home rather than the
+ * marketing page. Defaulting to `/` keeps the small set of public-marketing
+ * surfaces (about, build) pointing at the waitlist.
+ */
+export function AuthHeader({
+  forcePublic,
+  homeHref = "/",
+}: {
+  forcePublic?: boolean;
+  /** Where the wordmark links to. Pass `"/app"` from product surfaces. */
+  homeHref?: string;
+} = {}) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user, isSignedIn, signOut } = useAuth();
@@ -49,7 +64,7 @@ export function AuthHeader({ forcePublic }: { forcePublic?: boolean } = {}) {
     <>
       <nav className="flex justify-between items-center w-full px-6 h-20 bg-white border-b-[3px] border-black shadow-brutal z-50 sticky top-0">
         <div className="flex items-center gap-8 min-w-0">
-          <Link href="/" className="shrink-0 block" aria-label="kommit, home">
+          <Link href={homeHref} className="shrink-0 block" aria-label="kommit, home">
             <Wordmark />
           </Link>
           <div className="hidden lg:flex gap-2">

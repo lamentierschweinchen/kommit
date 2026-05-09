@@ -307,7 +307,7 @@ export default function ReviewPage() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Link
-              href="/"
+              href="/app"
               className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
             >
               ← Site

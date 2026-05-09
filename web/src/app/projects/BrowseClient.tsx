@@ -100,7 +100,7 @@ export function BrowseClient() {
 
   return (
     <>
-      <AuthHeader />
+      <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
         <section className="mt-12 md:mt-16">
           <div className="flex items-end justify-between flex-wrap gap-4">
@@ -154,7 +154,7 @@ export function BrowseClient() {
         {filtered.length > 0 ? (
           <section className="mt-16 flex items-center justify-between flex-wrap gap-4">
             <Link
-              href="/"
+              href="/app"
               className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-6 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
             >
               <Icon name="arrow_back" />

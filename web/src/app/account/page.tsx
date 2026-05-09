@@ -48,7 +48,7 @@ export default function AccountPage() {
 
   return (
     <>
-      <AuthHeader />
+      <AuthHeader homeHref="/app" />
       <div className="flex flex-1 relative">
         <Sidebar variant="kommitter" />
         <main className="flex-1 lg:ml-64 pb-24 max-w-[calc(80rem-16rem)] w-full">
