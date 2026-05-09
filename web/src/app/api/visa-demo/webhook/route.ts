@@ -15,23 +15,35 @@
  * settled USDC at the merchant wallet. (Handoff 44 § B explicitly calls
  * this out so a future reviewer doesn't add the gate by reflex.)
  *
- * Idempotency: keyed on `chargeId`. The charge-store's `markCompleted`
- * returns false when the charge is already terminal — second delivery
- * for the same chargeId is a no-op + 200.
+ * State machine on a verified successful settlement event (handoff 46
+ * Codex M2 closure — see visa-demo-charge-store.ts header for diagram):
  *
- * On a verified successful settlement event, the handler:
- *   1. Marks the charge as completed in the charge-store, recording the
- *      Solana settlement signature MoonPay returned.
- *   2. Relays the settled USDC from the merchant wallet (= fee-payer) to
- *      the kommitter's Privy wallet so the FE can run commitToProject
- *      using the existing client-side flow. Records the relay signature.
- *   3. Returns 200.
+ *     pending → markSettled
+ *             → tryRelay (atomic CAS to relay_pending)
+ *               ├─ relay tx ok    → markCompleted (terminal)
+ *               └─ relay tx fail  → markRelayFailed (retryable)
  *
- * On a failed/canceled/expired event: marks the charge with the
+ *     relay_failed → tryRelay (retry on duplicate webhook delivery)
+ *                  → … (same branches as above)
+ *
+ *     completed → return { status: "duplicate" }, no relay attempt
+ *     relay_pending → return { status: "relay-in-progress" }
+ *
+ * Why we split `settled` from `completed`: before handoff 46, the
+ * handler called `markCompleted` BEFORE the relay tx succeeded. A
+ * fee-payer outage left charges marked complete with no relay signature,
+ * the FE redirected the user to "kommit confirmed," and the USDC sat
+ * stranded at the merchant wallet. Worse, duplicate webhooks of those
+ * stuck charges short-circuited as "duplicate" and never retried the
+ * relay. Now `markCompleted` only fires after the relay tx returns a
+ * signature, and `relay_failed` is observable + retryable on the next
+ * MoonPay duplicate delivery.
+ *
+ * On a failed/canceled MoonPay event: marks the charge with the
  * appropriate terminal status so the FE polling can surface the error
  * without orphaning the user on a "Confirming…" spinner.
  *
- * Hand-off 44 § B.
+ * Hand-off 44 § B; hand-off 46 § B.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -43,10 +55,13 @@ import {
   verifyWebhookSignature,
 } from "@/lib/visa-demo-moonpay";
 import {
-  attachRelaySignature,
+  type ChargeRecord,
   getByChargeId,
   markCompleted,
+  markRelayFailed,
+  markSettled,
   markTerminalFailure,
+  tryRelay,
 } from "@/lib/visa-demo-charge-store";
 import {
   isFeePayerConfigured,
@@ -152,21 +167,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // charge-store's primary index is chargeId; the webhook body includes
   // a transactionId that may differ. We rely on additionalJSON to
   // route — it's the only field we control end-to-end.
-  // We also re-cross-check by transactionId in the relay step's logs.
   const chargeIdFromMeta =
     typeof event.additionalJSON.chargeId === "string"
       ? event.additionalJSON.chargeId
       : "";
 
-  // The transactionId here is the Helio transaction record, not the
-  // chargeId. The chargeId we stored was returned at create-time.
-  // additionalJSON should also carry it on success deliveries — but as a
-  // safety net, scan the store by idempotencyKey when chargeIdFromMeta
-  // is empty.
   let chargeIdForLookup = chargeIdFromMeta;
   if (!chargeIdForLookup && idempotencyKey) {
-    // Inline import to avoid pulling charge-store into the top-of-file
-    // type position; keeps the file readable at the routing logic.
     const { getByIdempotencyKey } = await import(
       "@/lib/visa-demo-charge-store"
     );
@@ -191,7 +198,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  // Route by transaction status.
+  // ── Failure-side branch ──────────────────────────────────────────────
   if (
     event.transactionStatus === "FAILED" ||
     event.transactionStatus === "CANCELED"
@@ -208,66 +215,143 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     event.transactionStatus !== "SUCCESS" &&
     event.transactionStatus !== "SETTLED"
   ) {
-    // PENDING / INITIATED / UNKNOWN — record an observability log line and
-    // return 200; the next delivery will carry the terminal status.
+    // PENDING / INITIATED / UNKNOWN — log and 200; the next delivery
+    // will carry the terminal status.
     return NextResponse.json({ ok: true, status: "pending" });
   }
 
-  // Successful settlement. Mark the charge completed (idempotent on
-  // chargeId) — markCompleted returns false when the charge is already
-  // terminal, which short-circuits the relay step on duplicate delivery.
-  const justCompleted = markCompleted({
-    chargeId: chargeIdForLookup,
-    amountUSDCSettled: event.totalAmountBaseUnits,
-    settlementSignature: event.transactionSignature,
-  });
+  // ── Success-side branch (state machine) ──────────────────────────────
 
-  if (!justCompleted) {
-    // Already-completed: dedup. Return 200 so MoonPay stops retrying.
+  // 1. Pending → settled. Records settlement amount + Solana signature.
+  if (record.status === "pending") {
+    markSettled({
+      chargeId: chargeIdForLookup,
+      amountUSDCSettled: event.totalAmountBaseUnits,
+      settlementSignature: event.transactionSignature,
+    });
+  }
+
+  // Re-read after the (possible) transition.
+  const afterSettle = getByChargeId(chargeIdForLookup);
+  if (!afterSettle) {
+    return NextResponse.json({ ok: true, ignored: true });
+  }
+
+  // 2. Already terminal-completed → duplicate, no relay re-attempt.
+  if (afterSettle.status === "completed") {
     return NextResponse.json({ ok: true, status: "duplicate" });
   }
 
-  // Relay USDC from merchant (fee-payer) wallet → kommitter wallet so the
-  // FE's existing client-side commitToProject works post-redirect.
-  // If this fails, we leave the charge in `completed` state but with no
-  // relaySignature — the FE will surface a "Settlement OK; relay
-  // pending" state that operators can re-run manually. We do NOT mark
-  // failed here, since the user's card was charged and we don't want to
-  // hide that.
-  const targetWallet = kommitterWallet || record.kommitterWallet;
-  if (!isFeePayerConfigured()) {
-    console.error(
-      "[visa-demo/webhook] KOMMIT_DEVNET_FEE_PAYER_SECRET unset — cannot relay USDC; user's payment is settled at merchant wallet but stranded.",
-      { chargeId: chargeIdForLookup },
+  // 3. Already terminal-failed/expired (shouldn't happen on a SUCCESS
+  //    delivery, but defensive — MoonPay shouldn't send SUCCESS after a
+  //    prior FAILED/CANCELED for the same charge).
+  if (
+    afterSettle.status === "failed" ||
+    afterSettle.status === "expired"
+  ) {
+    console.warn(
+      "[visa-demo/webhook] SUCCESS event for already-terminal-failed charge; ignoring.",
+      { chargeId: chargeIdForLookup, status: afterSettle.status },
     );
-    return NextResponse.json({ ok: true, status: "completed-no-relay" });
+    return NextResponse.json({ ok: true, status: "duplicate" });
   }
 
+  // 4. Currently mid-relay (another concurrent webhook already acquired
+  //    the slot). Let the in-flight handler finish; respond 200.
+  if (afterSettle.status === "relay_pending") {
+    return NextResponse.json({ ok: true, status: "relay-in-progress" });
+  }
+
+  // 5. settled OR relay_failed → try to acquire the relay slot. The CAS
+  //    is atomic by virtue of single-threaded JS: no await between read
+  //    and write inside `tryRelay`.
+  const acquired = tryRelay(chargeIdForLookup);
+  if (!acquired) {
+    // Concurrent loser — another handler grabbed the slot between our
+    // read above and the CAS. Defer to it.
+    return NextResponse.json({ ok: true, status: "relay-in-progress" });
+  }
+
+  // 6. We hold the relay slot. Run the merchant→kommitter USDC transfer.
+  return await runRelay({
+    chargeId: chargeIdForLookup,
+    amountBaseUnits: event.totalAmountBaseUnits,
+    record: afterSettle,
+    kommitterWalletFromMeta: kommitterWallet,
+  });
+}
+
+/**
+ * Execute the merchant→kommitter USDC relay. Caller MUST have acquired
+ * the relay slot via `tryRelay` before invoking this. Records terminal
+ * state (`completed` on success, `relay_failed` on failure) before
+ * returning.
+ */
+async function runRelay(args: {
+  chargeId: string;
+  amountBaseUnits: number;
+  record: ChargeRecord;
+  kommitterWalletFromMeta: string;
+}): Promise<NextResponse> {
+  const { chargeId, amountBaseUnits, record, kommitterWalletFromMeta } = args;
+
+  if (!isFeePayerConfigured()) {
+    const reason = "fee-payer not configured";
+    console.error(
+      "[visa-demo/webhook] KOMMIT_DEVNET_FEE_PAYER_SECRET unset — cannot relay USDC; charge is settled at merchant wallet but stranded until env is fixed and a duplicate webhook arrives.",
+      { chargeId },
+    );
+    markRelayFailed({ chargeId, reason });
+    return NextResponse.json({
+      ok: true,
+      status: "relay-failed-retryable",
+      reason,
+    });
+  }
+
+  const targetWallet = kommitterWalletFromMeta || record.kommitterWallet;
   let recipient: PublicKey;
   try {
     recipient = new PublicKey(targetWallet);
   } catch {
+    // Malformed kommitter address — won't ever succeed. We still mark
+    // relay_failed so a duplicate webhook revisits it (operator can fix
+    // the metadata in-place by patching the record before retry); but
+    // this is the closest thing we have to a non-retryable error and is
+    // logged loudly.
+    const reason = "kommitter wallet malformed";
     console.error(
       "[visa-demo/webhook] kommitter wallet from metadata is not a valid pubkey; cannot relay.",
-      { chargeId: chargeIdForLookup, targetWallet },
+      { chargeId, targetWallet },
     );
-    return NextResponse.json({ ok: true, status: "completed-no-relay" });
+    markRelayFailed({ chargeId, reason });
+    return NextResponse.json({
+      ok: true,
+      status: "relay-failed-retryable",
+      reason,
+    });
   }
 
   try {
-    const relaySig = await transferDevnetUSDC(
-      recipient,
-      event.totalAmountBaseUnits,
-    );
-    attachRelaySignature(chargeIdForLookup, relaySig);
+    const relaySig = await transferDevnetUSDC(recipient, amountBaseUnits);
+    markCompleted({ chargeId, relaySignature: relaySig });
+    return NextResponse.json({
+      ok: true,
+      status: "completed",
+      relaySignature: relaySig,
+    });
   } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
     console.error(
       "[visa-demo/webhook] USDC relay transfer failed:",
-      e instanceof Error ? e.message : e,
-      { chargeId: chargeIdForLookup },
+      reason,
+      { chargeId },
     );
-    return NextResponse.json({ ok: true, status: "completed-relay-failed" });
+    markRelayFailed({ chargeId, reason });
+    return NextResponse.json({
+      ok: true,
+      status: "relay-failed-retryable",
+      reason,
+    });
   }
-
-  return NextResponse.json({ ok: true, status: "completed" });
 }

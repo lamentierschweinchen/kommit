@@ -3,16 +3,18 @@
  *
  * Polled by `/visa-demo/success` after MoonPay redirects the user back.
  * Returns the charge state from the in-memory charge-store written by the
- * webhook handler. When `status === "completed"` and `relaySignature` is
- * present, the kommitter's wallet now holds the settled USDC and the FE
- * can run the existing client-side `commitToProject`.
+ * webhook handler. The FE gates its "kommit confirmed" UI on
+ * `status === "completed"` AND `relaySignature` truthy — intermediate
+ * states (`settled`, `relay_pending`, `relay_failed`) keep the FE on
+ * the polling page so a still-resolving on-chain relay doesn't surface
+ * as a misleading success. (Handoff 46 Codex M2 closure.)
  *
  * Auth: Privy session + caller-wallet-must-match-record check. We
  * deliberately scope visibility per-wallet so an attacker who guesses a
  * chargeId can't probe other users' charge states (the chargeId is
  * MongoDB-objectId-shaped, so guessable in principle).
  *
- * Hand-off 44 § C.
+ * Hand-off 44 § C; hand-off 46 § C.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -68,6 +70,7 @@ export async function GET(
     amountUSDCSettled: record.amountUSDCSettled,
     settlementSignature: record.settlementSignature,
     relaySignature: record.relaySignature,
+    relayFailureReason: record.relayFailureReason,
     failureReason: record.failureReason,
     projectPda: record.projectPda,
     projectSlug: record.projectSlug,
