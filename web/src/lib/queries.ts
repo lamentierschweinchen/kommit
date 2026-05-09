@@ -19,6 +19,7 @@ import { type Commitment } from "@/lib/data/commitments";
 import { isDemoMode } from "@/lib/demo-mode";
 import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
 import { isSandboxOverlayActive } from "@/lib/sandbox-overlay";
+import { getSandboxProjects } from "@/lib/sandbox-projects";
 
 /**
  * Demo-mode reads short-circuit Anchor entirely: the persona wallets aren't
@@ -100,12 +101,29 @@ function getReadProgram(): Program<Kommit> {
 // Pre-derive PDA tables for the projects that have on-chain wallets.
 const ON_CHAIN_PROJECTS: Project[] = PROJECTS.filter((p) => !!p.recipientWallet);
 
-const PROJECT_PDA_TO_PROJECT = new Map<string, Project>(
-  ON_CHAIN_PROJECTS.map((p) => [
+const PROJECT_PDA_TO_PROJECT = new Map<string, Project>();
+
+// 1. Static catalog wallets — production / regular product surface.
+for (const p of ON_CHAIN_PROJECTS) {
+  PROJECT_PDA_TO_PROJECT.set(
     findProjectPda(new PublicKey(p.recipientWallet!)).toBase58(),
     p,
-  ]),
-);
+  );
+}
+
+// 2. Lane B sandbox projects (handoff 49 H1 closure) — fresh recipient
+// wallets created by `setup-sandbox-projects.mjs` so their escrow ATAs
+// can be locked to the sandbox SPL mint, separate from the production
+// USDC-locked escrows of the static catalog. Without this loop, on-chain
+// kommits from `/sandbox/onchain` were silently dropped at the
+// `if (!project) continue;` filter below — judges would see the tx land
+// on Solscan but no row on `/dashboard`.
+for (const sp of getSandboxProjects()) {
+  const meta = PROJECTS.find((p) => p.slug === sp.slug);
+  if (meta) {
+    PROJECT_PDA_TO_PROJECT.set(sp.projectPda.toBase58(), meta);
+  }
+}
 
 const USDC_DECIMALS_DIVISOR = 1_000_000n;
 
