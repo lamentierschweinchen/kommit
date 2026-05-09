@@ -219,7 +219,7 @@ function SuccessContent() {
       <header className="px-6 md:px-12 py-6 border-b-[3px] border-black bg-white">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <Link
-            href="/"
+            href="/app"
             className="font-epilogue font-black uppercase tracking-tighter text-xl"
           >
             kommit

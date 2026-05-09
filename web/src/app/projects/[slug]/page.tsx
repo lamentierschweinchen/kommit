@@ -38,7 +38,7 @@ export default async function ProjectDetailPage({
 
   return (
     <>
-      <AuthHeader />
+      <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
         <ProjectHero project={project} />
 

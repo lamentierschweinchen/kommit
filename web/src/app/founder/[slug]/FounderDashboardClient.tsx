@@ -62,7 +62,7 @@ export function FounderDashboardClient({ project }: { project: Project }) {
 
   return (
     <>
-      <AuthHeader />
+      <AuthHeader homeHref="/app" />
       <div className="flex flex-1 relative">
         <Sidebar
           variant="founder"
