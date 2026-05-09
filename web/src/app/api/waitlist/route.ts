@@ -78,8 +78,15 @@ function callerIP(req: NextRequest): string {
   return "unknown";
 }
 
-function hashIP(ip: string, key: string): Buffer {
-  return createHmac("sha256", key).update(ip).digest();
+/**
+ * HMAC-SHA-256 the IP and return as PostgreSQL bytea hex literal
+ * (`\x...`). supabase-js JSON-serializes a Node Buffer to
+ * `{type:"Buffer",data:[...]}` which PostgREST can't insert into a
+ * bytea column — we send the canonical hex form as a string instead.
+ */
+function hashIP(ip: string, key: string): string {
+  const digest = createHmac("sha256", key).update(ip).digest("hex");
+  return `\\x${digest}`;
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
