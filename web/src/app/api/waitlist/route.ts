@@ -138,8 +138,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (error.code === "23505") {
       return NextResponse.json<WaitlistResponse>({ ok: true });
     }
-    console.warn("[waitlist] insert failed:", error.message);
-    return jsonError("server-error", 500);
+    // TEMP DEBUG (revert immediately after diagnosis): surface the actual
+    // Postgres error in the 500 response so we can see what's failing in
+    // prod that doesn't fail locally with the same key + schema.
+    console.warn("[waitlist] insert failed:", error.code, error.message, error.hint, error.details);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "server-error",
+        debug: {
+          code: error.code,
+          message: error.message,
+          hint: error.hint,
+          details: error.details,
+        },
+      },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json<WaitlistResponse>({ ok: true });
