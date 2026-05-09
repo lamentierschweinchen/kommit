@@ -15,14 +15,13 @@ import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 import { truncateAddress } from "@/lib/wallet-display";
-import { useVisaMode, getStoredCardLast4 } from "@/lib/visa-mode";
+import { useVisaMode } from "@/lib/visa-mode";
 
 export default function AccountPage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { confirm } = useToast();
   const isVisa = useVisaMode();
-  const cardLast4 = isVisa ? getStoredCardLast4() : null;
 
   const [exportOpen, setExportOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
@@ -97,11 +96,10 @@ export default function AccountPage() {
 
             {isVisa ? (
               <Row
-                label="Card on file"
-                value={cardLast4 ? `•••• •••• •••• ${cardLast4}` : "—"}
-                valueClass="font-mono"
-                hint="Sandbox card. Charges and payouts in this preview don't move real funds."
-                actionLabel="Update"
+                label="Payment method"
+                value="Card · MoonPay sandbox"
+                hint="Card details live with MoonPay's hosted checkout — we never see them. Withdrawals settle on-chain to your kommit balance."
+                actionLabel="Manage"
                 actionIcon="edit_note"
                 onAction={() => router.push("/visa-demo")}
               />

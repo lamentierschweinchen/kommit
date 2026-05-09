@@ -33,6 +33,11 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import {
+  createTransferInstruction,
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import { getFeePayer } from "./visa-demo-fee-payer";
 
 const RPC_URL =
@@ -135,3 +140,69 @@ export async function recordMemo(
 
 /** SOL → lamports convenience constant. */
 export const SOL = LAMPORTS_PER_SOL;
+
+/** Devnet USDC mint. Match the mint MoonPay Commerce settles into when
+ *  the parent Pay Link is configured for USDC on Solana devnet. */
+export const DEVNET_USDC_MINT = new PublicKey(
+  "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+);
+
+/**
+ * Transfer USDC base units from the fee-payer's associated token account
+ * to a recipient. Used by the visa-demo webhook handler to relay USDC
+ * from the merchant wallet (= fee-payer, configured as the Helio
+ * recipient) to the kommitter's Privy wallet, after MoonPay confirms the
+ * card-side settlement.
+ *
+ * Will create the recipient's associated token account if it doesn't
+ * exist (fee-payer pays the rent — small one-time cost). Returns the
+ * transaction signature.
+ */
+export async function transferDevnetUSDC(
+  recipient: PublicKey,
+  amountBaseUnits: number,
+): Promise<string> {
+  const conn = getDevnetConnection();
+  const fp = getFeePayer();
+
+  // Ensure the recipient ATA exists. `getOrCreateAssociatedTokenAccount`
+  // returns the account info; if it had to create it, the rent comes from
+  // the fee-payer.
+  const recipientAta = await getOrCreateAssociatedTokenAccount(
+    conn,
+    fp,
+    DEVNET_USDC_MINT,
+    recipient,
+    false,
+  );
+
+  const sourceAta = getAssociatedTokenAddressSync(
+    DEVNET_USDC_MINT,
+    fp.publicKey,
+  );
+
+  const ix = createTransferInstruction(
+    sourceAta,
+    recipientAta.address,
+    fp.publicKey,
+    BigInt(amountBaseUnits),
+  );
+
+  const tx = new Transaction().add(ix);
+  tx.feePayer = fp.publicKey;
+  const { blockhash, lastValidBlockHeight } =
+    await conn.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.lastValidBlockHeight = lastValidBlockHeight;
+  tx.sign(fp);
+
+  const sig = await conn.sendRawTransaction(tx.serialize(), {
+    skipPreflight: false,
+    preflightCommitment: "confirmed",
+  });
+  await conn.confirmTransaction(
+    { signature: sig, blockhash, lastValidBlockHeight },
+    "confirmed",
+  );
+  return sig;
+}
