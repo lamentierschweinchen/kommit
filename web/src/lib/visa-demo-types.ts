@@ -2,26 +2,20 @@
  * Shared API contract for the Visa-rails sandbox demo.
  *
  * Frontend stubs these (visa-demo-stub.ts) and calls them via
- * visa-demo-client.ts. Engineer (handoff 41) implements the real routes
- * under /api/visa-demo/{pre-fund,onramp,offramp} against the same shapes —
- * one env flip (`NEXT_PUBLIC_VISA_SANDBOX=live`) swaps stub for real.
+ * visa-demo-client.ts. Server routes under /api/visa-demo/* implement the
+ * same shapes — one env flip (`NEXT_PUBLIC_VISA_SANDBOX=live`) swaps stub
+ * for real.
  *
- * The frontend never reaches into Privy / Anchor / Solana directly in the
- * Visa-flavored flow. All on-chain action goes through these routes; the
- * user surface stays card-vocabulary-only.
+ * Handoff 44 rewrite: the original `OnrampRequest` carried card details
+ * that were entered on our domain; the new shape just carries amount +
+ * project + idempotency, because the user enters card details on
+ * MoonPay's hosted checkout page after we redirect them. The response
+ * carries `hostedUrl` (where the FE redirects) + `chargeId` (key for
+ * polling completion state). `OfframpRequest`/`OfframpResponse` and the
+ * `offramp` client method are deleted entirely — MoonPay Commerce has
+ * no offramp endpoint, so withdraw stays on the existing on-chain Anchor
+ * `WithdrawModal` flow with visa-mode chrome.
  */
-
-// ---- Card ------------------------------------------------------------------
-
-/** Sandbox test cards only. The Helio sandbox accepts the well-known
- *  `4242 4242 4242 4242` pattern; stub also accepts any 16-digit string for
- *  local-dev quickness. */
-export type SandboxCard = {
-  number: string;
-  exp: string; // MM/YY
-  cvc: string;
-  name: string;
-};
 
 // ---- Pre-fund --------------------------------------------------------------
 
@@ -32,107 +26,98 @@ export type PreFundResponse =
 // ---- Idempotency -----------------------------------------------------------
 
 /**
- * Codex H1: client-generated UUID per user-initiated kommit/withdraw click.
- * Server keys a short-lived dedup map by `${wallet}:${idempotencyKey}` and
- * returns the prior result on duplicate (no second Helio call, no second
- * memo). Frontend reuses the same key for in-flight retries (button
- * double-click, network jitter), generates a fresh `crypto.randomUUID()`
- * for the next user-initiated action.
+ * Codex H1: client-generated UUID per user-initiated kommit click. Server
+ * keys a short-lived dedup map by `${wallet}:${idempotencyKey}` and returns
+ * the prior result on duplicate (no second MoonPay call). Frontend reuses
+ * the same key for in-flight retries (button double-click, network jitter)
+ * and embeds it in the success-redirect URL so the post-redirect page can
+ * find the right charge to poll.
  */
 export type IdempotencyKey = string;
 
-// ---- Onramp ----------------------------------------------------------------
+// ---- Onramp (charge create + redirect) -------------------------------------
 
 export type OnrampRequest = {
-  card: SandboxCard;
+  /** Whole-EUR amount. Server bounds-checks integer + finite + [1, MAX_DEMO_EUR]. */
   amountEUR: number;
   /** On-chain recipient PDA for the project being kommitted to. Derived
    *  client-side via `findProjectPda(new PublicKey(project.recipientWallet))`. */
   projectPda: string;
-  /** Project slug — stub uses this to key the simulated position so the
-   *  dashboard renders the new commit without round-tripping the chain. */
+  /** Project slug — surfaces in webhook metadata + dashboard rendering. */
   projectSlug: string;
-  /** Codex H1 — see IdempotencyKey above. Required. */
+  /** Codex H1 — see IdempotencyKey above. Required. Doubles as the
+   *  cross-redirect identifier embedded in successRedirectUrl. */
   idempotencyKey: IdempotencyKey;
 };
 
 export type OnrampResponse =
   | {
       ok: true;
-      /** USDC base units (6 decimals). e.g. 54_350_000 ≈ $54.35. */
+      /** MoonPay charge ID — used by the FE success page to poll
+       *  completion state via `/api/visa-demo/charge/{chargeId}`. */
+      chargeId: string;
+      /** Hosted checkout URL — frontend redirects user to this URL.
+       *  Format: https://app.hel.io/charge/<token>. */
+      hostedUrl: string;
+      /** Reference USDC base units (6 decimals) at quote-time rate. The
+       *  *actually settled* amount comes through on the webhook and is
+       *  surfaced via the charge-status route. */
       amountUSDC: number;
-      /** EUR → USDC rate used. For display ("Charged €50 at 1.087 EUR/USDC"). */
+      /** Reference EUR → USDC rate. Display-only — webhook is truth. */
       fxRate: number;
-      /**
-       * Solana devnet **Memo-program** signature for sandbox traceability.
-       * Cosmetic — actual on-chain commit (the Anchor `commit` instruction)
-       * is executed client-side via the existing program calls in the live
-       * product flow. The visa-demo path uses a Memo tx as the
-       * Solscan-traceable artifact for the submission video. (Codex I1.)
-       */
-      memoTxHash: string;
-      /** Card last-4 for the success toast continuity. */
-      cardLast4: string;
+      /** Echo back the idempotency key so the FE can stash it for
+       *  post-redirect polling if the URL is lost. */
+      idempotencyKey: IdempotencyKey;
     }
   | {
       ok: false;
       error:
-        | "card-rejected"
-        | "onramp-failed"
-        | "commit-failed"
+        | "charge-failed"
         | "rate-limit"
         | "idempotency-conflict"
-        | "demo-api-disabled";
+        | "demo-api-disabled"
+        | "moonpay-not-configured";
     };
 
-// ---- Offramp ---------------------------------------------------------------
+// ---- Charge status (post-redirect FE polling) ------------------------------
 
-export type OfframpRequest = {
-  /** USDC base units to withdraw + payout. Server bounds-checks: integer,
-   *  finite, [1, MAX_DEMO_USDC_BASE]. (Codex H2.) */
-  amountUSDC: number;
-  /** PDA the withdraw is pulled from (i.e. the project account). */
-  projectPda: string;
-  /** Project slug for stub bookkeeping. */
-  projectSlug: string;
-  /** Card last-4 — passes through for display continuity in the success toast. */
-  cardLast4: string;
-  /** Codex H1 — see IdempotencyKey above. Required. */
-  idempotencyKey: IdempotencyKey;
-};
-
-export type OfframpResponse =
+export type ChargeStatusResponse =
   | {
       ok: true;
-      /** EUR amount actually credited back. */
-      amountEUR: number;
-      /**
-       * Solana devnet **Memo-program** signature for sandbox traceability.
-       * Cosmetic — actual on-chain withdraw (the Anchor `withdraw`
-       * instruction) is executed client-side via the existing program calls
-       * in the live product flow. The visa-demo path uses a Memo tx as
-       * the Solscan-traceable artifact for the submission video. (Codex I1.)
-       */
-      memoTxHash: string;
-      /** Sandbox payout reference (Helio / Mercuryo handle). */
-      payoutId: string;
+      chargeId: string;
+      status: "pending" | "completed" | "failed" | "expired";
+      /** USDC base units actually settled. Set when status === completed. */
+      amountUSDCSettled?: number;
+      /** Solana tx signature MoonPay used to deliver USDC to merchant
+       *  wallet. Set when status === completed. Solscan-traceable. */
+      settlementSignature?: string;
+      /** Solana tx signature for the merchant→kommitter relay transfer.
+       *  Set when status === completed AND relay succeeded. The
+       *  kommitter's wallet now holds USDC and can run commitToProject. */
+      relaySignature?: string;
+      /** Failure reason — set when status === failed/expired. */
+      failureReason?: string;
+      projectPda: string;
+      projectSlug: string;
+      idempotencyKey: IdempotencyKey;
     }
   | {
       ok: false;
-      error:
-        | "withdraw-failed"
-        | "offramp-failed"
-        | "rate-limit"
-        | "idempotency-conflict"
-        | "demo-api-disabled";
+      error: "not-found" | "auth" | "demo-api-disabled" | "wrong-wallet";
     };
 
 // ---- Client surface --------------------------------------------------------
 
-/** What both the stub and the live-routes client expose. The frontend imports
- *  this single shape and never branches on stub-vs-live at the call site. */
+/** What both the stub and the live-routes client expose. The frontend
+ *  imports this single shape and never branches on stub-vs-live at the
+ *  call site. Withdraw is intentionally NOT here — it stays on the
+ *  existing on-chain Anchor `WithdrawModal` flow with visa-mode chrome. */
 export interface VisaDemoClient {
   preFund(): Promise<PreFundResponse>;
+  /** Create a MoonPay charge + return the hosted URL for redirect. The FE
+   *  is responsible for actually navigating the browser. */
   onramp(req: OnrampRequest): Promise<OnrampResponse>;
-  offramp(req: OfframpRequest): Promise<OfframpResponse>;
+  /** Poll charge state by ID. Used by the success page after the user
+   *  redirects back from MoonPay's hosted checkout. */
+  chargeStatus(chargeId: string): Promise<ChargeStatusResponse>;
 }

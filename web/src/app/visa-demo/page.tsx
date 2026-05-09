@@ -1,12 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { findProjectPda } from "@/lib/kommit";
-import { activateVisaMode, deactivateVisaMode, formatEURDirect, useVisaMode } from "@/lib/visa-mode";
-import { activateDemoMode } from "@/lib/demo-mode";
+import {
+  deactivateVisaMode,
+  formatEURDirect,
+  useVisaMode,
+} from "@/lib/visa-mode";
 import { visaDemo } from "@/lib/visa-demo-client";
 import { PROJECTS } from "@/lib/data/projects";
 import { useToast } from "@/components/common/ToastProvider";
@@ -14,9 +17,15 @@ import { Icon } from "@/components/common/Icon";
 import { cn } from "@/lib/cn";
 
 const AMOUNT_PRESETS = [25, 50, 100, 250] as const;
-const SANDBOX_HINT = "Sandbox · use 4242 4242 4242 4242";
+const SANDBOX_HINT = "Sandbox · MoonPay-hosted card checkout";
 
-const FEATURED_SLUGS = ["caldera", "lighthouse-labs", "aurora", "frame-studio", "beacon-sci"];
+const FEATURED_SLUGS = [
+  "caldera",
+  "lighthouse-labs",
+  "aurora",
+  "frame-studio",
+  "beacon-sci",
+];
 
 export default function VisaDemoPage() {
   return (
@@ -27,18 +36,9 @@ export default function VisaDemoPage() {
 }
 
 function VisaDemoEntry() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { error: toastError } = useToast();
   const isVisa = useVisaMode();
-
-  // Card fields — controlled inputs with light formatting (groups of 4 for
-  // the card number; auto-slash on expiry). Sandbox accepts the well-known
-  // 4242... pattern; we don't validate beyond "looks like a card."
-  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
-  const [exp, setExp] = useState("12/29");
-  const [cvc, setCvc] = useState("123");
-  const [cardName, setCardName] = useState("");
 
   const [amountEUR, setAmountEUR] = useState<number>(50);
   const initialProject = searchParams?.get("project");
@@ -57,15 +57,10 @@ function VisaDemoEntry() {
     [],
   );
 
-  const project = eligibleProjects.find((p) => p.slug === projectSlug) ?? eligibleProjects[0];
+  const project =
+    eligibleProjects.find((p) => p.slug === projectSlug) ?? eligibleProjects[0];
 
-  const validCard =
-    cardNumber.replace(/\D/g, "").length >= 12 &&
-    /^\d{2}\/\d{2}$/.test(exp) &&
-    cvc.replace(/\D/g, "").length >= 3 &&
-    cardName.trim().length > 0;
-
-  const valid = validCard && amountEUR > 0 && !!project;
+  const valid = amountEUR > 0 && !!project;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,24 +69,28 @@ function VisaDemoEntry() {
 
     let projectPda: string;
     try {
-      projectPda = findProjectPda(new PublicKey(project.recipientWallet!)).toBase58();
+      projectPda = findProjectPda(
+        new PublicKey(project.recipientWallet!),
+      ).toBase58();
     } catch {
       setSubmitting(false);
-      toastError("Couldn't reach this project right now.", "Try a different one.");
+      toastError(
+        "Couldn't reach this project right now.",
+        "Try a different one.",
+      );
       return;
     }
 
-    // Codex H1: fresh idempotency key per user-initiated submit. If the
-    // user double-clicks or the network retries while this request is in
-    // flight, the same key suppresses duplicate Helio + memo calls. A
-    // *new* user click after this one resolves generates a fresh key.
+    // Codex H1: fresh idempotency key per user-initiated submit. Suppresses
+    // duplicate MoonPay charges on double-click / retry within the in-flight
+    // request lifetime; doubles as the cross-redirect identifier embedded
+    // in successRedirectUrl.
     const idempotencyKey =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const res = await visaDemo.onramp({
-      card: { number: cardNumber, exp, cvc, name: cardName.trim() },
       amountEUR,
       projectPda,
       projectSlug: project.slug,
@@ -101,39 +100,43 @@ function VisaDemoEntry() {
     if (!res.ok) {
       setSubmitting(false);
       const messages: Record<string, string> = {
-        "card-rejected": "Card declined. Try a different test card.",
-        "onramp-failed": "Couldn't process your card. Please retry.",
-        "commit-failed": "Something went wrong on our end. Please retry.",
+        "charge-failed":
+          "Couldn't start your payment. Please retry in a moment.",
         "rate-limit": "Too many attempts. Wait a moment and retry.",
-        "idempotency-conflict": "That request looks like a duplicate. Refresh the page and try again.",
-        "demo-api-disabled": "The demo isn't currently active. Please come back later.",
+        "idempotency-conflict":
+          "That request looks like a duplicate. Refresh the page and try again.",
+        "demo-api-disabled":
+          "The demo isn't currently active. Please come back later.",
+        "moonpay-not-configured":
+          "Payments are temporarily unavailable. Please try again later.",
       };
-      toastError("Card declined.", messages[res.error] ?? "Try a different test card?");
+      toastError("Couldn't start payment.", messages[res.error] ?? "Retry?");
       return;
     }
 
-    // Success — flip the chrome into Visa mode (hides crypto vocab site-
-    // wide), activate demo mode under the hood so the dashboard renders
-    // the seeded position, and redirect.
-    activateVisaMode(res.cardLast4);
-    activateDemoMode();
-    router.push("/dashboard");
-  };
-
-  // If we land here AGAIN after activation, the dashboard is the right
-  // surface — bounce the user instead of letting them re-enter card info.
-  useEffect(() => {
-    if (isVisa) {
-      // Don't auto-redirect; let the user see the entry as a "you're already
-      // in" affordance. They can Exit and come back.
+    // Stash the idempotency key so the success page can find this charge
+    // even if the URL parameter is stripped by an intermediate redirect.
+    try {
+      window.sessionStorage.setItem("kommit:visa:lastChargeId", res.chargeId);
+      window.sessionStorage.setItem("kommit:visa:lastIdemKey", idempotencyKey);
+    } catch {
+      // sessionStorage may be disabled — non-fatal, success page falls
+      // back to URL params.
     }
-  }, [isVisa]);
+
+    // Redirect to MoonPay-hosted checkout. The user enters their card
+    // there and is redirected back to /visa-demo/success on completion.
+    window.location.assign(res.hostedUrl);
+  };
 
   return (
     <main className="min-h-screen bg-[#FFFCF5] flex flex-col">
       <header className="px-6 md:px-12 py-6 border-b-[3px] border-black bg-white">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <Link href="/" className="font-epilogue font-black uppercase tracking-tighter text-xl">
+          <Link
+            href="/"
+            className="font-epilogue font-black uppercase tracking-tighter text-xl"
+          >
             kommit
           </Link>
           <span className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
@@ -152,29 +155,15 @@ function VisaDemoEntry() {
               Kommit on card rails.
             </h1>
             <p className="mt-6 font-epilogue font-medium text-lg md:text-xl text-gray-800 leading-snug border-l-[4px] border-primary pl-5">
-              Enter your card, pick a team, and back them. The infrastructure
-              gets out of your way — only the conviction shows.
+              Pick a team, pick an amount, then pay with your card on MoonPay&rsquo;s
+              hosted checkout. Your kommit lands the moment the payment settles.
             </p>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-start"
+            className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-12 items-start"
           >
-            {/* CARD */}
-            <CardPanel
-              cardNumber={cardNumber}
-              exp={exp}
-              cvc={cvc}
-              cardName={cardName}
-              onCardNumberChange={(v) => setCardNumber(formatCardNumber(v))}
-              onExpChange={(v) => setExp(formatExp(v))}
-              onCvcChange={(v) => setCvc(v.replace(/\D/g, "").slice(0, 4))}
-              onNameChange={setCardName}
-              disabled={submitting}
-            />
-
-            {/* AMOUNT + PROJECT + CTA */}
             <div className="space-y-7">
               <AmountField
                 amountEUR={amountEUR}
@@ -188,6 +177,34 @@ function VisaDemoEntry() {
                 onChange={setProjectSlug}
                 disabled={submitting}
               />
+            </div>
+
+            <div className="space-y-7">
+              <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-7">
+                <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+                  Order summary
+                </div>
+                <div className="mt-4 flex items-baseline justify-between gap-3">
+                  <span className="font-epilogue font-medium text-base text-gray-700">
+                    Kommit amount
+                  </span>
+                  <span className="font-epilogue font-black text-3xl tracking-tight">
+                    {formatEURDirect(amountEUR)}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between gap-3">
+                  <span className="font-epilogue font-medium text-base text-gray-700">
+                    Backing
+                  </span>
+                  <span className="font-epilogue font-black text-base text-right">
+                    {project?.name ?? "—"}
+                  </span>
+                </div>
+                <div className="mt-5 pt-5 border-t-[2px] border-black/10 font-epilogue text-xs text-gray-600 leading-relaxed">
+                  Card details are entered on MoonPay&rsquo;s hosted checkout
+                  page. We never see them.
+                </div>
+              </div>
 
               <div>
                 <button
@@ -197,19 +214,22 @@ function VisaDemoEntry() {
                 >
                   {submitting ? (
                     <>
-                      <Icon name="progress_activity" className="font-bold animate-spin" />
-                      Processing your card…
+                      <Icon
+                        name="progress_activity"
+                        className="font-bold animate-spin"
+                      />
+                      Redirecting to checkout&hellip;
                     </>
                   ) : (
                     <>
-                      Kommit {formatEURDirect(amountEUR)} to {project?.name ?? "—"}
+                      Pay {formatEURDirect(amountEUR)} with card
                       <Icon name="arrow_forward" className="font-bold" />
                     </>
                   )}
                 </button>
                 <p className="mt-3 font-epilogue font-medium text-xs text-gray-600 leading-relaxed text-center">
-                  Sandbox transaction. Your card is not charged. Withdraw any time and the
-                  funds return to the same card.
+                  Sandbox payments use MoonPay Commerce. Withdrawals stay
+                  on-chain to your kommit wallet — fiat off-ramp arrives in v1.
                 </p>
               </div>
             </div>
@@ -242,7 +262,7 @@ function VisaDemoEntry() {
       <footer className="border-t-[3px] border-black bg-white px-6 md:px-12 py-5">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <span className="font-epilogue font-medium text-xs text-gray-600">
-            Submission preview · sandbox only · no real funds move
+            Submission preview · MoonPay sandbox · devnet USDC
           </span>
           <Link
             href="/"
@@ -257,114 +277,6 @@ function VisaDemoEntry() {
 }
 
 // ---- Sub-components --------------------------------------------------------
-
-function CardPanel({
-  cardNumber,
-  exp,
-  cvc,
-  cardName,
-  onCardNumberChange,
-  onExpChange,
-  onCvcChange,
-  onNameChange,
-  disabled,
-}: {
-  cardNumber: string;
-  exp: string;
-  cvc: string;
-  cardName: string;
-  onCardNumberChange: (v: string) => void;
-  onExpChange: (v: string) => void;
-  onCvcChange: (v: string) => void;
-  onNameChange: (v: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="space-y-5">
-      {/* Stylized card preview — implicit card flow, no Visa logo or mark. */}
-      <div className="relative bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-7 aspect-[1.586/1] max-w-md">
-        <div className="absolute top-4 right-4 inline-block bg-black text-white font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-1">
-          Sandbox
-        </div>
-        <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
-          Card on file
-        </div>
-        <div className="mt-7 md:mt-10 font-mono font-bold text-xl md:text-2xl tracking-[0.18em] text-black">
-          {cardNumber || "•••• •••• •••• ••••"}
-        </div>
-        <div className="absolute bottom-5 left-7 right-7 flex justify-between items-end">
-          <div>
-            <div className="font-epilogue font-bold uppercase text-[8px] text-gray-500 tracking-widest">
-              Cardholder
-            </div>
-            <div className="font-epilogue font-black uppercase text-sm tracking-tight">
-              {cardName.toUpperCase() || "YOUR NAME"}
-            </div>
-          </div>
-          <div>
-            <div className="font-epilogue font-bold uppercase text-[8px] text-gray-500 tracking-widest">
-              Exp
-            </div>
-            <div className="font-epilogue font-black uppercase text-sm tracking-tight">
-              {exp || "MM/YY"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 max-w-md">
-        <Field label="Card number">
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="cc-number"
-            value={cardNumber}
-            onChange={(e) => onCardNumberChange(e.target.value)}
-            disabled={disabled}
-            className="w-full bg-white border-[3px] border-black px-4 py-3 font-mono text-base tracking-widest focus:outline-none focus:shadow-brutal disabled:opacity-50"
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Expiry">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="cc-exp"
-              placeholder="MM/YY"
-              value={exp}
-              onChange={(e) => onExpChange(e.target.value)}
-              disabled={disabled}
-              className="w-full bg-white border-[3px] border-black px-4 py-3 font-mono text-base tracking-wider focus:outline-none focus:shadow-brutal disabled:opacity-50"
-            />
-          </Field>
-          <Field label="CVC">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="cc-csc"
-              placeholder="123"
-              value={cvc}
-              onChange={(e) => onCvcChange(e.target.value)}
-              disabled={disabled}
-              className="w-full bg-white border-[3px] border-black px-4 py-3 font-mono text-base tracking-wider focus:outline-none focus:shadow-brutal disabled:opacity-50"
-            />
-          </Field>
-        </div>
-        <Field label="Cardholder name">
-          <input
-            type="text"
-            autoComplete="cc-name"
-            placeholder="As it appears on the card"
-            value={cardName}
-            onChange={(e) => onNameChange(e.target.value)}
-            disabled={disabled}
-            className="w-full bg-white border-[3px] border-black px-4 py-3 font-medium text-base focus:outline-none focus:shadow-brutal disabled:opacity-50"
-          />
-        </Field>
-      </div>
-    </div>
-  );
-}
 
 function AmountField({
   amountEUR,
@@ -456,7 +368,9 @@ function ProjectField({
                   )}
                   aria-hidden
                 >
-                  {isActive ? <span className="block w-2.5 h-2.5 bg-primary" /> : null}
+                  {isActive ? (
+                    <span className="block w-2.5 h-2.5 bg-primary" />
+                  ) : null}
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-epilogue font-black uppercase tracking-tight text-base">
@@ -478,28 +392,4 @@ function ProjectField({
       </ul>
     </div>
   );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-// ---- Input formatters ------------------------------------------------------
-
-function formatCardNumber(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 19);
-  return digits.match(/.{1,4}/g)?.join(" ") ?? digits;
-}
-
-function formatExp(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
 }

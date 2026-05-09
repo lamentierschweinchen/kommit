@@ -1,31 +1,41 @@
 /**
- * POST /api/visa-demo/onramp — fiat → USDC sandbox onramp.
+ * POST /api/visa-demo/onramp — create a MoonPay Commerce charge and
+ * return the hosted-checkout URL the frontend should redirect to.
  *
- * The full sandbox round-trip:
+ * The flow (handoff 44, β2):
  *   1. Auth caller (Privy session).
- *   2. Validate body (card + amountEUR + projectPda).
- *   3. Get a EUR → USDC quote from Helio sandbox (mock fallback if no key).
- *   4. Execute the onramp at Helio (mock fallback if no key).
- *   5. Record a structured Memo on devnet — fee-payer signs + submits;
- *      result is the `commitTxHash` returned to the client. Solscan-traceable.
+ *   2. Validate body (amountEUR + projectPda + projectSlug + idempotencyKey).
+ *      Card details are NOT collected here — the user enters them on
+ *      MoonPay's hosted page after the redirect.
+ *   3. Idempotency check on (wallet, idempotencyKey).
+ *   4. Rate limit.
+ *   5. createCharge against the configured parent Pay Link.
+ *   6. Record the charge in `visa-demo-charge-store` keyed by chargeId
+ *      (with idempotencyKey as a secondary index) so the webhook can
+ *      complete it and the FE can poll its state.
+ *   7. Return `{ chargeId, hostedUrl, ... }` — caller redirects.
  *
- * Note: this route does NOT fire the on-chain Anchor `commit` instruction.
- * The visa-sandbox demo is honest about being a sandbox: USDC arrives in
- * the user's wallet (via Helio sandbox), and a Memo tx records the demo
- * intent. v1+ would replace the memo with a real `commit` once Privy
- * server-side signing or a delegated-commit instruction lands. For the
- * submission video, the Memo tx serves as the on-chain proof.
+ * Codex closures applied here:
+ *   - M1 (server-side gate)         — VISA_DEMO_API_ENABLED checked first
+ *   - M2 (fail-closed live mode)    — no mock fallback; createCharge
+ *                                      throws and we 502 on real failures
+ *   - M3 (ignore caller fxRate)     — moot in the new shape; amount is
+ *                                      whole-EUR and reference USDC is
+ *                                      derived server-side
+ *   - H1 (idempotency)              — request-level dedup; webhook-level
+ *                                      dedup lives in the webhook route
+ *   - H2 (amount bounds)            — amountEURSchema (integer, finite,
+ *                                      [1, MAX_DEMO_EUR])
+ *   - L3 (trim secrets)             — readSecret used in moonpay client
  *
- * Hand-off 41 § E3.
+ * Hand-off 44 § D.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { PublicKey } from "@solana/web3.js";
+
 import { requireCallerWallet } from "@/lib/auth-server";
-import { quote, executeOnramp } from "@/lib/visa-demo-helio";
-import { recordMemo } from "@/lib/visa-demo-rpc";
-import { isFeePayerConfigured } from "@/lib/visa-demo-fee-payer";
 import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
 import { isVisaApiEnabled } from "@/lib/visa-demo-mode";
 import {
@@ -33,25 +43,21 @@ import {
   idempotencyKeySchema,
 } from "@/lib/visa-demo-bounds";
 import { lookup, cache } from "@/lib/visa-demo-idempotency";
+import {
+  createCharge,
+  isMoonPayConfigured,
+  referenceUsdcBaseUnits,
+} from "@/lib/visa-demo-moonpay";
+import { recordPending } from "@/lib/visa-demo-charge-store";
 import type { OnrampResponse } from "@/lib/visa-demo-types";
 
 export const runtime = "nodejs";
 
-const RATE_LIMIT_MS = 5_000; // 1 onramp per wallet per 5s; lighter than pre-fund
+const RATE_LIMIT_MS = 5_000; // 1 onramp per wallet per 5s
 
-// Sandbox card numbers we accept. Helio's sandbox accepts the well-known
-// `4242...` and `4111...` patterns. Anything else → card-rejected.
-const SANDBOX_ACCEPTED_PREFIXES = ["4242", "4111"];
+const REFERENCE_FX_RATE = 1.087;
 
-// Codex H2 + M3: integer-finite-bounded amount; no client-side fxRate.
-// Codex H1: idempotency key required; UUID-shape validated.
 const REQ = z.object({
-  card: z.object({
-    number: z.string().min(12).max(24),
-    exp: z.string().min(4).max(7),
-    cvc: z.string().min(3).max(4),
-    name: z.string().min(1).max(120),
-  }),
   amountEUR: amountEURSchema,
   projectPda: z.string().min(32).max(64),
   projectSlug: z.string().min(1).max(80),
@@ -59,12 +65,11 @@ const REQ = z.object({
 });
 
 type OnrampErrorCode =
-  | "card-rejected"
-  | "onramp-failed"
-  | "commit-failed"
+  | "charge-failed"
   | "rate-limit"
   | "idempotency-conflict"
-  | "demo-api-disabled";
+  | "demo-api-disabled"
+  | "moonpay-not-configured";
 
 type OnrampSuccess = Extract<OnrampResponse, { ok: true }>;
 
@@ -73,14 +78,18 @@ function jsonError(error: OnrampErrorCode, status: number): NextResponse {
   return NextResponse.json(body, { status });
 }
 
-function lastFour(card: string): string {
-  const digits = card.replace(/\D/g, "");
-  return digits.slice(-4) || "0000";
+/** Build the success-redirect URL. We embed the idempotencyKey so the
+ *  /visa-demo/success page can poll the right charge state via the
+ *  charge-store's secondary index, regardless of how MoonPay encodes
+ *  any extra query params it appends. */
+function buildSuccessRedirect(req: NextRequest, idempotencyKey: string): string {
+  const origin = new URL(req.url).origin;
+  return `${origin}/visa-demo/success?ik=${encodeURIComponent(idempotencyKey)}`;
 }
 
-function looksLikeSandboxCard(number: string): boolean {
-  const digits = number.replace(/\D/g, "");
-  return SANDBOX_ACCEPTED_PREFIXES.some((p) => digits.startsWith(p));
+function buildCancelRedirect(req: NextRequest): string {
+  const origin = new URL(req.url).origin;
+  return `${origin}/visa-demo/cancel`;
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -92,24 +101,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Auth.
   const authed = await requireCallerWallet(req);
   if (authed instanceof Response) {
-    return jsonError("onramp-failed", authed.status);
+    return jsonError("charge-failed", authed.status);
   }
   const callerWallet = authed.wallet;
 
   // 2. Validate body BEFORE rate-limit so an idempotent retry of an
   //    already-cached operation can short-circuit even if the caller is
-  //    inside the rate-limit window. Validation is cheap; rate-limit
-  //    burning a token on a body-malformed request just punishes the user.
+  //    inside the rate-limit window.
   let body: z.infer<typeof REQ>;
   try {
     body = REQ.parse(await req.json());
   } catch {
-    return jsonError("onramp-failed", 400);
+    return jsonError("charge-failed", 400);
   }
 
-  // 3. Idempotency check (Codex H1). MUST come before rate-limit + Helio
-  //    so a retry of an already-completed operation returns the cached
-  //    result without burning another rate-limit slot or another Helio call.
+  // 3. Idempotency check (Codex H1).
   const dedup = lookup<OnrampSuccess>(callerWallet, body.idempotencyKey);
   if (dedup.kind === "hit") {
     return NextResponse.json<OnrampResponse>(dedup.result);
@@ -118,86 +124,68 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("idempotency-conflict", 409);
   }
 
-  // 4. Rate limit (per wallet) — applied to NEW requests only.
+  // 4. Rate limit.
   if (!takeRateLimit(callerWallet, RATE_LIMIT_MS)) {
     return jsonError("rate-limit", 429);
   }
 
-  if (!looksLikeSandboxCard(body.card.number)) {
-    return jsonError("card-rejected", 402);
-  }
-
-  let user: PublicKey;
-  let projectPda: PublicKey;
+  // 5. Validate the projectPda parses as a real public key — surface a
+  //    400 cleanly rather than letting the downstream commit step blow up.
   try {
-    user = new PublicKey(callerWallet);
-    projectPda = new PublicKey(body.projectPda);
+    new PublicKey(body.projectPda);
   } catch {
-    return jsonError("onramp-failed", 400);
+    return jsonError("charge-failed", 400);
   }
 
-  // 5. Helio sandbox quote → execute.
-  let q;
-  try {
-    q = await quote(body.amountEUR);
-  } catch (e) {
-    console.warn("[visa-demo/onramp] quote threw:", e);
-    return jsonError("onramp-failed", 502);
-  }
-  // Codex M3: ignore any caller-supplied fxRate. Use only what Helio (or
-  // the deterministic mock fallback) returned. Memo amount + response
-  // amount derive from `q.amountUSDC` directly so attacker-controlled
-  // body fields can't inflate the signed memo.
-  const effectiveFxRate = q.fxRate;
-  const amountUSDCBase = Math.round(q.amountUSDC * 1_000_000);
-
-  try {
-    const onrampResult = await executeOnramp({
-      quote: q,
-      recipient: callerWallet,
-      cardLast4: lastFour(body.card.number),
-    });
-    if (onrampResult.status === "failed") {
-      return jsonError("onramp-failed", 502);
-    }
-  } catch (e) {
-    console.warn("[visa-demo/onramp] executeOnramp threw:", e);
-    return jsonError("onramp-failed", 502);
-  }
-
-  // 6. Memo tx for Solscan traceability (Codex I1: this is the
-  //    `memoTxHash` field in the response, NOT a real Anchor commit).
-  let memoTxHash = `sandbox-no-feepayer-${Date.now()}`;
-  if (isFeePayerConfigured()) {
-    try {
-      memoTxHash = await recordMemo("onramp", {
-        user,
-        projectPda,
-        amountUSDC: amountUSDCBase,
-      });
-    } catch (e) {
-      console.warn(
-        "[visa-demo/onramp] recordMemo failed; memoTxHash will be a placeholder:",
-        e,
-      );
-      // Don't fail the whole onramp — the Helio side already moved USDC
-      // (or simulated it). Surface the placeholder hash so the frontend
-      // success state still renders. Vercel logs flag the real failure.
-    }
-  } else {
+  // 6. MoonPay readiness — fail closed if env isn't configured (Codex M2).
+  if (!isMoonPayConfigured()) {
     console.warn(
-      "[visa-demo/onramp] KOMMIT_DEVNET_FEE_PAYER_SECRET unset; memoTxHash will be a placeholder. Sandbox demo still functions; Solscan link will be invalid.",
+      "[visa-demo/onramp] MoonPay Commerce not configured (HELIO_API_KEY or HELIO_PAYMENT_REQUEST_ID unset); failing closed.",
     );
+    return jsonError("moonpay-not-configured", 503);
   }
 
-  // 7. Cache result keyed by (wallet, idempotencyKey) before returning,
-  //    so the next retry within IDEMPOTENCY_TTL_MS is a no-op (Codex H1).
+  // 7. Create the charge.
+  let charge;
+  try {
+    charge = await createCharge({
+      amountEUR: body.amountEUR,
+      successRedirectUrl: buildSuccessRedirect(req, body.idempotencyKey),
+      cancelRedirectUrl: buildCancelRedirect(req),
+      idempotencyKey: body.idempotencyKey,
+      kommitterWallet: callerWallet,
+      projectPda: body.projectPda,
+      projectSlug: body.projectSlug,
+    });
+  } catch (e) {
+    console.warn(
+      "[visa-demo/onramp] createCharge threw:",
+      e instanceof Error ? e.message : e,
+    );
+    return jsonError("charge-failed", 502);
+  }
+
+  // 8. Record the pending charge so the webhook handler can complete it
+  //    and the FE can poll its state.
+  recordPending({
+    chargeId: charge.chargeId,
+    kommitterWallet: callerWallet,
+    projectPda: body.projectPda,
+    projectSlug: body.projectSlug,
+    amountUSDCReference: referenceUsdcBaseUnits(body.amountEUR),
+    idempotencyKey: body.idempotencyKey,
+  });
+
+  // 9. Cache the response keyed by (wallet, idempotencyKey) before
+  //    returning, so the next retry within IDEMPOTENCY_TTL_MS is a no-op
+  //    that returns the same chargeId/hostedUrl.
   const result: OnrampSuccess = {
     ok: true,
-    amountUSDC: amountUSDCBase,
-    fxRate: effectiveFxRate,
-    memoTxHash,
-    cardLast4: lastFour(body.card.number),
+    chargeId: charge.chargeId,
+    hostedUrl: charge.hostedUrl,
+    amountUSDC: charge.amountUSDC,
+    fxRate: REFERENCE_FX_RATE,
+    idempotencyKey: body.idempotencyKey,
   };
   cache(callerWallet, body.idempotencyKey, result);
 

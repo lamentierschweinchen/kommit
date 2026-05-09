@@ -19,7 +19,7 @@ import { formatNumber, formatUSD } from "@/lib/kommit-math";
 import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance } from "@/lib/demo-engagement";
-import { useVisaMode, formatEUR, getStoredCardLast4 } from "@/lib/visa-mode";
+import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import { Icon } from "@/components/common/Icon";
 import { DepositModal } from "@/components/account/DepositModal";
 
@@ -81,7 +81,6 @@ export default function DashboardPage() {
     else setAvailableUSD(null); // TODO: live USDC balance via wallet machinery
   }, [isSignedIn, user?.wallet, isDemo, refreshKey]);
 
-  const cardLast4 = isVisa ? getStoredCardLast4() : null;
   // In visa mode the dashboard reads in EUR. The kommit *score* stays
   // unitless (kommits are kommits), but every dollar amount converts to a
   // EUR display; the localStorage positions are still keyed in USDC.
@@ -121,9 +120,9 @@ export default function DashboardPage() {
               <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
                 Your kommits
               </h1>
-              {isVisa && cardLast4 ? (
+              {isVisa ? (
                 <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
-                  Card on file · ending in {cardLast4}
+                  Card-funded · settled on-chain
                 </p>
               ) : null}
             </div>
@@ -171,14 +170,12 @@ export default function DashboardPage() {
               }
             />
             <StatCard
-              label={isVisa ? "Available on card" : "Available to kommit"}
+              label={isVisa ? "Available to kommit" : "Available to kommit"}
               value={availableUSD !== null ? fmtMoney(availableUSD) : "—"}
               hint={
                 availableUSD !== null
                   ? isVisa
-                    ? cardLast4
-                      ? `card ending in ${cardLast4}`
-                      : "ready to charge"
+                    ? "settled on-chain · ready to deploy"
                     : isDemo
                       ? "demo cohort · pre-funded"
                       : "USDC in your wallet"
