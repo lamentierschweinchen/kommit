@@ -22,8 +22,18 @@ export default function robots(): MetadataRoute.Robots {
         // Authed surfaces gate themselves with <AuthGate>, but we still ask
         // crawlers not to bother — the rendered shell shows the gate, not
         // anything indexable. Keeps Google from caching the gate page.
-        // /demo and /sandbox/* are explicitly excluded per Lane A rollout.
-        disallow: ["/dashboard", "/account", "/founder/", "/demo", "/sandbox/"],
+        // /demo, /sandbox/*, /visa-demo/* are explicitly excluded per Lane A
+        // rollout (visa-demo is the card-mock sandbox — judge surface, not
+        // marketing; Codex Pass 1 L2 closure).
+        disallow: [
+          "/dashboard",
+          "/account",
+          "/founder/",
+          "/demo",
+          "/sandbox/",
+          "/visa-demo",
+          "/visa-demo/",
+        ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

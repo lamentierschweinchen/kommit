@@ -19,13 +19,18 @@
 import "server-only";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { readSecret } from "@/lib/server-env";
 
 let cached: SupabaseClient | null = null;
 
 export function getSupabaseAdminClient(): SupabaseClient {
   if (cached) return cached;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Codex Pass 1 L4 closure: route both reads through `readSecret` so a
+  // whitespace-pasted Vercel secret can't degrade the waitlist (or any
+  // future service-role consumer) to runtime `server-error` — same hardening
+  // applied to HELIO_* + KOMMIT_DEVNET_FEE_PAYER_SECRET on May 6.
+  const url = readSecret("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceKey = readSecret("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) {
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set (server-side only)",

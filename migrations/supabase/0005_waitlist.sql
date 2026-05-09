@@ -12,8 +12,11 @@
 --     table — the table is RLS-enabled with no select/insert policy and
 --     all privileges revoked at the GRANT layer too. Belt + suspenders:
 --     even a misconfigured RLS toggle wouldn't open the table to anon.
---   - IP is stored as a SHA-256 hash, not a raw address. The route hashes
---     before insert; the column type is `bytea` to make that explicit.
+--   - IP is stored as an HMAC-SHA-256 digest keyed by a server-side secret
+--     (`WAITLIST_IP_HASH_KEY`), not a raw address and not an unsalted hash.
+--     The route hashes before insert; column type is `bytea` to make that
+--     explicit. HMAC closes the dictionary-reversibility on the small IPv4
+--     space — Codex Pass 1 L1 closure.
 --
 -- Idempotent: re-runnable. CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS.
 --
@@ -50,4 +53,4 @@ grant all on waitlist_signups to service_role;
 grant all on sequence waitlist_signups_id_seq to service_role;
 
 comment on table waitlist_signups is
-  'Coming-soon waitlist captures (Lane A). Email + role (backer|builder) + sha256(ip) for soft rate-limit forensics. Written exclusively by service_role from /api/waitlist; no anon/authenticated grants.';
+  'Coming-soon waitlist captures (Lane A). Email + role (backer|builder) + HMAC-SHA-256(ip, WAITLIST_IP_HASH_KEY) for soft rate-limit forensics. Written exclusively by service_role from /api/waitlist; no anon/authenticated grants.';

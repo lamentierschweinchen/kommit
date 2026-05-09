@@ -10,9 +10,11 @@
  *     defense against drive-by spam, not production-grade. The downstream
  *     unique index on `email` is the authoritative dedup.
  *   - Email already-signed-up returns 200 (don't leak who's on the list).
- *   - IP is hashed (SHA-256) before storage.
- *   - SUPABASE_SERVICE_ROLE_KEY missing → 500 with a clear `config` code,
- *     not a build-time crash. Coordinator must add the key in Vercel.
+ *   - IP is HMAC-hashed (HMAC-SHA-256, server-side secret key) before
+ *     storage so dictionary-reversal of the small IPv4 space without the
+ *     key is infeasible (Codex Pass 1 L1 closure). Both `WAITLIST_IP_HASH_KEY`
+ *     and `SUPABASE_SERVICE_ROLE_KEY` missing → 500 `config`, not a build
+ *     crash; coordinator adds them in Vercel before flipping the route on.
  *
  * Schema: see migrations/supabase/0005_waitlist.sql.
  */
@@ -20,11 +22,12 @@
 import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { z } from "zod";
 
 import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { readSecret } from "@/lib/server-env";
 
 export const runtime = "nodejs";
 
@@ -75,8 +78,8 @@ function callerIP(req: NextRequest): string {
   return "unknown";
 }
 
-function hashIP(ip: string): Buffer {
-  return createHash("sha256").update(ip).digest();
+function hashIP(ip: string, key: string): Buffer {
+  return createHmac("sha256", key).update(ip).digest();
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -95,7 +98,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("rate-limit", 429);
   }
 
-  // 3. Service-role client. Throws (caught below) if env is missing.
+  // 3. Resolve config (HMAC key + service-role client). Both server-only,
+  //    fail closed with 500 `config` if either is missing — coordinator
+  //    must add both to Vercel before the route does anything useful.
+  const ipHashKey = readSecret("WAITLIST_IP_HASH_KEY");
+  if (!ipHashKey) {
+    return jsonError("config", 500);
+  }
   let supabase;
   try {
     supabase = getSupabaseAdminClient();
@@ -110,7 +119,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { error } = await supabase.from("waitlist_signups").insert({
     email: body.email,
     role: body.role,
-    ip_hash: hashIP(ip),
+    ip_hash: hashIP(ip, ipHashKey),
   });
 
   if (error) {

@@ -13,7 +13,7 @@ export default function LandingPage() {
 
   return (
     <>
-      <AuthHeader />
+      <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
         {/* HERO — audit #3 + Pass 2 mobile-walk fix 4a: H1 bottoms out at text-3xl
             so single-word rotations like BREAKTHROUGH fit at 320px. Rotating slot can
