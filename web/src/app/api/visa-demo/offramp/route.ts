@@ -23,6 +23,12 @@ import { executePayout } from "@/lib/visa-demo-helio";
 import { recordMemo } from "@/lib/visa-demo-rpc";
 import { isFeePayerConfigured } from "@/lib/visa-demo-fee-payer";
 import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
+import { isVisaApiEnabled } from "@/lib/visa-demo-mode";
+import {
+  amountUSDCBaseSchema,
+  idempotencyKeySchema,
+} from "@/lib/visa-demo-bounds";
+import { lookup, cache } from "@/lib/visa-demo-idempotency";
 import type { OfframpResponse } from "@/lib/visa-demo-types";
 
 export const runtime = "nodejs";
@@ -31,14 +37,23 @@ const RATE_LIMIT_MS = 5_000;
 
 const STUB_FX_RATE = 1.087; // mirrors visa-demo-stub.ts
 
+// Codex H2: amount is integer + finite + bounded. Codex H1: idempotency key.
 const REQ = z.object({
-  amountUSDC: z.number().positive(), // base units (6 decimals)
+  amountUSDC: amountUSDCBaseSchema,
   projectPda: z.string().min(32).max(64),
   projectSlug: z.string().min(1).max(80),
   cardLast4: z.string().min(4).max(4),
+  idempotencyKey: idempotencyKeySchema,
 });
 
-type OfframpErrorCode = "withdraw-failed" | "offramp-failed" | "rate-limit";
+type OfframpErrorCode =
+  | "withdraw-failed"
+  | "offramp-failed"
+  | "rate-limit"
+  | "idempotency-conflict"
+  | "demo-api-disabled";
+
+type OfframpSuccess = Extract<OfframpResponse, { ok: true }>;
 
 function jsonError(error: OfframpErrorCode, status: number): NextResponse {
   const body: OfframpResponse = { ok: false, error };
@@ -46,6 +61,11 @@ function jsonError(error: OfframpErrorCode, status: number): NextResponse {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // 0. Server-side feature gate (Codex M1).
+  if (!isVisaApiEnabled()) {
+    return jsonError("demo-api-disabled", 503);
+  }
+
   // 1. Auth.
   const authed = await requireCallerWallet(req);
   if (authed instanceof Response) {
@@ -53,17 +73,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   const callerWallet = authed.wallet;
 
-  // 2. Rate limit.
-  if (!takeRateLimit(callerWallet, RATE_LIMIT_MS)) {
-    return jsonError("rate-limit", 429);
-  }
-
-  // 3. Validate body.
+  // 2. Validate body BEFORE rate-limit (see onramp comment for rationale).
   let body: z.infer<typeof REQ>;
   try {
     body = REQ.parse(await req.json());
   } catch {
     return jsonError("offramp-failed", 400);
+  }
+
+  // 3. Idempotency check (Codex H1).
+  const dedup = lookup<OfframpSuccess>(callerWallet, body.idempotencyKey);
+  if (dedup.kind === "hit") {
+    return NextResponse.json<OfframpResponse>(dedup.result);
+  }
+  if (dedup.kind === "conflict") {
+    return jsonError("idempotency-conflict", 409);
+  }
+
+  // 4. Rate limit.
+  if (!takeRateLimit(callerWallet, RATE_LIMIT_MS)) {
+    return jsonError("rate-limit", 429);
   }
 
   let user: PublicKey;
@@ -75,7 +104,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("offramp-failed", 400);
   }
 
-  // 4. Helio payout.
+  // 5. Helio payout.
   let payout;
   try {
     payout = await executePayout({
@@ -90,24 +119,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("offramp-failed", 502);
   }
 
-  // 5. Memo tx.
-  let withdrawTxHash = `sandbox-no-feepayer-${Date.now()}`;
+  // 6. Memo tx (Codex I1: this is the `memoTxHash` field in the response).
+  let memoTxHash = `sandbox-no-feepayer-${Date.now()}`;
   if (isFeePayerConfigured()) {
     try {
-      withdrawTxHash = await recordMemo("offramp", {
+      memoTxHash = await recordMemo("offramp", {
         user,
         projectPda,
         amountUSDC: body.amountUSDC,
       });
     } catch (e) {
       console.warn(
-        "[visa-demo/offramp] recordMemo failed; withdraw hash will be a placeholder:",
+        "[visa-demo/offramp] recordMemo failed; memoTxHash will be a placeholder:",
         e,
       );
     }
   } else {
     console.warn(
-      "[visa-demo/offramp] KOMMIT_DEVNET_FEE_PAYER_SECRET unset; withdrawTxHash will be a placeholder.",
+      "[visa-demo/offramp] KOMMIT_DEVNET_FEE_PAYER_SECRET unset; memoTxHash will be a placeholder.",
     );
   }
 
@@ -115,10 +144,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const amountUSDCDollars = body.amountUSDC / 1_000_000;
   const amountEUR = amountUSDCDollars / STUB_FX_RATE;
 
-  return NextResponse.json<OfframpResponse>({
+  // 7. Cache + return (Codex H1).
+  const result: OfframpSuccess = {
     ok: true,
     amountEUR,
-    withdrawTxHash,
+    memoTxHash,
     payoutId: payout.payoutId,
-  });
+  };
+  cache(callerWallet, body.idempotencyKey, result);
+
+  return NextResponse.json<OfframpResponse>(result);
 }

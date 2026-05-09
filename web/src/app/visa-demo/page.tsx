@@ -81,11 +81,21 @@ function VisaDemoEntry() {
       return;
     }
 
+    // Codex H1: fresh idempotency key per user-initiated submit. If the
+    // user double-clicks or the network retries while this request is in
+    // flight, the same key suppresses duplicate Helio + memo calls. A
+    // *new* user click after this one resolves generates a fresh key.
+    const idempotencyKey =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     const res = await visaDemo.onramp({
       card: { number: cardNumber, exp, cvc, name: cardName.trim() },
       amountEUR,
       projectPda,
       projectSlug: project.slug,
+      idempotencyKey,
     });
 
     if (!res.ok) {
@@ -95,6 +105,8 @@ function VisaDemoEntry() {
         "onramp-failed": "Couldn't process your card. Please retry.",
         "commit-failed": "Something went wrong on our end. Please retry.",
         "rate-limit": "Too many attempts. Wait a moment and retry.",
+        "idempotency-conflict": "That request looks like a duplicate. Refresh the page and try again.",
+        "demo-api-disabled": "The demo isn't currently active. Please come back later.",
       };
       toastError("Card declined.", messages[res.error] ?? "Try a different test card?");
       return;

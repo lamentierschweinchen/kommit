@@ -132,11 +132,17 @@ export function WithdrawModal({
         return;
       }
       const amountUSDC = Math.round(displayUSD * 1_000_000);
+      // Codex H1: fresh idempotency key per user-initiated withdraw click.
+      const idempotencyKey =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const res = await visaDemo.offramp({
         amountUSDC,
         projectPda,
         projectSlug,
         cardLast4: cardLast4 ?? "0000",
+        idempotencyKey,
       });
       setSubmitting(false);
       if (!res.ok) {
