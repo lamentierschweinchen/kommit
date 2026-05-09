@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { Modal } from "@/components/common/Modal";
 import { useToast } from "@/components/common/ToastProvider";
@@ -17,7 +17,15 @@ import { useAuth } from "@/components/auth/AuthProvider";
  *
  * On successful authentication, Privy fires the `useLogin` `onComplete` callback;
  * we close the modal, route to /dashboard, and fire the welcome toast there.
+ *
+ * Lane B routing exception: `/sandbox/*` routes have their own multi-step
+ * post-signin flow (sign in → fund → kommit). Pushing to /dashboard there
+ * skips step 2 of the judge experience and drops the user on a surface
+ * where the only funding affordance is the card-mock. Stay put when
+ * pathname is sandbox-scoped.
  */
+
+const STAY_PUT_PREFIXES = ["/sandbox"] as const;
 export function SignInModal({
   open,
   onOpenChange,
@@ -35,6 +43,8 @@ export function SignInModal({
   title?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const stayOnPage = STAY_PUT_PREFIXES.some((p) => pathname?.startsWith(p));
   const isDemo = useDemoMode();
   const { signIn: demoSignIn } = useAuth();
   const { authenticated } = usePrivy();
@@ -42,7 +52,11 @@ export function SignInModal({
   const { login } = useLogin({
     onComplete: ({ isNewUser }) => {
       onOpenChange(false);
-      router.push("/dashboard");
+      // Sandbox flow owns its own post-signin sequencing (Lane B steps 2+3).
+      // Outside sandbox, /dashboard is the canonical landing.
+      if (!stayOnPage) {
+        router.push("/dashboard");
+      }
       setTimeout(
         () =>
           confirm(
@@ -86,7 +100,7 @@ export function SignInModal({
             onClick={() => {
               demoSignIn("lukas");
               onOpenChange(false);
-              router.push("/dashboard");
+              if (!stayOnPage) router.push("/dashboard");
             }}
             className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center justify-center gap-3"
           >
