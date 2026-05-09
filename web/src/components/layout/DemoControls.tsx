@@ -4,7 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { USERS, avatarUrl } from "@/lib/data/users";
-import { useDemoMode, deactivateDemoMode } from "@/lib/demo-mode";
+import {
+  useDemoMode,
+  deactivateDemoMode,
+  useDemoFrozen,
+  freezeDemoState,
+  unfreezeDemoState,
+  useRecordingMode,
+  activateRecordingMode,
+} from "@/lib/demo-mode";
 import { useVisaMode } from "@/lib/visa-mode";
 import { cn } from "@/lib/cn";
 
@@ -17,12 +25,16 @@ import { cn } from "@/lib/cn";
 export function DemoControls() {
   const isDemo = useDemoMode();
   const isVisa = useVisaMode();
+  const isRecording = useRecordingMode();
+  const isFrozen = useDemoFrozen();
   const { user, role, switchUser, signOut, signIn } = useAuth();
   const [open, setOpen] = useState(false);
 
   // Hide entirely in visa mode — the persona-switcher chrome would leak
   // crypto vocabulary ("DEMO · Lukas · Kommitter") into the recorded flow.
-  if (!isDemo || isVisa) return null;
+  // Also hide in recording mode — the slim <RecordingPersonaPill> in the
+  // header replaces this UI for the camera-facing flow.
+  if (!isDemo || isVisa || isRecording) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-[90] print:hidden">
@@ -111,6 +123,41 @@ export function DemoControls() {
           >
             Reset to Lukas
           </button>
+          <div className="pt-2 mt-2 border-t-[2px] border-black space-y-2">
+            <div className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
+              Recording
+            </div>
+            <label className="flex items-center gap-2 px-2 py-1.5 border-[2px] border-black bg-white cursor-pointer hover:bg-gray-100">
+              <input
+                type="checkbox"
+                checked={isFrozen}
+                onChange={(e) => {
+                  if (e.target.checked) freezeDemoState();
+                  else unfreezeDemoState();
+                }}
+                className="w-4 h-4 accent-primary"
+              />
+              <span className="font-epilogue font-bold uppercase text-xs tracking-tight">
+                Freeze state
+              </span>
+              <span className="ml-auto font-epilogue text-[9px] tracking-widest text-gray-500">
+                {isFrozen ? "ON" : "OFF"}
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                activateRecordingMode();
+                setOpen(false);
+              }}
+              className="w-full text-left flex items-center gap-2 px-2 py-1.5 border-[2px] border-black bg-white text-black hover:bg-gray-100 font-epilogue font-bold uppercase text-xs tracking-tight"
+            >
+              Enter recording mode
+              <span className="ml-auto font-epilogue text-[9px] tracking-widest text-gray-500">
+                Esc to exit
+              </span>
+            </button>
+          </div>
           <div className="pt-2 mt-2 border-t-[2px] border-black space-y-1">
             <Link
               href="/demo"

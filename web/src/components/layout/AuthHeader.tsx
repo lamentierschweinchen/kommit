@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { MobileDrawer } from "./MobileDrawer";
+import { RecordingPersonaPill } from "./RecordingPersonaPill";
 import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -91,6 +92,7 @@ export function AuthHeader({
         </div>
 
         <div className="flex items-center gap-3">
+          <RecordingPersonaPill />
           {showAnonHeader ? (
             <button
               type="button"
