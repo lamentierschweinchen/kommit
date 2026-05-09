@@ -35,19 +35,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { visaDemo } from "@/lib/visa-demo-client";
 import { activateVisaMode } from "@/lib/visa-mode";
-import { activateDemoMode } from "@/lib/demo-mode";
+import { activateDemoMode, isDemoMode } from "@/lib/demo-mode";
+import { activateSandboxOverlay } from "@/lib/sandbox-overlay";
 import { simulateCommit } from "@/lib/demo-engagement";
 import { USERS } from "@/lib/data/users";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Icon } from "@/components/common/Icon";
 import { useToast } from "@/components/common/ToastProvider";
 import type { ChargeStatusResponse } from "@/lib/visa-demo-types";
 
 /**
- * The visa-demo flow lands the user on the kommitter dashboard as the
- * "lukas" persona. Pinning the persona here (a) keeps the Lukas avatar
- * + sidebar consistent with the rest of the demo experience, and (b)
- * gives simulateCommit a stable wallet key that matches what the
- * dashboard's `getCommitmentsForUser(user.wallet)` will read.
+ * Default landing persona when the visitor has no Privy session — the
+ * historical visa-demo flow pinned Lukas for narrative continuity. For a
+ * Privy-authenticated visitor coming from /sandbox the simulated commit
+ * is keyed by their own wallet instead, so the dashboard read returns
+ * positions under the same wallet they signed in with. See handoff 49
+ * § item 8 for the auth-context branching logic.
  */
 const VISA_DEMO_PERSONA_ID = "lukas";
 
@@ -68,6 +71,17 @@ function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { error: toastError } = useToast();
+  const { user, isSignedIn } = useAuth();
+  // Refs so the polling closure (which sets up once on mount per the
+  // existing eslint-disabled deps) sees the latest auth state when it
+  // hits the `completed + relaySignature` branch — Privy hydrates
+  // asynchronously after the MoonPay redirect.
+  const isSignedInRef = useRef(isSignedIn);
+  const userWalletRef = useRef(user?.wallet ?? null);
+  useEffect(() => {
+    isSignedInRef.current = isSignedIn;
+    userWalletRef.current = user?.wallet ?? null;
+  }, [isSignedIn, user?.wallet]);
 
   // Charge identifiers — accept either `?chargeId=` (preferred) or `?ik=`
   // (idempotency-key fallback when MoonPay's redirect strips chargeId).
@@ -134,24 +148,35 @@ function SuccessContent() {
           !settledRef.current
         ) {
           settledRef.current = true;
-          // Pin the demo persona BEFORE the simulateCommit write so the
-          // wallet key used here matches what the dashboard will read
-          // (MockAuthProvider hydrates from PERSONA_KEY → user.wallet →
-          // getCommitmentsForUser(user.wallet)). Previously `wallet:
-          // res.idempotencyKey` wrote under a per-charge UUID that no
-          // dashboard surface ever reads — the position was orphaned.
+          // Two paths (handoff 49 § item 8):
+          //   - Privy session active (real-mode user landed here from
+          //     /sandbox → "Fund with card") → write simulateCommit
+          //     under the Privy wallet AND set the sandbox overlay so
+          //     the dashboard's read merges localStorage positions with
+          //     on-chain ones. Don't activate demo-mode (would flip the
+          //     judge into the Lukas persona — wrong identity).
+          //   - No Privy session (or demo-mode already active) → keep
+          //     the historical Lukas-persona behavior.
           activateVisaMode();
-          activateDemoMode(VISA_DEMO_PERSONA_ID);
+          const privyWallet = userWalletRef.current;
+          const usePrivyOverlay =
+            !!isSignedInRef.current && !!privyWallet && !isDemoMode();
+          const targetWallet = usePrivyOverlay
+            ? privyWallet!
+            : USERS[VISA_DEMO_PERSONA_ID].wallet;
+          if (usePrivyOverlay) {
+            activateSandboxOverlay();
+          } else {
+            activateDemoMode(VISA_DEMO_PERSONA_ID);
+          }
           if (res.amountUSDCSettled) {
             try {
-              // Codex I1 honest-narrative note: this is a localStorage
-              // SIMULATION, not an on-chain Anchor commit. The on-chain
-              // artifacts (settlementSignature + relaySignature) are
-              // both real and Solscan-traceable; the kommit-position
-              // accrual is a v0.5 sandbox shortcut. v1 wires
-              // commitToProject().
+              // Codex I1 honest-narrative note: localStorage SIMULATION,
+              // not an on-chain Anchor commit. The settlement + relay
+              // signatures are real on-chain artifacts; the kommit
+              // position accrual is a sandbox shortcut.
               simulateCommit({
-                wallet: USERS[VISA_DEMO_PERSONA_ID].wallet,
+                wallet: targetWallet,
                 projectSlug: res.projectSlug,
                 principalUSD: res.amountUSDCSettled / 1_000_000,
               });
