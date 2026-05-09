@@ -8,7 +8,8 @@ export type Commitment = {
 
 /**
  * Lukas's portfolio — drives /dashboard.
- * Math: kommits = USD × days, computed live from sinceISO to demo-today (2026-04-28).
+ * Math: kommits = USD × hours, computed live from sinceISO to demo-today (2026-04-28).
+ * One kommit per dollar-hour committed.
  */
 export const LUKAS_COMMITMENTS: Commitment[] = [
   { projectSlug: "caldera", kommittedUSD: 200, sinceISO: "2026-03-12" },
