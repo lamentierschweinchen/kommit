@@ -81,20 +81,53 @@ export type OnrampResponse =
 
 // ---- Charge status (post-redirect FE polling) ------------------------------
 
+/**
+ * Charge lifecycle position. Handoff 46 (Codex M2 closure) split the
+ * prior `completed` into `settled` / `relay_pending` / `relay_failed` /
+ * `completed` so the FE can distinguish "MoonPay confirmed payment, but
+ * our merchant→kommitter USDC relay hasn't landed yet" from "fully done."
+ *
+ *   pending       — charge created; user redirected to MoonPay; no webhook yet.
+ *   settled       — webhook signature-verified; MoonPay confirmed the card +
+ *                   delivered USDC to OUR merchant wallet. Relay NOT yet
+ *                   attempted. Brief intermediate state.
+ *   relay_pending — relay tx is in flight (webhook handler holding the slot).
+ *                   Brief intermediate state.
+ *   relay_failed  — relay attempted; failed. Retryable on the next duplicate
+ *                   webhook delivery (MoonPay retries on its own cadence).
+ *   completed     — relay tx signature recorded. The kommitter's wallet holds
+ *                   the relayed USDC. ONLY this state is safe for the FE to
+ *                   treat as "kommit confirmed."
+ *   failed        — terminal MoonPay-side failure (FAILED/CANCELED webhook).
+ *   expired       — TTL eviction at the charge-store level.
+ */
+export type ChargeStatus =
+  | "pending"
+  | "settled"
+  | "relay_pending"
+  | "relay_failed"
+  | "completed"
+  | "failed"
+  | "expired";
+
 export type ChargeStatusResponse =
   | {
       ok: true;
       chargeId: string;
-      status: "pending" | "completed" | "failed" | "expired";
-      /** USDC base units actually settled. Set when status === completed. */
+      status: ChargeStatus;
+      /** USDC base units actually settled. Set once status >= settled. */
       amountUSDCSettled?: number;
       /** Solana tx signature MoonPay used to deliver USDC to merchant
-       *  wallet. Set when status === completed. Solscan-traceable. */
+       *  wallet. Set once status >= settled. Solscan-traceable. */
       settlementSignature?: string;
       /** Solana tx signature for the merchant→kommitter relay transfer.
-       *  Set when status === completed AND relay succeeded. The
-       *  kommitter's wallet now holds USDC and can run commitToProject. */
+       *  Set ONLY when status === "completed". Presence of this field is
+       *  the FE's gate for treating the charge as fully done. */
       relaySignature?: string;
+      /** Last relay-attempt failure reason. Set when status ===
+       *  "relay_failed". Surfaces in the success page's "settling on-chain
+       *  is taking longer than expected" intermediate UI. */
+      relayFailureReason?: string;
       /** Failure reason — set when status === failed/expired. */
       failureReason?: string;
       projectPda: string;

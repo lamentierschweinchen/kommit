@@ -2,32 +2,65 @@
  * In-memory charge-state store for the visa-demo webhook → FE polling
  * bridge. SERVER-ONLY.
  *
- * Webhook handler writes here on a verified `charge.completed`-equivalent
- * event; the FE success page polls `/api/visa-demo/charge/{chargeId}` to
- * pick up the result and trigger the client-side commit.
+ * State machine (handoff 46 — Codex M2 closure):
+ *
+ *     pending ─[markSettled]────► settled ─[tryRelay]────► relay_pending
+ *                                    │                        │
+ *                                    │                        ├─[markCompleted]──► completed (terminal)
+ *                                    │                        │
+ *                                    │                        └─[markRelayFailed]► relay_failed
+ *                                    │                                                │
+ *                                    │                                                │
+ *                                    └─[markTerminalFailure]──► failed | expired      │
+ *                                                                  (terminal)         │
+ *                                                                                     │
+ *                                                          ◄──[tryRelay (retry)]──────┘
+ *
+ * Why split `settled` from `completed`: the MoonPay webhook tells us the
+ * card cleared and USDC arrived at OUR merchant wallet (= fee-payer). The
+ * FE-visible "kommit confirmed" state requires a SECOND on-chain step —
+ * the merchant→kommitter relay transfer — to actually succeed. Before
+ * handoff 46 these were collapsed: webhook arrival → `completed`, and a
+ * relay failure left a charge that LOOKED done while USDC was stranded
+ * at the merchant wallet. Now `completed` is gated on the relay tx
+ * signature being recorded, and a relay failure leaves a `relay_failed`
+ * charge that the next duplicate webhook delivery will retry.
+ *
+ * Concurrency model: single Node.js process, single-threaded JS event
+ * loop. `tryRelay` is the atomic CAS step — a synchronous read+write
+ * inside one function call (no `await` boundary inside it), so two
+ * concurrent webhook handlers cannot both acquire the relay slot. Once
+ * one wins, the other sees `relay_pending` and returns
+ * `relay-in-progress`.
  *
  * Sandbox-scale only — same memory-pruning shape as visa-demo-idempotency.ts
  * and visa-demo-rate-limit.ts (Codex M4 risk-accept applies the same way).
- * KV / Redis migration is v1 work.
- *
- * Shape note: we key BY chargeId AND maintain a secondary index by
- * idempotencyKey. The chargeId is the natural key for everything (webhook
- * delivery, polling, idempotency at the MoonPay side); the idempotencyKey
- * lookup exists because the FE success page may not always have the
- * chargeId in the URL (depends on which redirect query params we choose).
+ * KV / Redis migration is v1 work; durable cross-instance CAS lands then.
  */
 
 import "server-only";
 
 const TTL_MS = 30 * 60 * 1000; // 30 min — covers a slow user + poll lifetime
 
+/** 7-state lifecycle; see file-header diagram. */
+export type ChargeState =
+  | "pending"
+  | "settled"
+  | "relay_pending"
+  | "relay_failed"
+  | "completed"
+  | "failed"
+  | "expired";
+
+/** True when the state will accept no further transitions. */
+function isTerminal(s: ChargeState): boolean {
+  return s === "completed" || s === "failed" || s === "expired";
+}
+
 export type ChargeRecord = {
   chargeId: string;
-  /** Status of the underlying transaction. `pending` = charge created but
-   *  no terminal webhook event yet; `completed` = SUCCESS/SETTLED received
-   *  and we relayed USDC to the kommitter; `failed`/`expired` = terminal
-   *  bad outcomes. */
-  status: "pending" | "completed" | "failed" | "expired";
+  /** Lifecycle position. See ChargeState above. */
+  status: ChargeState;
   /** Wallet that initiated this charge. Used by the GET status route to
    *  auth-gate polling — only the originator can read their own charge. */
   kommitterWallet: string;
@@ -36,17 +69,18 @@ export type ChargeRecord = {
   projectSlug: string;
   /** USDC base units the charge was created for (reference at quote time). */
   amountUSDCReference: number;
-  /** Final settled USDC base units from the webhook (set on completion). */
+  /** Final settled USDC base units from the webhook (set when settled). */
   amountUSDCSettled?: number;
   /** Solana transaction signature from MoonPay's settlement (the one that
-   *  delivered USDC to our merchant wallet). Surfaces in the success UI as
-   *  the "real on-chain proof" Solscan link. */
+   *  delivered USDC to our merchant wallet). Set when settled. */
   settlementSignature?: string;
-  /** Solana tx signature for the merchant-→kommitter relay transfer that
-   *  the webhook handler executes after a successful settlement. The
-   *  kommitter's wallet now holds USDC and can run commitToProject. */
+  /** Solana tx signature for the merchant→kommitter relay transfer. Set
+   *  only when status === "completed". The kommitter's wallet now holds
+   *  the relayed USDC. */
   relaySignature?: string;
-  /** Failure reason — surfaces to the FE on `failed` for honest messaging. */
+  /** Last relay-attempt failure reason. Set when status === relay_failed. */
+  relayFailureReason?: string;
+  /** Failure reason for terminal states (failed/expired). */
   failureReason?: string;
   /** Internal idempotency key the charge was created with. Doubles as a
    *  cross-redirect identifier (we embed it in successRedirectUrl). */
@@ -97,38 +131,95 @@ export function recordPending(args: {
   byIdemKey.set(args.idempotencyKey, args.chargeId);
 }
 
-/** Mark a charge as completed and stash the settlement details. Idempotent
- *  on chargeId — second call with the same chargeId returns false without
- *  overwriting. Webhook handler treats false as "already-processed dedup,
- *  return 200." */
-export function markCompleted(args: {
+/**
+ * Mark a charge as `settled`: MoonPay's webhook confirms card payment +
+ * Solana settlement to the merchant wallet. Records the settled amount
+ * and the settlement Solana tx signature. Idempotent: returns true on the
+ * pending → settled transition; returns false if the charge is already
+ * settled or further along (caller treats false as "already-processed,
+ * carry on to the relay step").
+ *
+ * Replaces the prior `markCompleted` first half (handoff 46 § A).
+ */
+export function markSettled(args: {
   chargeId: string;
   amountUSDCSettled: number;
   settlementSignature: string;
 }): boolean {
   const existing = byChargeId.get(args.chargeId);
-  if (!existing) return false; // unknown charge; webhook for someone else's
-  if (existing.status !== "pending") return false; // already terminal
-  existing.status = "completed";
+  if (!existing) return false;
+  if (existing.status !== "pending") return false;
+  existing.status = "settled";
   existing.amountUSDCSettled = args.amountUSDCSettled;
   existing.settlementSignature = args.settlementSignature;
   existing.updatedAt = Date.now();
   return true;
 }
 
-/** Attach the merchant→kommitter relay signature to an already-completed
- *  charge. Called after the webhook handler successfully transfers USDC. */
-export function attachRelaySignature(
-  chargeId: string,
-  relaySignature: string,
-): void {
+/**
+ * Acquire the relay slot via atomic CAS. Returns true iff the caller
+ * transitions the charge from `settled` or `relay_failed` into
+ * `relay_pending`. Returns false in every other case (charge unknown,
+ * charge already mid-relay, charge already terminal, charge still
+ * `pending`).
+ *
+ * Atomicity comes from JS single-threaded execution — there is no
+ * `await` boundary inside this function, so two concurrent webhook
+ * handlers cannot both observe `settled` and both write `relay_pending`.
+ * Whichever is scheduled first wins; the other sees `relay_pending`
+ * and returns false.
+ */
+export function tryRelay(chargeId: string): boolean {
   const existing = byChargeId.get(chargeId);
-  if (!existing) return;
-  existing.relaySignature = relaySignature;
+  if (!existing) return false;
+  if (existing.status !== "settled" && existing.status !== "relay_failed") {
+    return false;
+  }
+  existing.status = "relay_pending";
   existing.updatedAt = Date.now();
+  return true;
 }
 
-/** Mark a charge as failed/expired. Idempotent like markCompleted. */
+/**
+ * Record a successful relay. Caller must have previously acquired the
+ * relay slot via `tryRelay`. Transitions `relay_pending → completed`.
+ * No-op (returns false) if the charge isn't in `relay_pending`.
+ */
+export function markCompleted(args: {
+  chargeId: string;
+  relaySignature: string;
+}): boolean {
+  const existing = byChargeId.get(args.chargeId);
+  if (!existing) return false;
+  if (existing.status !== "relay_pending") return false;
+  existing.status = "completed";
+  existing.relaySignature = args.relaySignature;
+  existing.relayFailureReason = undefined;
+  existing.updatedAt = Date.now();
+  return true;
+}
+
+/**
+ * Record a failed relay attempt. Caller must have previously acquired
+ * the relay slot via `tryRelay`. Transitions `relay_pending → relay_failed`.
+ * The next duplicate webhook delivery will see `relay_failed` and re-try
+ * via `tryRelay` again — that's the M2 fix's retry path.
+ */
+export function markRelayFailed(args: {
+  chargeId: string;
+  reason: string;
+}): boolean {
+  const existing = byChargeId.get(args.chargeId);
+  if (!existing) return false;
+  if (existing.status !== "relay_pending") return false;
+  existing.status = "relay_failed";
+  existing.relayFailureReason = args.reason;
+  existing.updatedAt = Date.now();
+  return true;
+}
+
+/** Mark a charge as failed/expired. Only legal from `pending` (MoonPay
+ *  reported terminal-failure before the card cleared). Idempotent. */
 export function markTerminalFailure(args: {
   chargeId: string;
   status: "failed" | "expired";
@@ -141,6 +232,20 @@ export function markTerminalFailure(args: {
   existing.failureReason = args.reason;
   existing.updatedAt = Date.now();
   return true;
+}
+
+/** True iff the charge is in `relay_failed` and a duplicate webhook
+ *  should retry the relay. Mostly observability — the webhook handler
+ *  also gets this signal from `tryRelay`'s return value. */
+export function getRetryable(chargeId: string): boolean {
+  const existing = byChargeId.get(chargeId);
+  return !!existing && existing.status === "relay_failed";
+}
+
+/** True iff the charge is in any terminal state (no further transitions). */
+export function isChargeTerminal(chargeId: string): boolean {
+  const existing = byChargeId.get(chargeId);
+  return !!existing && isTerminal(existing.status);
 }
 
 export function getByChargeId(chargeId: string): ChargeRecord | null {
