@@ -16,7 +16,8 @@
  *     and `SUPABASE_SERVICE_ROLE_KEY` missing → 500 `config`, not a build
  *     crash; coordinator adds them in Vercel before flipping the route on.
  *
- * Schema: see migrations/supabase/0005_waitlist.sql.
+ * Schema: see migrations/supabase/0005_waitlist.sql + 0006_waitlist_ip_hash_text.sql
+ * (the latter relaxes ip_hash from bytea to text — see hashIP() comment).
  */
 
 import "server-only";
@@ -79,14 +80,16 @@ function callerIP(req: NextRequest): string {
 }
 
 /**
- * HMAC-SHA-256 the IP and return as PostgreSQL bytea hex literal
- * (`\x...`). supabase-js JSON-serializes a Node Buffer to
- * `{type:"Buffer",data:[...]}` which PostgREST can't insert into a
- * bytea column — we send the canonical hex form as a string instead.
+ * HMAC-SHA-256 the IP and return the hex digest as plain text.
+ *
+ * The `ip_hash` column is `text`, not `bytea` — see migration 0006.
+ * PostgREST can't auto-cast a JSON string to bytea on parameterized
+ * inserts, which broke every Lane-A insert through the initial ship.
+ * Hex text removes the encoding ambiguity. Same HMAC keyed by
+ * `WAITLIST_IP_HASH_KEY` (Codex Pass 1 L1 closure preserved).
  */
 function hashIP(ip: string, key: string): string {
-  const digest = createHmac("sha256", key).update(ip).digest("hex");
-  return `\\x${digest}`;
+  return createHmac("sha256", key).update(ip).digest("hex");
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
