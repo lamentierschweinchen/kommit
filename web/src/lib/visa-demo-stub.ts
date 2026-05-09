@@ -24,9 +24,6 @@
  * lives until the tab closes — exactly the lifetime we need.
  */
 
-import {
-  simulateCommit,
-} from "@/lib/demo-engagement";
 import type {
   ChargeStatusResponse,
   OnrampRequest,
@@ -73,11 +70,6 @@ type StubCharge = {
   amountUSDCBase: number;
   idempotencyKey: string;
   kommitterWallet: string;
-  /**
-   * Sentinel for the "first chargeStatus read fires simulateCommit" gate.
-   * Replaces the previous `kommitterWallet.startsWith("simulated:")` mutation.
-   */
-  simulated?: boolean;
 };
 
 const STUB_CHARGES_KEY = "kommit:visa:stubCharges";
@@ -167,19 +159,11 @@ async function chargeStatus(
   if (!entry) {
     return { ok: false, error: "not-found" };
   }
-  // First read: simulate the localStorage position so the dashboard
-  // renders the new commit. Idempotent on chargeId — once we've fired
-  // the simulation, leave the entry in place (with `simulated: true`) so
-  // subsequent polls return the same "completed" payload without
-  // double-writing the kommit position.
-  if (!entry.simulated) {
-    simulateCommit({
-      wallet: getVisaDemoWallet(),
-      projectSlug: entry.projectSlug,
-      principalUSD: entry.amountUSDCBase / 1_000_000,
-    });
-    setStubCharge(chargeId, { ...entry, simulated: true });
-  }
+  // The simulateCommit write lives on the success page (sole writer for
+  // both stub and live modes) — the stub previously double-wrote against
+  // a different wallet key, leaving the dashboard empty. The success
+  // page pins the demo persona explicitly and uses USERS["lukas"].wallet
+  // so the dashboard reads the position back consistently.
   return {
     ok: true,
     chargeId,
