@@ -93,6 +93,19 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+
+            {/* Manifesto link — prominent, brutalist, sits below the green
+                box so visitors who want the long form know exactly where
+                to go. Doesn't compete with the CTAs above. */}
+            <div className="mt-10 md:mt-14 ml-0 md:ml-[7.75rem]">
+              <Link
+                href="/manifesto"
+                className="inline-flex items-center gap-3 font-epilogue font-black uppercase tracking-tight text-base md:text-lg border-b-[4px] border-black hover:bg-secondary px-2 py-1 transition-colors"
+              >
+                Read the full manifesto
+                <Icon name="arrow_forward" className="font-bold" />
+              </Link>
+            </div>
           </section>
         </div>
       </main>

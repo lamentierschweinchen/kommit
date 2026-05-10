@@ -36,6 +36,7 @@ const KEY_REACTIONS = `${NS}reactions`; // Record<updateId, Record<emoji, number
 const KEY_COMMENTS = `${NS}comments`; // Record<updateId, RemoteComment[]>
 const KEY_POSITIONS = `${NS}positions`; // Record<wallet, Record<slug, StoredPosition>>
 const KEY_BALANCES = `${NS}balances`; // Record<wallet, number>
+const KEY_BACKER_NOTES = `${NS}backerNotes`; // Record<projectSlug, BackerNote[]>
 const KEY_SEEDED = `${NS}seeded`; // marker — has activate-time seed run?
 
 /** Each persona starts with this much simulated USDC available to kommit. */
@@ -381,8 +382,14 @@ export function simulateCommit(args: {
   wallet: string;
   projectSlug: string;
   principalUSD: number;
+  /** Optional public note from the backer — appears in the project's
+   *  "Backer notes" panel. Trimmed/clamped to 280 chars by the caller. */
+  note?: string;
+  /** Display name to attribute the note to. Falls back to a short wallet
+   *  if absent, but the caller usually has it. */
+  authorName?: string;
 }): Commitment {
-  const { wallet, projectSlug, principalUSD } = args;
+  const { wallet, projectSlug, principalUSD, note, authorName } = args;
   if (isDemoFrozen()) {
     // Frozen: return the existing position unchanged so callers don't break.
     const existing = readAllPositions()[wallet]?.[projectSlug];
@@ -423,6 +430,16 @@ export function simulateCommit(args: {
   writeAllPositions(all);
   setDemoBalance(wallet, getDemoBalance(wallet) - principalUSD);
   appendDemoActivity({ kind: "commit", wallet, projectSlug, amountUSD: principalUSD });
+  // Optional backer note — recorded alongside the commit if provided.
+  if (note && note.trim().length > 0) {
+    appendBackerNote({
+      projectSlug,
+      wallet,
+      authorName: authorName ?? `${wallet.slice(0, 4)}…${wallet.slice(-4)}`,
+      principalUSD,
+      note: note.trim().slice(0, 280),
+    });
+  }
   notifyPositionsChanged();
   const pos = all[wallet][projectSlug];
   return {
@@ -492,6 +509,62 @@ function setDemoBalance(wallet: string, amount: number) {
   all[wallet] = round2(Math.max(0, amount));
   writeStore(KEY_BALANCES, all);
 }
+
+// ---- Backer notes ----------------------------------------------------------
+
+/**
+ * Optional note left at commit time. Demo-only for v0.5; renders in the
+ * "Backer notes" panel on the project detail page. Real-mode wires into
+ * a server-backed comments store post-submission.
+ */
+export type BackerNote = {
+  projectSlug: string;
+  wallet: string;
+  authorName: string;
+  principalUSD: number;
+  note: string;
+  atISO: string;
+};
+
+function readAllBackerNotes(): Record<string, BackerNote[]> {
+  return readStore<Record<string, BackerNote[]>>(KEY_BACKER_NOTES, {});
+}
+
+function writeAllBackerNotes(all: Record<string, BackerNote[]>) {
+  writeStore(KEY_BACKER_NOTES, all);
+}
+
+function appendBackerNote(args: Omit<BackerNote, "atISO">) {
+  if (isDemoFrozen()) return;
+  const all = readAllBackerNotes();
+  const list = all[args.projectSlug] ?? [];
+  all[args.projectSlug] = [{ ...args, atISO: nowISO() }, ...list];
+  writeAllBackerNotes(all);
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new StorageEvent("storage", { key: KEY_BACKER_NOTES }));
+    } catch {
+      /* non-fatal */
+    }
+  }
+}
+
+/**
+ * Public wrapper around appendBackerNote — used by real-mode commit to
+ * stash the note in localStorage as a v0.5 stub. Will rewire to a
+ * server-backed comments store post-submission.
+ */
+export function saveBackerNote(args: Omit<BackerNote, "atISO">) {
+  appendBackerNote(args);
+}
+
+export function listBackerNotes(projectSlug: string): BackerNote[] {
+  if (!projectSlug) return [];
+  return readAllBackerNotes()[projectSlug] ?? [];
+}
+
+/** Storage key clients can watch to react to backer-note mutations. */
+export const DEMO_BACKER_NOTES_STORAGE_KEY = KEY_BACKER_NOTES;
 
 // ---- Activity log ----------------------------------------------------------
 
@@ -699,6 +772,7 @@ export function clearDemoEngagement() {
     window.localStorage.removeItem(KEY_COMMENTS);
     window.localStorage.removeItem(KEY_POSITIONS);
     window.localStorage.removeItem(KEY_BALANCES);
+    window.localStorage.removeItem(KEY_BACKER_NOTES);
     window.localStorage.removeItem(KEY_ACTIVITY);
     window.localStorage.removeItem(KEY_SEEDED);
   } catch {

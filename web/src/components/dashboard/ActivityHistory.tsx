@@ -21,17 +21,22 @@ import { cn } from "@/lib/cn";
  *
  * `kinds` filters the activity-feed types — pass e.g. `["commit", "withdraw"]`
  * for a "My history" view that hides reactions/comments. Defaults to all.
+ *
+ * `compact` renders a sidebar-friendly layout — narrower rows, no shadows,
+ * truncated project names. Used by the sidebar's "My history" surface.
  */
 export function ActivityHistory({
   wallet,
   kinds,
   defaultLimit,
+  compact = false,
   emptyHeadline = "No activity yet.",
   emptyBody = "Your kommits, withdrawals, and reactions land here as you act.",
 }: {
   wallet: string;
   kinds?: DemoActivityEntry["kind"][];
   defaultLimit?: number;
+  compact?: boolean;
   emptyHeadline?: string;
   emptyBody?: string;
 }) {
@@ -57,11 +62,19 @@ export function ActivityHistory({
 
   if (filtered.length === 0) {
     return (
-      <div className="bg-white border-[3px] border-black shadow-brutal p-6">
-        <p className="font-epilogue font-bold uppercase text-sm tracking-tight">
+      <div className={cn(
+        "bg-white border-[3px] border-black",
+        compact ? "p-3" : "shadow-brutal p-6",
+      )}>
+        <p className={cn(
+          "font-epilogue font-bold uppercase tracking-tight",
+          compact ? "text-xs" : "text-sm",
+        )}>
           {emptyHeadline}
         </p>
-        <p className="mt-2 text-sm font-medium text-gray-700">{emptyBody}</p>
+        {compact ? null : (
+          <p className="mt-2 text-sm font-medium text-gray-700">{emptyBody}</p>
+        )}
       </div>
     );
   }
@@ -72,16 +85,16 @@ export function ActivityHistory({
         items={filtered}
         defaultLimit={defaultLimit}
         itemKey={(e, i) => `${e.atISO}-${i}`}
-        renderItem={(e) => <ActivityRow entry={e} />}
+        renderItem={(e) => <ActivityRow entry={e} compact={compact} />}
       />
     );
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className={compact ? "space-y-1.5" : "space-y-2"}>
       {filtered.map((e, i) => (
         <li key={`${e.atISO}-${i}`}>
-          <ActivityRow entry={e} />
+          <ActivityRow entry={e} compact={compact} />
         </li>
       ))}
     </ul>
@@ -96,21 +109,28 @@ const KIND_META: Record<DemoActivityEntry["kind"], { icon: IconName; label: stri
   comment: { icon: "edit_note", label: "Commented", color: "bg-white text-black" },
 };
 
-function ActivityRow({ entry }: { entry: DemoActivityEntry }) {
+function ActivityRow({ entry, compact = false }: { entry: DemoActivityEntry; compact?: boolean }) {
   const meta = KIND_META[entry.kind];
   const project = entry.projectSlug ? getProject(entry.projectSlug) : null;
   return (
-    <div className="bg-white border-[3px] border-black p-4 flex items-center gap-4">
+    <div className={cn(
+      "bg-white border-[3px] border-black flex items-center",
+      compact ? "p-2 gap-2.5" : "p-4 gap-4",
+    )}>
       <span
         className={cn(
-          "shrink-0 w-9 h-9 border-[2px] border-black flex items-center justify-center",
+          "shrink-0 border-[2px] border-black flex items-center justify-center",
+          compact ? "w-6 h-6" : "w-9 h-9",
           meta.color,
         )}
       >
-        <Icon name={meta.icon} size="sm" />
+        <Icon name={meta.icon} size={compact ? "xs" : "sm"} />
       </span>
       <div className="flex-1 min-w-0">
-        <div className="font-epilogue font-bold uppercase text-xs tracking-tight">
+        <div className={cn(
+          "font-epilogue font-bold uppercase tracking-tight truncate",
+          compact ? "text-[10px]" : "text-xs",
+        )}>
           {meta.label}
           {entry.amountUSD ? (
             <>
@@ -136,7 +156,10 @@ function ActivityRow({ entry }: { entry: DemoActivityEntry }) {
             </span>
           ) : null}
         </div>
-        <div className="font-epilogue font-medium text-[10px] uppercase tracking-widest text-gray-500">
+        <div className={cn(
+          "font-epilogue font-medium uppercase tracking-widest text-gray-500",
+          compact ? "text-[9px]" : "text-[10px]",
+        )}>
           {relativeTime(entry.atISO.slice(0, 10))}
         </div>
       </div>

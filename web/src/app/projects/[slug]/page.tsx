@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { UpdatesPanel } from "@/components/project/UpdatesPanel";
+import { BackerNotes } from "@/components/project/BackerNotes";
 import { findProjectPda } from "@/lib/kommit";
 import { PublicKey } from "@solana/web3.js";
 import { KommittersList } from "@/components/project/KommittersList";
@@ -86,6 +87,8 @@ export default async function ProjectDetailPage({
                 ))}
               </div>
             </section>
+
+            <BackerNotes projectSlug={project.slug} />
 
             <section id="updates">
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">

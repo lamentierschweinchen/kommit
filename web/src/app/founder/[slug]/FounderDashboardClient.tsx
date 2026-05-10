@@ -18,12 +18,10 @@ import { findProjectPda } from "@/lib/kommit";
 import { PublicKey } from "@solana/web3.js";
 import type { RemoteUpdate } from "@/lib/api-types";
 // kommit.now is the first integrator of its own public on-chain reader.
-// `@kommitapp/reader` is open-source (MIT) and `npm install`-able by any Solana
-// product that wants to gate features on real conviction. The cohort surface
-// below reads through `getKommittersForProject` exactly as the SDK README
-// documents — no internal shortcut, no internal-only field. If you're
-// reading this trying to understand the integration story, the SDK call is
-// at the bottom of `OnChainCohortSection` in this file.
+// `@kommitapp/reader` is open-source and `npm install`-able by any Solana
+// product that wants to gate features on real conviction. The "Your backers"
+// section below reads through `getKommittersForProject` exactly as the SDK
+// README documents — no internal shortcut, no internal-only field.
 //
 //   npm install @kommitapp/reader
 //   import { getKommittersForProject } from "@kommitapp/reader";
@@ -59,6 +57,17 @@ export function FounderDashboardClient({ project }: { project: Project }) {
   // The enumerated kommitters list is a subset for display.
   const totalKommits = project.totalKommitsGenerated;
   const totalUSD = project.totalKommittedUSD;
+
+  // Average commitment age across the enumerated kommitters — feeds the
+  // "Your backers" stat strip. Null when we have no kommitters to average.
+  const avgAgeDays = useMemo(() => {
+    if (project.kommitters.length === 0) return null;
+    const total = project.kommitters.reduce(
+      (acc, k) => acc + daysBetween(k.sinceISO),
+      0,
+    );
+    return Math.round(total / project.kommitters.length);
+  }, [project.kommitters]);
 
   return (
     <>
@@ -221,7 +230,12 @@ export function FounderDashboardClient({ project }: { project: Project }) {
             )}
           </section>
 
-          <OnChainCohortSection projectPda={projectPda} />
+          <OnChainCohortSection
+            projectPda={projectPda}
+            totalUSD={totalUSD}
+            kommittersCount={project.kommittersCount}
+            avgAgeDays={avgAgeDays}
+          />
 
           <YourCohortSection />
           </div>
@@ -316,26 +330,31 @@ function FounderStat({
 }
 
 /**
- * "On-chain cohort (live)" — the SDK consumer surface.
+ * "Your backers" — founder-facing cohort summary, fed by the SDK.
  *
- * Reads the project's full kommitter list directly from devnet via the
- * `@kommitapp/reader` open-source SDK. THIS surface is the production proof
- * that kommit.now is the first consumer of its own public reader: any
- * Solana product can `npm install @kommitapp/reader` and pull the same data
- * the same way. The call site is plain — see the `useEffect` below.
+ * Stats up top (count + total kommitted + average commitment age), live
+ * record list below. The list is read through `@kommitapp/reader` on every
+ * render so any Solana product can `npm install` it and read the same data
+ * the same way — but that integration story sits as a small footnote, not
+ * the headline.
  *
  * Behavior:
- *   - In real auth mode: hits devnet RPC via the SDK and renders the cohort
- *     ranked by lifetime kommits descending (the SDK sorts internally).
+ *   - In real auth mode: hits devnet RPC via the SDK.
  *   - In demo mode: still fires the SDK call but the persona project PDAs
  *     usually have no on-chain rows yet, so the empty state is normal. The
- *     mock-fed `#kommitters` section above is the demo storyteller; this
- *     section is the integration story.
- *   - Empty state explains the situation rather than hiding — composability
- *     is the claim, the empty cohort is just "no commits flowed yet on
- *     devnet."
+ *     mock-fed `#kommitters` section above is the demo storyteller.
  */
-function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
+function OnChainCohortSection({
+  projectPda,
+  totalUSD,
+  kommittersCount,
+  avgAgeDays,
+}: {
+  projectPda: string | null;
+  totalUSD: number;
+  kommittersCount: number;
+  avgAgeDays: number | null;
+}) {
   const [records, setRecords] = useState<KommitRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -347,9 +366,6 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
     setError(null);
     const rpcUrl =
       process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? "https://api.devnet.solana.com";
-    // ↓↓↓ The integration call. Identical to what an external integrator
-    //     would write after `npm install @kommitapp/reader`. No private API,
-    //     no service-role key, no internal shortcut.
     getKommittersForProject(rpcUrl, projectPda)
       .then((r) => {
         if (!cancelled) setRecords(r);
@@ -367,23 +383,59 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
 
   return (
     <section
-      id="on-chain-cohort"
+      id="your-backers"
       className="mt-20 pt-10 border-t-[8px] border-black"
     >
-      <div className="flex items-end justify-between flex-wrap gap-4 mb-3">
-        <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-          On-chain cohort
-        </h2>
-        <span
-          className="inline-flex items-center gap-2 bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2.5 py-1.5 border-[2px] border-black"
-          title="Reads through @kommitapp/reader on every render — open-source, MIT, npm-installable. See the source comment in this component."
-        >
-          via @kommitapp/reader
-        </span>
+      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+        Your backers
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5 mb-8">
+        <FounderStat
+          label="Backers"
+          value={formatNumber(kommittersCount)}
+          hint={kommittersCount > 0 ? "active cohort" : "—"}
+          accent
+        />
+        <FounderStat
+          label="Total kommitted"
+          value={formatUSD(totalUSD)}
+          hint={kommittersCount > 0 ? `across ${kommittersCount} backer${kommittersCount === 1 ? "" : "s"}` : "—"}
+        />
+        <FounderStat
+          label="Average commitment"
+          value={avgAgeDays !== null ? `${avgAgeDays} day${avgAgeDays === 1 ? "" : "s"}` : "—"}
+          hint={avgAgeDays !== null ? "since first kommit" : "—"}
+        />
       </div>
-      <p className="mb-6 font-epilogue font-medium text-sm text-gray-600 max-w-2xl">
-        Live read of every kommitter on this project, fetched from devnet
-        through the open-source{" "}
+
+      {!projectPda ? (
+        <OnChainCohortNotice
+          title="Project not yet on-chain"
+          body="The recipient wallet for this project hasn't been published on devnet — once it does, your backers will flow in here automatically."
+        />
+      ) : loading ? (
+        <OnChainCohortNotice
+          title="Loading…"
+          body="Reading the latest backer list from devnet."
+        />
+      ) : error ? (
+        <OnChainCohortNotice
+          title="Read failed"
+          body={`Could not load backers: ${error}.`}
+          tone="warn"
+        />
+      ) : records && records.length > 0 ? (
+        <OnChainCohortTable records={records} />
+      ) : (
+        <OnChainCohortNotice
+          title="No backers yet"
+          body="Your backer list will populate here as kommits land on devnet."
+        />
+      )}
+
+      <p className="mt-6 font-epilogue font-medium text-[11px] text-gray-500 tracking-tight max-w-2xl">
+        Pulled live from devnet via the open-source{" "}
         <a
           href="https://github.com/lamentierschweinchen/kommit/tree/main/app/packages/kommit-reader"
           target="_blank"
@@ -392,35 +444,8 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
         >
           @kommitapp/reader
         </a>{" "}
-        SDK. Any Solana product can `npm install` it and read the same cohort
-        the same way — gating discounts, beta access, allocation priority on
-        real on-chain conviction instead of token bags.
+        SDK — any Solana product can read the same cohort the same way.
       </p>
-
-      {!projectPda ? (
-        <OnChainCohortNotice
-          title="Project not yet on-chain"
-          body="This project's recipient wallet hasn't been published on devnet — once it does, the cohort will flow in here automatically."
-        />
-      ) : loading ? (
-        <OnChainCohortNotice
-          title="Reading devnet…"
-          body={`Calling getKommittersForProject(rpcUrl, "${projectPda.slice(0, 8)}…${projectPda.slice(-4)}")`}
-        />
-      ) : error ? (
-        <OnChainCohortNotice
-          title="Read failed"
-          body={`SDK error: ${error}. Empty cohort doesn't crash — the SDK returns Promise<KommitRecord[]>; this is a hard error.`}
-          tone="warn"
-        />
-      ) : records && records.length > 0 ? (
-        <OnChainCohortTable records={records} />
-      ) : (
-        <OnChainCohortNotice
-          title="No on-chain kommits yet"
-          body={`The SDK returned an empty array. Cohort populates as commits flow in on devnet (program ${"GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3".slice(0, 8)}…). This section is the live on-chain reader; the cohort summary above is rendered from the project listing.`}
-        />
-      )}
     </section>
   );
 }
