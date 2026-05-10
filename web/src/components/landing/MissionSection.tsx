@@ -3,14 +3,12 @@ import { Icon } from "@/components/common/Icon";
 
 /**
  * Mission excerpt for the coming-soon `/` landing — a tight pull from the
- * cohort manifesto v2 (cohort_manifesto.md). The full manifesto is the
- * authoritative version; this section is its handshake on the marketing page.
- *
- * Hand-off note: if the manifesto's hosted URL changes, update FULL_HREF.
- * Currently `#` because the manifesto isn't published at a stable URL yet.
+ * cohort manifesto (cohort_manifesto.md). The full manifesto is hosted at
+ * /manifesto on kommit.now; this section is its handshake on the marketing
+ * page.
  */
 
-const FULL_HREF = "#";
+const FULL_HREF = "/manifesto";
 
 export function MissionSection() {
   return (
