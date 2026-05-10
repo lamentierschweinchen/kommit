@@ -6,7 +6,7 @@ import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
+import { kommitsFor, formatKommits, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { daysBetween, shortDate } from "@/lib/date-utils";
 import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import { useVisaMode, formatEUR } from "@/lib/visa-mode";
@@ -192,10 +192,12 @@ function ActivePositionDisplay({
   const liveKommits = useLiveKommits(committedUSD, sinceISO);
   const isVisa = useVisaMode();
   // Until the visibility-effect mounts and triggers the first tick, show the
-  // SSR-pinned demo number so the headline never reads "0.00".
+  // SSR-pinned demo number so the headline never reads "0.00". formatKommits
+  // matches formatLiveKommits's compact rule (≥1M → "3.88M") so the value
+  // doesn't visually jump on hydration.
   const display = liveKommits > 0
     ? formatLiveKommits(liveKommits)
-    : formatNumber(kommitsFor(committedUSD, sinceISO));
+    : formatKommits(kommitsFor(committedUSD, sinceISO));
 
   return (
     <>

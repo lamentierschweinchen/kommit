@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { USERS, avatarUrl } from "@/lib/data/users";
+import { USERS, avatarUrl, type User } from "@/lib/data/users";
 import {
   useDemoMode,
   deactivateDemoMode,
   useDemoFrozen,
   freezeDemoState,
   unfreezeDemoState,
-  useRecordingMode,
-  activateRecordingMode,
 } from "@/lib/demo-mode";
 import { useVisaMode } from "@/lib/visa-mode";
 import { cn } from "@/lib/cn";
@@ -25,16 +24,21 @@ import { cn } from "@/lib/cn";
 export function DemoControls() {
   const isDemo = useDemoMode();
   const isVisa = useVisaMode();
-  const isRecording = useRecordingMode();
   const isFrozen = useDemoFrozen();
   const { user, role, switchUser, signOut, signIn } = useAuth();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   // Hide entirely in visa mode — the persona-switcher chrome would leak
   // crypto vocabulary ("DEMO · Lukas · Kommitter") into the recorded flow.
-  // Also hide in recording mode — the slim <RecordingPersonaPill> in the
-  // header replaces this UI for the camera-facing flow.
-  if (!isDemo || isVisa || isRecording) return null;
+  if (!isDemo || isVisa) return null;
+
+  // Mirror /demo's `enterAs` routing — switch to a founder and you land on
+  // their founder dashboard; switch to a kommitter and you land on /dashboard.
+  // Without this, switching to Julian from /dashboard would render Julian's
+  // wallet on the kommitter dashboard (empty), which reads as "broken".
+  const naturalSurfaceFor = (u: User): string =>
+    u.role === "founder" && u.ownsProject ? `/founder/${u.ownsProject}` : "/dashboard";
 
   return (
     <div className="fixed bottom-4 left-4 z-[90] print:hidden">
@@ -82,6 +86,7 @@ export function DemoControls() {
               onClick={() => {
                 switchUser(u.id);
                 setOpen(false);
+                router.push(naturalSurfaceFor(u));
               }}
               className={cn(
                 "w-full text-left flex items-center gap-3 px-2 py-2 border-[2px] border-black",
@@ -108,6 +113,7 @@ export function DemoControls() {
             onClick={() => {
               signOut();
               setOpen(false);
+              router.push("/");
             }}
             className="w-full text-left flex items-center gap-2 px-3 py-2 border-[2px] border-black bg-white text-black hover:bg-gray-100 font-epilogue font-bold uppercase text-xs tracking-tight"
           >
@@ -118,6 +124,7 @@ export function DemoControls() {
             onClick={() => {
               signIn("lukas");
               setOpen(false);
+              router.push("/dashboard");
             }}
             className="w-full text-left flex items-center gap-2 px-3 py-2 border-[2px] border-black bg-secondary text-black font-epilogue font-bold uppercase text-xs tracking-tight"
           >
@@ -144,19 +151,6 @@ export function DemoControls() {
                 {isFrozen ? "ON" : "OFF"}
               </span>
             </label>
-            <button
-              type="button"
-              onClick={() => {
-                activateRecordingMode();
-                setOpen(false);
-              }}
-              className="w-full text-left flex items-center gap-2 px-2 py-1.5 border-[2px] border-black bg-white text-black hover:bg-gray-100 font-epilogue font-bold uppercase text-xs tracking-tight"
-            >
-              Enter recording mode
-              <span className="ml-auto font-epilogue text-[9px] tracking-widest text-gray-500">
-                Esc to exit
-              </span>
-            </button>
           </div>
           <div className="pt-2 mt-2 border-t-[2px] border-black space-y-1">
             <Link

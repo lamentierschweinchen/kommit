@@ -177,7 +177,7 @@ export default function DashboardPage() {
                   ? isVisa
                     ? "settled on-chain · ready to deploy"
                     : isDemo
-                      ? "demo cohort · pre-funded"
+                      ? "ready to deploy"
                       : "USDC in your wallet"
                   : "Deposit to fund your kommits"
               }

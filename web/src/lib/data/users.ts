@@ -34,30 +34,13 @@ export const USERS: Record<string, User> = {
     wallet: "CYzMs8zagf6jaanndLkR1Lv6h3x8nzAnoACGQfyBKMTF",
     ownsProject: "caldera",
   },
-  lina: {
-    id: "lina",
-    displayName: "Lina Park",
-    role: "founder",
-    avatarSeed: 20,
-    email: "lina@marginhouse.org",
-    wallet: "83EDkAQhmpeTQW6mmBwc6RctS5S99324tvsq1oJVAqC4",
-    ownsProject: "margin-house",
-  },
-  maya: {
-    id: "maya",
-    displayName: "Maya Okonkwo",
+  sara: {
+    id: "sara",
+    displayName: "Sara Chen",
     role: "kommitter",
     avatarSeed: 32,
-    email: "maya@example.com",
+    email: "sara@example.com",
     wallet: "HjTDMvHr3tuyoBuQweq4zoJjY1E5zNfJbt9ncgQujJoq",
-  },
-  theo: {
-    id: "theo",
-    displayName: "Theo Reinhardt",
-    role: "kommitter",
-    avatarSeed: 45,
-    email: "theo@example.com",
-    wallet: "CG4uVkhn77jnCHjuTgSKeZVE8Bzbn6TM5TnJ7s2mYCPo",
   },
 };
 

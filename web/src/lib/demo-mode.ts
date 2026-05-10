@@ -30,7 +30,6 @@ import { useEffect, useState } from "react";
 const ENV_DEMO = process.env.NEXT_PUBLIC_KOMMIT_DEMO === "1";
 const STORAGE_KEY = "kommit:demo";
 const PERSONA_KEY = "kommit:demo:persona";
-const RECORDING_KEY = "kommit:demo:recording";
 const FROZEN_KEY = "kommit:demo:frozen";
 
 /**
@@ -111,52 +110,6 @@ export function setStoredPersonaId(id: string | null) {
   try {
     if (id) window.localStorage.setItem(PERSONA_KEY, id);
     else window.localStorage.removeItem(PERSONA_KEY);
-  } catch {}
-}
-
-// ---------------------------------------------------------------------------
-// Recording mode — for the 2-min submission video. Hides DemoControls and
-// adds a slim header pill + keyboard bindings for fast persona switches
-// during a take. Activated via `?recording=1` (query param sets the
-// localStorage flag on first mount, then router.replace strips the query so
-// the URL stays clean for the camera).
-// ---------------------------------------------------------------------------
-
-export function isRecordingMode(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(RECORDING_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function useRecordingMode(): boolean {
-  const [active, setActive] = useState<boolean>(false);
-  useEffect(() => {
-    setActive(isRecordingMode());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === RECORDING_KEY || e.key === null) setActive(isRecordingMode());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-  return active;
-}
-
-export function activateRecordingMode() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(RECORDING_KEY, "1");
-    window.dispatchEvent(new StorageEvent("storage", { key: RECORDING_KEY }));
-  } catch {}
-}
-
-export function deactivateRecordingMode() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(RECORDING_KEY);
-    window.dispatchEvent(new StorageEvent("storage", { key: RECORDING_KEY }));
   } catch {}
 }
 

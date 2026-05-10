@@ -1,11 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import { bricolage, publicSans, jetbrainsMono } from "@/lib/fonts";
 import { ProvidersMount } from "@/components/providers-mount";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/common/ToastProvider";
 import { DemoControls } from "@/components/layout/DemoControls";
-import { RecordingActivator } from "@/components/layout/RecordingActivator";
 import "@/styles/globals.css";
 
 /**
@@ -61,11 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Self-gates via useDemoMode — renders only when the demo
                   env flag or the localStorage flag set by /demo is on. */}
               <DemoControls />
-              {/* Wrapped in Suspense because useSearchParams suspends until
-                  client-side params are available in Next 15. */}
-              <Suspense fallback={null}>
-                <RecordingActivator />
-              </Suspense>
             </ToastProvider>
           </AuthProvider>
         </ProvidersMount>

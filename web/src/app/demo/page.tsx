@@ -37,9 +37,7 @@ function buildCohortSeed() {
 const PERSONA_BLURBS: Record<string, string> = {
   lukas: "Kommitter with a portfolio across Climate, Bio, and Edu projects.",
   julian: "Founder of CALDERA — geothermal-baseload heat for industry. Post updates, see your cohort.",
-  lina: "Founder of MARGIN HOUSE — short-form retail-broker accountability journalism.",
-  maya: "Kommitter, lighter portfolio. Useful as a 'fresh visitor' POV.",
-  theo: "Kommitter with a graduated record — see what kommits look like after a project lands.",
+  sara: "New visitor — clean dashboard, no commitments yet. The first-time user POV.",
 };
 
 /**
@@ -107,7 +105,7 @@ function DemoEntry() {
 
   return (
     <main className="flex-1 px-6 md:px-12 py-12 md:py-16 max-w-4xl mx-auto w-full">
-      <div className="bg-white border-[3px] border-black shadow-brutal p-6 md:p-10 relative overflow-hidden">
+      <div className="bg-white border-[3px] border-black shadow-brutal p-6 md:p-10 relative">
         <div className="absolute -top-3 -right-3 inline-block bg-secondary text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm rotate-3">
           Demo
         </div>
