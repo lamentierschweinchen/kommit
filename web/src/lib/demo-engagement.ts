@@ -528,11 +528,97 @@ export function seedDemoCohort(args: {
   }
   writeAllUpdates(allUpdates);
 
+  // Seed Lukas's activity history so the dashboard "My history" feed has
+  // something to render — a veteran kommitter ought to look ACTIVE on first
+  // paint. Built from the commits he already has plus a plausible mix of
+  // partial withdrawals, reactions, and comments. Idempotent: keyed off the
+  // same KEY_SEEDED marker as the rest of the cohort seed.
+  const existingActivity = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
+  const hasLukasActivity = existingActivity.some((e) => e.wallet === args.lukasWallet);
+  if (!hasLukasActivity) {
+    const entries = buildLukasSeedActivity(args.lukasWallet, args.lukasCommitments);
+    const merged = [...entries, ...existingActivity].slice(0, 200);
+    writeStore(KEY_ACTIVITY, merged);
+  }
+
   try {
     window.localStorage.setItem(KEY_SEEDED, "1");
   } catch {
     /* non-fatal */
   }
+}
+
+/**
+ * Synthesize a plausible activity log for Lukas. Each commitment becomes a
+ * "commit" entry at noon UTC of its `sinceISO`, plus a sprinkle of
+ * withdrawals / reactions / comments at later, scattered timestamps so the
+ * feed reads like a real veteran user — not a list of identical events.
+ */
+function buildLukasSeedActivity(
+  wallet: string,
+  commitments: Commitment[],
+): DemoActivityEntry[] {
+  const out: DemoActivityEntry[] = [];
+
+  for (const c of commitments) {
+    out.push({
+      kind: "commit",
+      wallet,
+      projectSlug: c.projectSlug,
+      amountUSD: c.kommittedUSD,
+      atISO: `${c.sinceISO}T12:00:00.000Z`,
+    });
+  }
+
+  const WITHDRAWALS: Array<{ slug: string; amount: number; atISO: string }> = [
+    { slug: "aurora", amount: 100, atISO: "2026-03-22T15:30:00.000Z" },
+    { slug: "frame-studio", amount: 50, atISO: "2026-04-09T11:45:00.000Z" },
+    { slug: "lighthouse-labs", amount: 75, atISO: "2026-04-23T18:20:00.000Z" },
+  ];
+  for (const w of WITHDRAWALS) {
+    if (!commitments.some((c) => c.projectSlug === w.slug)) continue;
+    out.push({
+      kind: "withdraw",
+      wallet,
+      projectSlug: w.slug,
+      amountUSD: w.amount,
+      atISO: w.atISO,
+    });
+  }
+
+  const REACTIONS: Array<{ atISO: string; emoji: string; project: string }> = [
+    { atISO: "2026-04-26T09:15:00.000Z", emoji: "🔥", project: "CALDERA" },
+    { atISO: "2026-04-22T17:40:00.000Z", emoji: "🚀", project: "Lighthouse Labs" },
+    { atISO: "2026-04-21T14:05:00.000Z", emoji: "👏", project: "Frame Studio" },
+    { atISO: "2026-04-19T20:30:00.000Z", emoji: "💪", project: "Beacon Sci" },
+    { atISO: "2026-04-15T10:20:00.000Z", emoji: "🔥", project: "Caldera" },
+    { atISO: "2026-04-04T13:50:00.000Z", emoji: "🤝", project: "Quire Chess" },
+  ];
+  for (const r of REACTIONS) {
+    out.push({
+      kind: "react",
+      wallet,
+      atISO: r.atISO,
+      label: `${r.emoji} on ${r.project} update`,
+    });
+  }
+
+  const COMMENTS: Array<{ atISO: string; label: string }> = [
+    {
+      atISO: "2026-04-25T16:20:00.000Z",
+      label: "On Caldera — appreciate the rapid borefield iteration. Stay focused.",
+    },
+    {
+      atISO: "2026-04-04T18:40:00.000Z",
+      label: "On Quire — pivot is the right call. Trainer was always the wedge.",
+    },
+  ];
+  for (const c of COMMENTS) {
+    out.push({ kind: "comment", wallet, atISO: c.atISO, label: c.label });
+  }
+
+  out.sort((a, b) => b.atISO.localeCompare(a.atISO));
+  return out;
 }
 
 function stableId(pda: string, atISO: string, idx: number): string {

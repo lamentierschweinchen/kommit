@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
+import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
@@ -13,6 +15,7 @@ import type { Commitment } from "@/lib/data/commitments";
 import type { RemoteUpdate } from "@/lib/api-types";
 import { findProjectPda } from "@/lib/kommit";
 import { authedFetch } from "@/lib/api-client";
+import { Icon } from "@/components/common/Icon";
 import { cn } from "@/lib/cn";
 
 export function CommitmentRow({
@@ -22,9 +25,12 @@ export function CommitmentRow({
 }: {
   commitment: Commitment;
   project: Project;
+  /** Fires after a successful withdraw OR top-up so callers can refresh. */
   onWithdrawSuccess?: () => void;
 }) {
+  const router = useRouter();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [commitOpen, setCommitOpen] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
 
@@ -134,12 +140,26 @@ export function CommitmentRow({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {newCount > 0 ? (
             <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
               {newCount} New
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              if (isVisa) {
+                router.push(`/visa-demo?project=${project.slug}`);
+                return;
+              }
+              setCommitOpen(true);
+            }}
+            className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform inline-flex items-center gap-1.5"
+          >
+            <Icon name="add" size="sm" />
+            Kommit more
+          </button>
           <button
             type="button"
             onClick={() => setWithdrawOpen(true)}
@@ -149,6 +169,12 @@ export function CommitmentRow({
           </button>
         </div>
       </article>
+      <CommitModal
+        open={commitOpen}
+        onOpenChange={setCommitOpen}
+        project={project}
+        onSuccess={onWithdrawSuccess}
+      />
       <WithdrawModal
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
