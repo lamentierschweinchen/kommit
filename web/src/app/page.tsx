@@ -54,16 +54,21 @@ export default function ComingSoonPage() {
                 extraction.
               </h1>
               <p className="text-lg md:text-xl font-medium text-gray-800 max-w-xl leading-relaxed border-l-[4px] border-primary pl-6 italic">
-                Back early-stage projects without locking your money. Earn
-                kommits the longer you stay. Launching soon — get on the
-                list.
+                Back early-stage teams without locking your money. Earn
+                standing by staying.
               </p>
               <p className="text-base font-medium text-gray-700 max-w-xl leading-relaxed">
                 One kommit accrues per dollar-hour committed. Your money
                 stays yours. Yield funds the platform — no fee on you, no fee
-                on founders. The primitive is dedicated to the public domain;
-                the platform is at <span className="font-bold">kommit.now</span>.
+                on founders.
               </p>
+              <Link
+                href="/manifesto"
+                className="inline-flex items-center gap-2 font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-b-[3px] border-black hover:bg-secondary px-2 py-1 transition-colors"
+              >
+                Read the manifesto
+                <span aria-hidden>→</span>
+              </Link>
             </div>
 
             <div className="w-full">
@@ -98,12 +103,12 @@ export default function ComingSoonPage() {
             <HowCard
               num="02"
               title="Kommit"
-              body="Your money stays yours. The team sees a real backer. Withdraw anytime, no fees."
+              body="Your money stays yours. The team sees a real backer. Withdraw anytime."
             />
             <HowCard
               num="03"
               title="Earn kommits"
-              body="Kommits build the longer you stay. First access when the team raises. Yours forever."
+              body="Kommits build the longer you stay. Your standing earns rights — first dibs, perks, privileged access. Soulbound, public, yours."
             />
           </div>
         </section>

@@ -181,20 +181,20 @@ export default function BuildApplicationPage() {
 function FounderPitchBox() {
   const bullets: { title: string; body: string }[] = [
     {
-      title: "Signal you can actually trust",
+      title: "Signal you can trust",
       body: "Kommitters paid opportunity cost in real money over real time to back you. Read the count and learn something true — not opinion volume.",
     },
     {
       title: "No platform fee on the round",
-      body: "Yield earned on parked capital funds the platform. We don't take 7-9% at the moment your round closes — that part is yours.",
+      body: "Yield earned on parked capital funds the platform. We don't take 7-9% when your round closes.",
     },
     {
-      title: "First-dibs cohort = pre-qualified angels",
+      title: "First-dibs cohort, earned through patience",
       body: "Backers who held through pivots get first-dibs at round price. They've watched you for months — your round closes faster.",
     },
     {
       title: "Public legibility",
-      body: "“Backed by 50 kommitters with $200K committed across 18 months” is verifiable in seconds. Cap-table-adjacent legitimacy you didn't have before.",
+      body: "“Backed by 50 kommitters with $200K committed across 18 months” is verifiable in seconds. Cap-table-adjacent legitimacy.",
     },
   ];
   return (

@@ -178,7 +178,7 @@ export default function SandboxOnChainPage() {
         toastError(
           mapped.kind === "unknown" ? "Kommit didn't go through." : mapped.title,
           mapped.kind === "unknown"
-            ? "The project's escrow may already be initialized with a different mint. Try a different project."
+            ? "This project's setup is incompatible. Try a different one."
             : mapped.detail,
         );
       }
