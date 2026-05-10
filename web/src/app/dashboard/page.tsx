@@ -8,11 +8,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
 import { ActivityHistory } from "@/components/dashboard/ActivityHistory";
 import { RightRail } from "@/components/dashboard/RightRail";
-import { ProjectCardSmall } from "@/components/project/ProjectCardSmall";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { getCommitmentsForUser } from "@/lib/queries";
-import { getProject, PROJECTS } from "@/lib/data/projects";
+import { getProject } from "@/lib/data/projects";
 import type { Commitment } from "@/lib/data/commitments";
 import { formatNumber, formatUSD } from "@/lib/kommit-math";
 import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
@@ -84,11 +83,6 @@ export default function DashboardPage() {
   // unitless (kommits are kommits), but every dollar amount converts to a
   // EUR display; the localStorage positions are still keyed in USDC.
   const fmtMoney = (usdc: number) => (isVisa ? formatEUR(usdc) : formatUSD(usdc));
-
-  const recommendedSlugs = ["cadence", "forge-health", "verity-books"];
-  const recommended = recommendedSlugs
-    .map((s) => PROJECTS.find((p) => p.slug === s))
-    .filter((p): p is NonNullable<typeof p> => !!p);
 
   return (
     <>
@@ -216,27 +210,32 @@ export default function DashboardPage() {
               {isSignedIn && user?.wallet && isDemo ? (
                 <section className="pt-10 border-t-[8px] border-black">
                   <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                    Activity
+                    My history
                   </h2>
-                  <ActivityHistory wallet={user.wallet} />
+                  <ActivityHistory
+                    wallet={user.wallet}
+                    kinds={["commit", "withdraw"]}
+                    defaultLimit={10}
+                    emptyHeadline="No history yet."
+                    emptyBody="Your kommits and withdrawals land here as you act."
+                  />
                 </section>
               ) : null}
-
-              <section className="pt-10 border-t-[8px] border-black">
-                <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                  Back more projects
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {recommended.map((p) => (
-                    <ProjectCardSmall key={p.slug} project={p} />
-                  ))}
-                </div>
-              </section>
             </div>
 
             <aside className="lg:pt-10 lg:border-t-[8px] lg:border-black space-y-6">
               <RightRail commitments={commitments} />
             </aside>
+          </div>
+
+          <div className="mt-20 pt-8 border-t-[2px] border-black">
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-2 font-epilogue font-bold uppercase tracking-widest text-xs text-gray-600 hover:text-black"
+            >
+              Browse all projects
+              <Icon name="arrow_forward" size="sm" />
+            </Link>
           </div>
           </div>
           </AuthGate>

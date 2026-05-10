@@ -16,7 +16,15 @@ export type Founder = {
   role: string;
   bio: string;
   avatarSeed: number;
-  pastWorkUrl?: string;
+  /**
+   * Social account URLs surfaced on the project detail founder card. If none
+   * are present the icon row hides entirely — no dead links to nowhere.
+   */
+  socials?: {
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+  };
 };
 
 export type ProjectUpdate = {
@@ -87,14 +95,21 @@ const CALDERA: Project = {
       role: "CEO · ex-DOE building energy",
       bio: "Ran the DOE's commercial heat-pump pilot. PhD in geothermics. Has put pumps in eighty-six buildings on three continents.",
       avatarSeed: 12,
-      pastWorkUrl: "#",
+      socials: {
+        linkedin: "https://www.linkedin.com/in/julianvance",
+        twitter: "https://twitter.com/julianvance",
+        website: "https://caldera.energy",
+      },
     },
     {
       name: "Priya Singh",
       role: "CTO · ex-Tesla Energy",
       bio: "Designed Tesla's commercial-energy planner. Authored a chunk of the borefield-thermal models now in production. Lives in code; ships in calendar quarters, not sprints.",
       avatarSeed: 49,
-      pastWorkUrl: "#",
+      socials: {
+        linkedin: "https://www.linkedin.com/in/priyasingh",
+        twitter: "https://twitter.com/priya_borefield",
+      },
     },
   ],
   kommittersCount: 142,
@@ -171,6 +186,11 @@ const LIGHTHOUSE: Project = {
       role: "CEO · ex-NOAA forecaster",
       bio: "Spent six years at NOAA building short-range forecast models. Grew up in an orchard family in Oregon.",
       avatarSeed: 47,
+      socials: {
+        linkedin: "https://www.linkedin.com/in/mayachen-noaa",
+        twitter: "https://twitter.com/mayachen_wx",
+        website: "https://lighthouselabs.farm",
+      },
     },
   ],
   kommittersCount: 89,
@@ -218,6 +238,11 @@ const AURORA: Project = {
       role: "CEO · ex-Stripe payments",
       bio: "Led cross-border product at Stripe. Latin-America-first; banked in two currencies before he was twelve.",
       avatarSeed: 33,
+      socials: {
+        linkedin: "https://www.linkedin.com/in/tomasreyes",
+        twitter: "https://twitter.com/tomasreyes",
+        website: "https://aurora.cash",
+      },
     },
   ],
   kommittersCount: 217,
@@ -260,6 +285,10 @@ const QUIRE_CHESS: Project = {
       role: "CEO · WIM",
       bio: "Woman International Master. Spent five years as a chess streamer; knows where adult improvers stall.",
       avatarSeed: 24,
+      socials: {
+        twitter: "https://twitter.com/sofia_wim",
+        website: "https://quire.chess",
+      },
     },
   ],
   kommittersCount: 74,
@@ -303,6 +332,11 @@ const FRAME_STUDIO: Project = {
       role: "CEO · ex-Frame.io",
       bio: "Built Frame.io's mobile review app. Left to do this without Adobe's roadmap pulling on it.",
       avatarSeed: 15,
+      socials: {
+        linkedin: "https://www.linkedin.com/in/rentanaka",
+        twitter: "https://twitter.com/rentanaka",
+        website: "https://framestudio.app",
+      },
     },
   ],
   kommittersCount: 126,
@@ -345,6 +379,11 @@ const BEACON_SCI: Project = {
       role: "CEO · ex-bioRxiv",
       bio: "Spent four years at bioRxiv. Believes peer review should be portable infrastructure, not a journal moat.",
       avatarSeed: 58,
+      socials: {
+        linkedin: "https://www.linkedin.com/in/anikapatel-biorxiv",
+        twitter: "https://twitter.com/anikapatel",
+        website: "https://beacon-sci.org",
+      },
     },
   ],
   kommittersCount: 61,

@@ -11,7 +11,7 @@ import { RoadmapCard } from "@/components/project/RoadmapCard";
 import { getProject, projectImageUrl, type Project } from "@/lib/data/projects";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD, formatNumber } from "@/lib/kommit-math";
-import { shortDate } from "@/lib/date-utils";
+import { longDate, shortDate } from "@/lib/date-utils";
 import { cn } from "@/lib/cn";
 import { Tape } from "@/components/common/Tape";
 import { Icon } from "@/components/common/Icon";
@@ -54,6 +54,8 @@ export default async function ProjectDetailPage({
               </div>
             </section>
 
+            <ProjectInfoSection project={project} />
+
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 The team
@@ -70,7 +72,7 @@ export default async function ProjectDetailPage({
                       alt={f.name}
                       className="w-24 h-24 border-[3px] border-black object-cover grayscale shrink-0"
                     />
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <div className="font-epilogue font-black uppercase text-xl tracking-tight">
                         {f.name}
                       </div>
@@ -78,15 +80,7 @@ export default async function ProjectDetailPage({
                         {f.role}
                       </div>
                       <p className="text-sm font-medium text-gray-800 leading-relaxed">{f.bio}</p>
-                      {f.pastWorkUrl ? (
-                        <Link
-                          href={f.pastWorkUrl}
-                          className="inline-flex items-center gap-1 font-epilogue font-bold uppercase tracking-widest text-[11px] text-primary hover:underline"
-                        >
-                          Past work
-                          <Icon name="arrow_outward" size="xs" />
-                        </Link>
-                      ) : null}
+                      <FounderSocials socials={f.socials} name={f.name} />
                     </div>
                   </article>
                 ))}
@@ -225,6 +219,123 @@ function HeroStat({ label, value }: { label: string; value: string }) {
     <div className="border-[3px] border-black p-3 shadow-brutal-sm bg-white">
       <div className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{label}</div>
       <div className="font-epilogue font-black text-base">{value}</div>
+    </div>
+  );
+}
+
+function ProjectInfoSection({ project }: { project: Project }) {
+  // Surfaces project-shape fields the page didn't render before — chiefly
+  // `totalKommitsGenerated` (cohort score). Plus a one-glance summary of the
+  // existing metadata so kommitters get a "is this real" panel before diving
+  // into the team/updates.
+  const stateLabel =
+    project.state === "graduated"
+      ? "Graduated"
+      : project.state === "just-listed"
+        ? "Just listed"
+        : "Active";
+  const lastUpdate = [...project.updates].sort((a, b) => b.atISO.localeCompare(a.atISO))[0];
+  const cohortKommits = project.totalKommitsGenerated;
+  const items: Array<{ label: string; value: string }> = [
+    { label: "Sector", value: project.sector },
+    { label: "Stage", value: stateLabel },
+    { label: "Active since", value: longDate(project.activeSinceISO) },
+    {
+      label: "Cohort kommits",
+      value: cohortKommits > 0 ? formatNumber(cohortKommits) : "—",
+    },
+    {
+      label: "Total committed",
+      value: formatUSD(project.totalKommittedUSD, {
+        compact: project.totalKommittedUSD >= 10_000,
+      }),
+    },
+    { label: "Kommitters", value: formatNumber(project.kommittersCount) },
+  ];
+  return (
+    <section>
+      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+        Project info
+      </h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {items.map((it) => (
+          <div key={it.label} className="bg-white border-[3px] border-black p-4 shadow-brutal-sm">
+            <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+              {it.label}
+            </div>
+            <div className="mt-1 font-epilogue font-black text-base md:text-lg tracking-tight">
+              {it.value}
+            </div>
+          </div>
+        ))}
+      </div>
+      {lastUpdate ? (
+        <p className="mt-4 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
+          Last update {shortDate(lastUpdate.atISO)} — {lastUpdate.title}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function FounderSocials({
+  socials,
+  name,
+}: {
+  socials?: { linkedin?: string; twitter?: string; website?: string };
+  name: string;
+}) {
+  if (!socials) return null;
+  type Entry = { url: string; key: "linkedin" | "twitter" | "website"; label: string; svg: React.ReactNode };
+  const entries: Entry[] = [];
+  if (socials.linkedin) {
+    entries.push({
+      url: socials.linkedin,
+      key: "linkedin",
+      label: "LinkedIn",
+      // lucide-react dropped brand glyphs, so brand icons live as inline SVGs.
+      svg: (
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden>
+          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+        </svg>
+      ),
+    });
+  }
+  if (socials.twitter) {
+    entries.push({
+      url: socials.twitter,
+      key: "twitter",
+      label: "Twitter",
+      svg: (
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden>
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      ),
+    });
+  }
+  if (socials.website) {
+    entries.push({
+      url: socials.website,
+      key: "website",
+      label: "Website",
+      svg: <Icon name="globe" size="sm" />,
+    });
+  }
+  if (entries.length === 0) return null;
+  return (
+    <div className="pt-2 flex items-center gap-2">
+      {entries.map((e) => (
+        <Link
+          key={e.key}
+          href={e.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${name} on ${e.label}`}
+          className="w-8 h-8 border-[2px] border-black bg-white shadow-brutal-sm flex items-center justify-center hover:bg-secondary hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+        >
+          {e.svg}
+        </Link>
+      ))}
     </div>
   );
 }

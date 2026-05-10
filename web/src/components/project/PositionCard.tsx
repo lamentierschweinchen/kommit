@@ -7,7 +7,7 @@ import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { kommitsFor, formatKommits, formatNumber, formatUSD } from "@/lib/kommit-math";
-import { daysBetween, shortDate } from "@/lib/date-utils";
+import { shortDate } from "@/lib/date-utils";
 import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import type { Project } from "@/lib/data/projects";
@@ -94,9 +94,6 @@ export function PositionCard({
   return (
     <>
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
-        <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-          Your position
-        </div>
         {variant === "active" && committedUSD && sinceISO ? (
           <ActivePositionDisplay
             committedUSD={committedUSD}
@@ -105,6 +102,9 @@ export function PositionCard({
           />
         ) : project.kommittersCount === 0 ? (
           <>
+            <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
+              Your position
+            </div>
             <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
               No kommitters yet.
             </div>
@@ -114,6 +114,9 @@ export function PositionCard({
           </>
         ) : (
           <>
+            <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
+              Your position
+            </div>
             <div className="font-epilogue font-black text-2xl md:text-3xl tracking-tighter">
               Back {project.name}.
             </div>
@@ -191,6 +194,12 @@ export function PositionCard({
  * Active-position display block. Pulled into its own component so the
  * `useLiveKommits` hook runs unconditionally — React hooks can't sit inside
  * a conditional branch in the parent.
+ *
+ * Two-stat brutalist layout (handoff 56 #5): kommits on the left as the
+ * live-ticking primary number, currently-committed principal on the right.
+ * Both get the same border-[3px] / large-number treatment so they read as
+ * peers — the previous "one big kommit count + tiny committed chip" was
+ * doing no work for the user.
  */
 function ActivePositionDisplay({
   committedUSD,
@@ -206,32 +215,38 @@ function ActivePositionDisplay({
   // Until the visibility-effect mounts and triggers the first tick, show the
   // SSR-pinned demo number so the headline never reads "0.00". formatKommits
   // matches formatLiveKommits's compact rule (≥1M → "3.88M") so the value
-  // doesn't visually jump on hydration. For fresh commits (sinceISO ≥
-  // DEMO_TODAY_ISO) `kommitsFor` clamps to 0 — exactly the value the live
-  // hook will return on its first tick once `sinceMs` is plumbed through, so
-  // there's no visible jump from "10 per dollar" → real time.
-  const display = liveKommits > 0
-    ? formatLiveKommits(liveKommits)
-    : formatKommits(kommitsFor(committedUSD, sinceISO));
+  // doesn't visually jump on hydration.
+  const kommitsDisplay =
+    liveKommits > 0
+      ? formatLiveKommits(liveKommits)
+      : formatKommits(kommitsFor(committedUSD, sinceISO));
+  const moneyDisplay = isVisa ? formatEUR(committedUSD) : formatUSD(committedUSD);
 
   return (
     <>
-      <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-1">
-        Your kommits
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white border-[3px] border-black p-4 shadow-brutal-sm">
+          <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+            Your kommits
+          </div>
+          <div
+            className="mt-2 font-epilogue font-black text-3xl md:text-4xl tracking-tighter tabular-nums text-primary"
+            aria-live="polite"
+          >
+            {kommitsDisplay}
+          </div>
+        </div>
+        <div className="bg-white border-[3px] border-black p-4 shadow-brutal-sm">
+          <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+            Currently kommitted
+          </div>
+          <div className="mt-2 font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
+            {moneyDisplay}
+          </div>
+        </div>
       </div>
-      <div
-        className="font-epilogue font-black text-5xl md:text-6xl tracking-tighter tabular-nums"
-        aria-live="polite"
-      >
-        {display}
-      </div>
-      <div className="flex flex-wrap gap-2 mt-5">
-        <span className="bg-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
-          Active since {shortDate(sinceISO)}
-        </span>
-        <span className="bg-primary text-white border-[2px] border-black px-3 py-1 shadow-brutal-sm font-epilogue font-black uppercase text-xs tracking-tight">
-          {isVisa ? formatEUR(committedUSD) : formatUSD(committedUSD)} currently committed
-        </span>
+      <div className="mt-4 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+        Active since {shortDate(sinceISO)}
       </div>
       <p className="mt-5 text-sm font-medium text-gray-700 leading-relaxed">
         <span className="font-epilogue font-bold uppercase text-[11px] tracking-widest text-black">

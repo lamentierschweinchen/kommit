@@ -11,14 +11,30 @@ import { getProject } from "@/lib/data/projects";
 import { formatUSD } from "@/lib/kommit-math";
 import { relativeTime } from "@/lib/date-utils";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { PaginatedList } from "@/components/common/PaginatedList";
 import { cn } from "@/lib/cn";
 
 /**
  * Transaction history for the kommitter dashboard. Reads from the demo
  * activity log (currently demo-mode only — when on-chain reads land for
  * real-mode this swaps to a tx-history endpoint).
+ *
+ * `kinds` filters the activity-feed types — pass e.g. `["commit", "withdraw"]`
+ * for a "My history" view that hides reactions/comments. Defaults to all.
  */
-export function ActivityHistory({ wallet }: { wallet: string }) {
+export function ActivityHistory({
+  wallet,
+  kinds,
+  defaultLimit,
+  emptyHeadline = "No activity yet.",
+  emptyBody = "Your kommits, withdrawals, and reactions land here as you act.",
+}: {
+  wallet: string;
+  kinds?: DemoActivityEntry["kind"][];
+  defaultLimit?: number;
+  emptyHeadline?: string;
+  emptyBody?: string;
+}) {
   const isDemo = useDemoMode();
   const [entries, setEntries] = useState<DemoActivityEntry[]>([]);
 
@@ -27,9 +43,8 @@ export function ActivityHistory({ wallet }: { wallet: string }) {
       setEntries([]);
       return;
     }
-    setEntries(getDemoActivity(wallet, 25));
-    // Re-read on storage changes so a kommit fired in another tab shows up.
-    const onStorage = () => setEntries(getDemoActivity(wallet, 25));
+    setEntries(getDemoActivity(wallet, 200));
+    const onStorage = () => setEntries(getDemoActivity(wallet, 200));
     if (typeof window !== "undefined") {
       window.addEventListener("storage", onStorage);
       return () => window.removeEventListener("storage", onStorage);
@@ -38,23 +53,36 @@ export function ActivityHistory({ wallet }: { wallet: string }) {
 
   if (!isDemo) return null;
 
-  if (entries.length === 0) {
+  const filtered = kinds ? entries.filter((e) => kinds.includes(e.kind)) : entries;
+
+  if (filtered.length === 0) {
     return (
       <div className="bg-white border-[3px] border-black shadow-brutal p-6">
         <p className="font-epilogue font-bold uppercase text-sm tracking-tight">
-          No activity yet.
+          {emptyHeadline}
         </p>
-        <p className="mt-2 text-sm font-medium text-gray-700">
-          Your kommits, withdrawals, and reactions land here as you act.
-        </p>
+        <p className="mt-2 text-sm font-medium text-gray-700">{emptyBody}</p>
       </div>
+    );
+  }
+
+  if (defaultLimit && filtered.length > defaultLimit) {
+    return (
+      <PaginatedList
+        items={filtered}
+        defaultLimit={defaultLimit}
+        itemKey={(e, i) => `${e.atISO}-${i}`}
+        renderItem={(e) => <ActivityRow entry={e} />}
+      />
     );
   }
 
   return (
     <ul className="space-y-2">
-      {entries.map((e, i) => (
-        <ActivityRow key={`${e.atISO}-${i}`} entry={e} />
+      {filtered.map((e, i) => (
+        <li key={`${e.atISO}-${i}`}>
+          <ActivityRow entry={e} />
+        </li>
       ))}
     </ul>
   );
@@ -72,7 +100,7 @@ function ActivityRow({ entry }: { entry: DemoActivityEntry }) {
   const meta = KIND_META[entry.kind];
   const project = entry.projectSlug ? getProject(entry.projectSlug) : null;
   return (
-    <li className="bg-white border-[3px] border-black p-4 flex items-center gap-4">
+    <div className="bg-white border-[3px] border-black p-4 flex items-center gap-4">
       <span
         className={cn(
           "shrink-0 w-9 h-9 border-[2px] border-black flex items-center justify-center",
@@ -112,6 +140,6 @@ function ActivityRow({ entry }: { entry: DemoActivityEntry }) {
           {relativeTime(entry.atISO.slice(0, 10))}
         </div>
       </div>
-    </li>
+    </div>
   );
 }
