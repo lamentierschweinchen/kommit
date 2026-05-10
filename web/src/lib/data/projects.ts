@@ -61,6 +61,13 @@ export type Project = {
   graduatedAtISO?: string;
   raisedAmountUSD?: number;
   raisedAtValuationUSD?: number;
+  /**
+   * Benefits the kommitter cohort earned when this project graduated. Only
+   * meaningful for `state === "graduated"`. Rendered on the project detail
+   * page below the graduation banner and inside the claim-benefits stub on
+   * the kommitter's dashboard row.
+   */
+  kommitterBenefits?: string[];
   imageSeed: string;
   /** Card title display variant — drives content-safe-zone sizing */
   titleSize?: "tight" | "normal";
@@ -228,10 +235,10 @@ const AURORA: Project = {
   pitch: "Same-day cash on cross-border invoices.",
   longerPitch: [
     "International B2B invoices take 30-60 days to clear. Aurora advances the cash on day one, takes a small fee, and clears settlement asynchronously through a stablecoin-backed liquidity pool.",
-    "Two months in, $14M in advances cleared with under 0.3% loss rate. Building toward a $100M annualized run rate.",
+    "Two months in, $14M in advances cleared with under 0.3% loss rate. The cohort's conviction carried us through the round — closed a $2.4M seed extension on April 22 at an $18M valuation, allocation reserved for the kommitters who showed up early.",
   ],
   sector: "Fintech",
-  state: "active",
+  state: "graduated",
   founders: [
     {
       name: "Tomás Reyes",
@@ -249,10 +256,26 @@ const AURORA: Project = {
   totalKommittedUSD: 118_500,
   totalKommitsGenerated: 2_184_750,
   activeSinceISO: "2026-02-28",
+  graduatedAtISO: "2026-04-22",
+  raisedAmountUSD: 2_400_000,
+  raisedAtValuationUSD: 18_000_000,
+  kommitterBenefits: [
+    "Allocation rights in the $2.4M seed extension",
+    "10% lifetime discount on Aurora Pro",
+    "Early access to v2 (private beta, June 2026)",
+    "Kommitter-only quarterly AMA with the founders",
+    "Listed in the public cohort credits page",
+  ],
   recipientWallet: "AoB7NCrsHTuD7cDPrGebdVvi3oYgGW1RVJNJahrVXJYF",
   imageSeed: "aurora",
   titleSize: "normal",
   updates: [
+    {
+      atISO: "2026-04-22",
+      title: "Graduated — $2.4M seed extension closed",
+      body: "We did it. $2.4M seed extension at $18M post-money, anchored by your conviction. Allocation rights and the rest of the kommitter benefits go live this week — check your dashboard. Thank you for backing us before this was easy.",
+      isGraduation: true,
+    },
     {
       atISO: "2026-04-18",
       title: "Series of Brazilian SMEs onboarded",

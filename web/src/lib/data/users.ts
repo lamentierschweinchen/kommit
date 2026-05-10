@@ -1,3 +1,5 @@
+import { SEED_WALLET_NAMES } from "./seed-engagement";
+
 export type Role = "kommitter" | "founder" | "anon";
 
 /**
@@ -91,6 +93,12 @@ export function getUserByWallet(wallet: string): User | undefined {
  * "VTg…AqC4" so on-chain authors outside the demo cohort still render
  * something sensible. The `addressFallback` flag toggles whether unknown
  * wallets render as the truncated address (default) or a generic label.
+ *
+ * Seeded comment/note authors live in `data/seed-engagement.ts` and aren't
+ * promoted to full `User` records — they're cohort members visible only in
+ * engagement seeds. That map is consulted before falling through to the
+ * truncated form so a comment from "Jordan" reads "Jordan", not
+ * "JoR8…VwBd".
  */
 export function walletDisplayName(
   wallet: string,
@@ -99,6 +107,8 @@ export function walletDisplayName(
   if (!wallet) return opts.genericLabel ?? "—";
   const u = getUserByWallet(wallet);
   if (u) return u.displayName;
+  const seedName = SEED_WALLET_NAMES[wallet];
+  if (seedName) return seedName;
   if (opts.genericLabel) return opts.genericLabel;
   if (wallet.length < 10) return wallet;
   return `${wallet.slice(0, 4)}…${wallet.slice(-4)}`;

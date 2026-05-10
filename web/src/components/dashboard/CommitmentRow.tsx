@@ -6,6 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { CommitChooserModal } from "@/components/commit/CommitChooserModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
+import { ClaimBenefitsModal } from "@/components/dashboard/ClaimBenefitsModal";
 import { BrutalButton } from "@/components/common/BrutalButton";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
@@ -32,8 +33,10 @@ export function CommitmentRow({
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [commitOpen, setCommitOpen] = useState(false);
   const [chooserOpen, setChooserOpen] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
+  const isGraduated = project.state === "graduated";
 
   useEffect(() => {
     if (!project.recipientWallet || typeof window === "undefined") return;
@@ -89,10 +92,16 @@ export function CommitmentRow({
           // Stacks vertically at narrow widths.
           "bg-white border-[3px] border-black p-5 relative",
           "flex flex-col md:flex-row md:items-center gap-4 md:gap-6",
-          isPivot ? "shadow-brutal-purple mt-3" : "shadow-brutal",
+          isGraduated || isPivot ? "shadow-brutal-purple mt-3" : "shadow-brutal",
         )}
       >
-        {isPivot ? (
+        {isGraduated ? (
+          <div className="absolute -top-3 left-6 z-10">
+            <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              ★ Graduated{project.graduatedAtISO ? ` ${shortDate(project.graduatedAtISO)}` : ""}
+            </span>
+          </div>
+        ) : isPivot ? (
           <div className="absolute -top-3 left-6 z-10">
             {/* Audit fix #6: every pivoted commitment shows the inline tag persistently */}
             <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
@@ -160,28 +169,51 @@ export function CommitmentRow({
                 {newCount} new
               </span>
             ) : null}
-            <BrutalButton
-              size="xs"
-              variant="primary"
-              iconLeft={<Icon name="add" size="xs" />}
-              onClick={() => {
-                if (isVisa) {
-                  setChooserOpen(true);
-                  return;
-                }
-                setCommitOpen(true);
-              }}
-            >
-              Kommit
-            </BrutalButton>
-            <BrutalButton
-              size="xs"
-              variant="outline"
-              iconLeft={<Icon name="remove" size="xs" />}
-              onClick={() => setWithdrawOpen(true)}
-            >
-              Withdraw
-            </BrutalButton>
+            {isGraduated ? (
+              <>
+                <BrutalButton
+                  size="xs"
+                  variant="primary"
+                  iconLeft={<Icon name="workspace_premium" size="xs" />}
+                  onClick={() => setClaimOpen(true)}
+                >
+                  Claim benefits
+                </BrutalButton>
+                <BrutalButton
+                  size="xs"
+                  variant="outline"
+                  iconLeft={<Icon name="remove" size="xs" />}
+                  onClick={() => setWithdrawOpen(true)}
+                >
+                  Withdraw
+                </BrutalButton>
+              </>
+            ) : (
+              <>
+                <BrutalButton
+                  size="xs"
+                  variant="primary"
+                  iconLeft={<Icon name="add" size="xs" />}
+                  onClick={() => {
+                    if (isVisa) {
+                      setChooserOpen(true);
+                      return;
+                    }
+                    setCommitOpen(true);
+                  }}
+                >
+                  Kommit
+                </BrutalButton>
+                <BrutalButton
+                  size="xs"
+                  variant="outline"
+                  iconLeft={<Icon name="remove" size="xs" />}
+                  onClick={() => setWithdrawOpen(true)}
+                >
+                  Withdraw
+                </BrutalButton>
+              </>
+            )}
           </div>
         </div>
       </article>
@@ -205,6 +237,11 @@ export function CommitmentRow({
         committedUSD={commitment.kommittedUSD}
         recipientWallet={project.recipientWallet}
         onSuccess={onWithdrawSuccess}
+      />
+      <ClaimBenefitsModal
+        open={claimOpen}
+        onOpenChange={setClaimOpen}
+        project={project}
       />
     </>
   );

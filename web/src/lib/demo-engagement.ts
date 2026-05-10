@@ -38,6 +38,13 @@ const KEY_POSITIONS = `${NS}positions`; // Record<wallet, Record<slug, StoredPos
 const KEY_BALANCES = `${NS}balances`; // Record<wallet, number>
 const KEY_BACKER_NOTES = `${NS}backerNotes`; // Record<projectSlug, BackerNote[]>
 const KEY_SEEDED = `${NS}seeded`; // marker — has activate-time seed run?
+// Per-piece seed markers (handoff 63): engagement (reactions + comments per
+// pivot/graduation update) + backer notes ship after the original cohort
+// seed. They run idempotently against their own markers so browsers that
+// already activated demo under v1 get the new content without needing a
+// manual `clearDemoEngagement` to flush v1 state.
+const KEY_ENGAGEMENT_SEEDED = `${NS}engagementSeeded`;
+const KEY_NOTES_SEEDED = `${NS}notesSeeded`;
 
 /** Each persona starts with this much simulated USDC available to kommit. */
 export const DEMO_DEFAULT_BALANCE_USD = 5000;
@@ -606,63 +613,190 @@ export function seedDemoCohort(args: {
   lukasWallet: string;
   lukasCommitments: Commitment[];
   projectUpdates: Array<{
+    /** Project slug — used by engagement seeds to attach
+     *  comments/reactions/notes to the right project+update. */
+    slug: string;
     pda: string;
     authorWallet: string;
     seed: Array<{ atISO: string; title: string; body: string; isPivot?: boolean; isGraduation?: boolean }>;
   }>;
+  /** Per-update engagement seeds: reactions + comments to attach to specific
+   *  (slug, atISO) update pairs. Resolved against the same stable IDs the
+   *  update seed loop builds, so reactions survive reloads. */
+  engagement?: Array<{
+    projectSlug: string;
+    updateAtISO: string;
+    reactions?: Record<string, number>;
+    comments?: Array<{ authorWallet: string; body: string; postedAtISO: string }>;
+  }>;
+  /** Per-project backer notes — surface in `BackerNotes` on the project
+   *  detail page + the founder dashboard. */
+  backerNotes?: Array<{
+    projectSlug: string;
+    authorName: string;
+    authorWallet: string;
+    principalUSD: number;
+    note: string;
+    atISO: string;
+  }>;
 }) {
   if (typeof window === "undefined") return;
   const already = window.localStorage.getItem(KEY_SEEDED);
-  if (already === "1") return;
 
-  // Seed Lukas's portfolio.
-  const positions = readAllPositions();
-  positions[args.lukasWallet] = {};
-  for (const c of args.lukasCommitments) {
-    positions[args.lukasWallet][c.projectSlug] = {
-      kommittedUSD: c.kommittedUSD,
-      sinceISO: c.sinceISO,
-      ...(c.pivotedAtISO ? { pivotedAtISO: c.pivotedAtISO } : {}),
-    };
+  // The legacy seed marker (`demo:v1:seeded`) gates positions + initial
+  // updates + Lukas's activity log — running those twice would clobber
+  // in-progress kommits and activity. The newer engagement/backer-note
+  // seeds (handoff 63) gate on their own per-piece existence checks so
+  // they run on browsers that already activated the demo under v1 without
+  // forcing the user to clear local state.
+  if (already !== "1") {
+    // Seed Lukas's portfolio.
+    const positions = readAllPositions();
+    positions[args.lukasWallet] = {};
+    for (const c of args.lukasCommitments) {
+      positions[args.lukasWallet][c.projectSlug] = {
+        kommittedUSD: c.kommittedUSD,
+        sinceISO: c.sinceISO,
+        ...(c.pivotedAtISO ? { pivotedAtISO: c.pivotedAtISO } : {}),
+      };
+    }
+    writeAllPositions(positions);
   }
-  writeAllPositions(positions);
 
   // Seed every project's update history into the API-shape store, with
-  // deterministic IDs so reactions persist across reloads.
+  // deterministic IDs so reactions persist across reloads. The (slug → pda)
+  // map is captured here so the engagement-seed loop below can resolve a
+  // slug+atISO to the same stable id this loop assigns.
   const allUpdates = readAllUpdates();
+  const updateIdBySlugAndDate = new Map<string, string>();
   for (const p of args.projectUpdates) {
-    if ((allUpdates[p.pda]?.length ?? 0) > 0) continue;
-    allUpdates[p.pda] = p.seed.map((u, i) => ({
-      id: stableId(p.pda, u.atISO, i),
-      project_pda: p.pda,
-      author_wallet: p.authorWallet,
-      title: u.title,
-      body: u.body,
-      is_pivot: !!u.isPivot,
-      is_graduation: !!u.isGraduation,
-      // Rendered via longDate(slice(0,10)) — pad to ISO so slicing matches.
-      posted_at: `${u.atISO}T12:00:00.000Z`,
-    }));
+    if ((allUpdates[p.pda]?.length ?? 0) > 0) {
+      // Even when updates were pre-seeded, capture the existing IDs so the
+      // engagement seed loop can attach reactions/comments to them.
+      for (const u of allUpdates[p.pda] ?? []) {
+        updateIdBySlugAndDate.set(
+          `${p.slug}|${u.posted_at.slice(0, 10)}`,
+          u.id,
+        );
+      }
+      continue;
+    }
+    allUpdates[p.pda] = p.seed.map((u, i) => {
+      const id = stableId(p.pda, u.atISO, i);
+      updateIdBySlugAndDate.set(`${p.slug}|${u.atISO}`, id);
+      return {
+        id,
+        project_pda: p.pda,
+        author_wallet: p.authorWallet,
+        title: u.title,
+        body: u.body,
+        is_pivot: !!u.isPivot,
+        is_graduation: !!u.isGraduation,
+        // Rendered via longDate(slice(0,10)) — pad to ISO so slicing matches.
+        posted_at: `${u.atISO}T12:00:00.000Z`,
+      };
+    });
   }
   writeAllUpdates(allUpdates);
 
-  // Seed Lukas's activity history so the dashboard "My history" feed has
-  // something to render — a veteran kommitter ought to look ACTIVE on first
-  // paint. Built from the commits he already has plus a plausible mix of
-  // partial withdrawals, reactions, and comments. Idempotent: keyed off the
-  // same KEY_SEEDED marker as the rest of the cohort seed.
-  const existingActivity = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
-  const hasLukasActivity = existingActivity.some((e) => e.wallet === args.lukasWallet);
-  if (!hasLukasActivity) {
-    const entries = buildLukasSeedActivity(args.lukasWallet, args.lukasCommitments);
-    const merged = [...entries, ...existingActivity].slice(0, 200);
-    writeStore(KEY_ACTIVITY, merged);
+  // Seed engagement: reaction counts + comments per pivot/graduation update.
+  // Idempotent via its own marker — runs once across the whole session even
+  // if seedDemoCohort is called multiple times.
+  const engagementMarker = window.localStorage.getItem(KEY_ENGAGEMENT_SEEDED);
+  if (
+    engagementMarker !== "1" &&
+    args.engagement &&
+    args.engagement.length > 0
+  ) {
+    const allReactions = readAllReactions();
+    const allComments = readAllComments();
+    for (const e of args.engagement) {
+      const updateId = updateIdBySlugAndDate.get(
+        `${e.projectSlug}|${e.updateAtISO}`,
+      );
+      if (!updateId) continue;
+      if (e.reactions && Object.keys(e.reactions).length > 0) {
+        // Merge — preserve any reactions a user already clicked through the
+        // demo UI; seed counts add on top instead of overwriting.
+        const cur = allReactions[updateId] ?? {};
+        for (const [token, count] of Object.entries(e.reactions)) {
+          cur[token] = (cur[token] ?? 0) + count;
+        }
+        allReactions[updateId] = cur;
+      }
+      if (e.comments && e.comments.length > 0) {
+        const existing = allComments[updateId] ?? [];
+        const seeded: RemoteComment[] = e.comments.map((c, i) => ({
+          id: stableId(updateId, c.postedAtISO, i),
+          update_id: updateId,
+          author_wallet: c.authorWallet,
+          body: c.body,
+          posted_at: c.postedAtISO,
+        }));
+        allComments[updateId] = [...seeded, ...existing];
+      }
+    }
+    writeAllReactions(allReactions);
+    writeAllComments(allComments);
+    try {
+      window.localStorage.setItem(KEY_ENGAGEMENT_SEEDED, "1");
+    } catch {
+      /* non-fatal */
+    }
   }
 
-  try {
-    window.localStorage.setItem(KEY_SEEDED, "1");
-  } catch {
-    /* non-fatal */
+  // Seed backer notes: surface in `BackerNotes` panel on project detail and
+  // the founder dashboard. Idempotent via its own marker.
+  const notesMarker = window.localStorage.getItem(KEY_NOTES_SEEDED);
+  if (
+    notesMarker !== "1" &&
+    args.backerNotes &&
+    args.backerNotes.length > 0
+  ) {
+    const allNotes = readAllBackerNotes();
+    for (const n of args.backerNotes) {
+      const list = allNotes[n.projectSlug] ?? [];
+      allNotes[n.projectSlug] = [
+        {
+          projectSlug: n.projectSlug,
+          wallet: n.authorWallet,
+          authorName: n.authorName,
+          principalUSD: n.principalUSD,
+          note: n.note,
+          atISO: n.atISO,
+        },
+        ...list,
+      ];
+    }
+    writeAllBackerNotes(allNotes);
+    try {
+      window.localStorage.setItem(KEY_NOTES_SEEDED, "1");
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  if (already !== "1") {
+    // Seed Lukas's activity history so the dashboard "My history" feed has
+    // something to render — a veteran kommitter ought to look ACTIVE on first
+    // paint. Built from the commits he already has plus a plausible mix of
+    // partial withdrawals, reactions, and comments. Idempotent: keyed off the
+    // same KEY_SEEDED marker as the rest of the cohort seed.
+    const existingActivity = readStore<DemoActivityEntry[]>(KEY_ACTIVITY, []);
+    const hasLukasActivity = existingActivity.some(
+      (e) => e.wallet === args.lukasWallet,
+    );
+    if (!hasLukasActivity) {
+      const entries = buildLukasSeedActivity(args.lukasWallet, args.lukasCommitments);
+      const merged = [...entries, ...existingActivity].slice(0, 200);
+      writeStore(KEY_ACTIVITY, merged);
+    }
+
+    try {
+      window.localStorage.setItem(KEY_SEEDED, "1");
+    } catch {
+      /* non-fatal */
+    }
   }
 }
 
@@ -775,6 +909,8 @@ export function clearDemoEngagement() {
     window.localStorage.removeItem(KEY_BACKER_NOTES);
     window.localStorage.removeItem(KEY_ACTIVITY);
     window.localStorage.removeItem(KEY_SEEDED);
+    window.localStorage.removeItem(KEY_ENGAGEMENT_SEEDED);
+    window.localStorage.removeItem(KEY_NOTES_SEEDED);
   } catch {
     /* non-fatal */
   }

@@ -71,22 +71,33 @@ export function PositionCard({
   if (variant === "graduated" && graduatedRecord) {
     return (
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
+        <div className="absolute -top-3 left-6">
+          <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+            Graduated
+          </span>
+        </div>
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your record
         </div>
         <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
           {formatUSD(committedUSD ?? 0)}
-          <span className="text-gray-400 text-base ml-2">kommitted (returned)</span>
+          <span className="text-gray-400 text-base ml-2">kommitted</span>
         </div>
         <div className="mt-4 space-y-2 font-epilogue font-bold uppercase text-xs tracking-tight">
           <div className="text-gray-500">
             Active {shortDate(graduatedRecord.activeFromISO)} → {shortDate(graduatedRecord.activeToISO)}
           </div>
           <div className="text-primary">
-            {formatNumber(graduatedRecord.finalKommitsKept)} final kommits
+            {formatNumber(graduatedRecord.finalKommitsKept)} kommits at graduation
           </div>
-          <div className="text-gray-500">First access: invited Apr 28</div>
         </div>
+        <p className="mt-5 text-sm font-medium text-gray-700 leading-relaxed">
+          Your kommitter benefits are listed on this page. Check{" "}
+          <span className="font-epilogue font-bold uppercase text-[11px] tracking-widest">
+            /dashboard
+          </span>{" "}
+          to claim.
+        </p>
       </div>
     );
   }
@@ -138,6 +149,24 @@ export function PositionCard({
             </button>
             <p className="text-center font-epilogue font-medium text-xs text-gray-600">
               Kommitments open when {project.name} goes live.
+            </p>
+          </div>
+        ) : project.state === "graduated" ? (
+          // Graduated round: kommit CTA closes off — early backers earned their
+          // rights, late visitors see the round is closed (no funnel into a
+          // dead position). Withdraw stays available so anyone with a residual
+          // position can still pull principal.
+          <div className="mt-6 grid grid-cols-1 gap-3">
+            <button
+              type="button"
+              disabled
+              className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-gray-400 flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
+            >
+              <Icon name="info" size="sm" />
+              Round closed
+            </button>
+            <p className="text-center font-epilogue font-medium text-xs text-gray-600">
+              Backers earned their rights below.
             </p>
           </div>
         ) : (
