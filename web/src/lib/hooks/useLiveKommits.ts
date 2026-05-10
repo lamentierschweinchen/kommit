@@ -59,14 +59,26 @@ export function useLiveKommits(usdAmount: number, sinceISO: string): number {
 }
 
 /**
- * Format a live-ticking kommits number for display. Comma thousands separator,
- * two decimal places so the user sees the count actually moving.
+ * Format a live-ticking kommits number for display. Tiered so that small
+ * positions visibly tick per second (the design intent of the math feel)
+ * while large aggregates don't overflow stat cards or surface noise digits.
+ *
+ *   < 1,000:  "421.78"   — 2 decimals, ticks visibly
+ *   < 1M:     "421,378"  — no decimals, comma
+ *   ≥ 1M:    "3.88M"    — compact suffix
  */
 export function formatLiveKommits(n: number): string {
-  return n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return `${m.toFixed(m < 10 ? 2 : 1)}M`;
+  }
+  if (n < 1_000) {
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  return Math.floor(n).toLocaleString("en-US");
 }
 
 /**

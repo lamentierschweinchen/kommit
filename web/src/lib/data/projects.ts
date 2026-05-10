@@ -390,9 +390,11 @@ const CADENCE: Project = {
       avatarSeed: 11,
     },
   ],
-  kommittersCount: 152,
-  totalKommittedUSD: 94_210,
-  totalKommitsGenerated: 1_488_180,
+  // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
+  // doesn't render "X kommitters" alongside "Launching soon".
+  kommittersCount: 0,
+  totalKommittedUSD: 0,
+  totalKommitsGenerated: 0,
   activeSinceISO: "2026-03-04",
   imageSeed: "cadence",
   titleSize: "normal",
@@ -424,9 +426,11 @@ const FORGE_HEALTH: Project = {
       avatarSeed: 5,
     },
   ],
-  kommittersCount: 108,
-  totalKommittedUSD: 71_460,
-  totalKommitsGenerated: 893_250,
+  // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
+  // doesn't render "X kommitters" alongside "Launching soon".
+  kommittersCount: 0,
+  totalKommittedUSD: 0,
+  totalKommitsGenerated: 0,
   activeSinceISO: "2026-03-19",
   imageSeed: "forge",
   titleSize: "tight",
@@ -458,9 +462,11 @@ const VERITY_BOOKS: Project = {
       avatarSeed: 44,
     },
   ],
-  kommittersCount: 52,
-  totalKommittedUSD: 18_940,
-  totalKommitsGenerated: 132_580,
+  // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
+  // doesn't render "X kommitters" alongside "Launching soon".
+  kommittersCount: 0,
+  totalKommittedUSD: 0,
+  totalKommitsGenerated: 0,
   activeSinceISO: "2026-04-21",
   imageSeed: "verity",
   titleSize: "tight",

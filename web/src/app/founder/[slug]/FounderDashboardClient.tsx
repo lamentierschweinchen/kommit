@@ -418,7 +418,7 @@ function OnChainCohortSection({ projectPda }: { projectPda: string | null }) {
       ) : (
         <OnChainCohortNotice
           title="No on-chain kommits yet"
-          body={`The SDK returned an empty array. Cohort populates as commits flow in on devnet (program ${"GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3".slice(0, 8)}…). The seed cohort above is mock data for demo purposes; this section is the real reader.`}
+          body={`The SDK returned an empty array. Cohort populates as commits flow in on devnet (program ${"GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3".slice(0, 8)}…). This section is the live on-chain reader; the cohort summary above is rendered from the project listing.`}
         />
       )}
     </section>
