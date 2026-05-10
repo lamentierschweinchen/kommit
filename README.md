@@ -1,12 +1,16 @@
 # Kommit
 
-**A conviction primitive for early-stage backing on Solana.** You park your money. The interest it earns funds the platform sustainably — no fees on you, no fees on the team. You allocate that money across early-stage teams you want to back. Withdraw anytime; your money stays yours. What you earn is a record: **kommits** — capital × time committed, soulbound, public, verifiable. They prove you showed up early. Other products can read them. When a team raises, kommitters with earned standing get first dibs to invest.
+> *Showing up early to back a team should buy you something. Right now, it doesn't.*
 
-Built for the [Solana Frontier hackathon](https://solana.com/frontier) (May 2026). MIT-licensed and open-source from commit 1.
+**Kommit is a conviction primitive for early-stage backing on Solana.** Back early-stage teams without locking your money up. When teams raise, your standing earns first dibs to invest at round price.
 
-> ⚠️ **Hackathon / devnet-grade — not production-ready.** This codebase is submitted to Solana Frontier and currently runs on **Solana devnet only**. It has **not been independently audited**. Mainnet deploy artifacts exist (`scripts/deploy_mainnet.sh`) but the button has not been pressed; mainnet is whenever-if-ever. Don't put real money you can't afford to lose into anything here.
+The mechanism: park USDC, allocate it across teams. Yield earned on parked capital funds the platform — no fees on backers, no fees on teams. What accrues is **kommits** — capital × time committed, soulbound, public, on-chain. Withdraw your principal anytime; the kommit record stays.
+
+Built for the [Solana Frontier hackathon](https://solana.com/frontier) (May 2026). MIT-licensed, open-source from commit 1. Full thesis at [kommit.now/manifesto](https://kommit.now/manifesto) (CC0).
+
+> ⚠️ **Devnet-grade — not production-ready.** This codebase ships v0.5 to Solana Frontier and runs on **Solana devnet only**. It has **not been independently audited**. Mainnet deploy artifacts exist (`scripts/deploy_mainnet.sh`) but mainnet is gated on third-party audit and Squads multisig migration of admin + program upgrade authority — see [Deploy](#deploy). Do not commit funds you cannot afford to lose.
 >
-> See [`SECURITY.md`](SECURITY.md) for disclosure path and known limitations, [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program audit, and [`RECOVERY.md`](RECOVERY.md) for program-upgrade-keypair recovery.
+> See [`SECURITY.md`](SECURITY.md) for disclosure path and known limitations, [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program review, and [`RECOVERY.md`](RECOVERY.md) for program-upgrade-keypair recovery.
 
 **Live demo:** [kommit.now](https://kommit.now) (devnet)
 
@@ -34,26 +38,17 @@ Kommit's signal is **stake-backed and survival-compatible**. Real money committe
 ## Sample flow
 
 ```
-Kommitter parks $100 on Kommit, allocates it to project X.
-  → $100 in per-project escrow PDA (still kommitter's)
-  → CPI deposit to klend's USDC reserve
-  → cTokens minted to per-project collateral PDA
-  → Kommit accrues capital × time on-chain (u128 active_score + lifetime_score)
-
-Time passes. Kommits grow continuously while capital stays committed.
-
-Project graduates to a real round (or doesn't).
-  → If it graduates through Kommit, kommitters with earned standing get first
-    dibs to invest at round price (right of first allocation).
-  → Either way, kommitters keep their money + their kommits as a portable
-    record of conviction. Other products can read kommit balances on-chain.
-
-Kommitter withdraws anytime:
-  → Layer-1 path (escrow has enough): direct transfer escrow → kommitter
-  → Layer-2 path (escrow insufficient): klend redeem first, then transfer
-  → Money returns to kommitter's wallet
-  → active_score zeroed; lifetime_score preserved
+Park $100 on Kommit, allocate it to project X.
+  → Kommits accrue continuously (capital × time) while the principal stays committed.
+  → If the team raises through a kommit-compatible path, your earned standing converts
+    to first-dibs allocation at round price.
+  → Withdraw anytime — principal returns; kommit record stays as a portable
+    public conviction signal.
 ```
+
+Architecture detail (CPI to klend, escrow PDAs, two-path withdraw, score
+fields) lives in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) and the program
+source under [`programs/kommit/src`](programs/kommit/src).
 
 ---
 
@@ -66,7 +61,7 @@ flowchart LR
     end
 
     subgraph OnChain["Solana program (devnet)"]
-        Kommit["Kommit Anchor program<br/>10 instructions<br/>5 PDAs"]
+        Kommit["Kommit Anchor program<br/>11 instructions<br/>5 PDAs"]
         Klend["Kamino klend<br/>(YieldSource adapter v1)"]
         Kommit -- "supply / redeem<br/>(CPI, hand-rolled)" --> Klend
     end
@@ -102,7 +97,7 @@ flowchart LR
 
 ## Status
 
-**v0.5 — primitive feature-complete on devnet.** End-to-end klend round-trip verified; QA Codex SHIP-CLEAN on `fix/qa-criticals` (merged); 30/30 anchor TS tests + 8/8 Rust unit tests + 3/3 webhook fixture tests passing. Fiat rails (card / SEPA / bank) are the v1 architectural milestone — see scope section below.
+**v0.5 — primitive feature-complete on devnet.** End-to-end klend round-trip verified; security review cleared (see [Security](#security)); 30/30 anchor TS tests + 8/8 Rust unit tests + 3/3 webhook fixture tests passing. Fiat rails (card / SEPA / bank) are the v1 architectural milestone — see scope section below.
 
 **Frontend is wired live on devnet.** Real Privy auth (passkey + Google + email), real Anchor program reads, real on-chain commit/withdraw against the deployed program. Indexer reads through Supabase. Mock data fallback for surfaces where indexer hasn't materialized.
 
@@ -125,7 +120,7 @@ flowchart LR
 app/
 ├── programs/kommit/             # Anchor program (Rust, Anchor 0.31.1)
 │   └── src/
-│       ├── lib.rs               # Program entry point (10 instructions)
+│       ├── lib.rs               # Program entry point (11 instructions)
 │       ├── state.rs             # 5 PDAs (KommitConfig, Project, Commitment,
 │       │                        #   LendingPosition, KaminoAdapterConfig)
 │       ├── errors.rs
@@ -247,13 +242,13 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 - [`RISK.md`](RISK.md) — structural risk surfaces named explicitly (smart-contract, yield-source, oracle, counterparty, regulatory, operational). Companion to SECURITY.md; covers tradeoffs we won't fix because they're not bugs, just things kommitters and reviewers should understand.
 - [`RECOVERY.md`](RECOVERY.md) — program upgrade authority keypair recovery procedure (no secrets in the doc).
 
-QA history:
+Review history:
 
-- **Codex Pass 1** (initial security review) — 4 critical findings, fix-pass-1 + fix-pass-2 cycles.
-- **Codex Pass 2** (verification) — `fix/qa-criticals` SHIP-CLEAN at HEAD `f4d87d7`. C1 v2 fee-field math matches `klend-sdk`'s `getTotalSupply()` semantics; H2/M2/C2/C3/C4 test gaps closed.
-- **Full-stack security hardening pass** — see SECURITY_HARDENING.md (workspace-level, not in repo). Verdict: HOLD-WITH-FIXES at time of writing; tracked findings burning down.
+- **Initial security review** — multiple findings raised and resolved before submission. Full audit trail in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md).
+- **Verification pass** — clean. C1 fee-field math now matches `klend-sdk`'s `getTotalSupply()` semantics; harvest principal-preservation, signer-mismatch, and event-identity tests added.
+- **Full-stack hardening pass** — multi-pass adversarial review across full-stack surfaces (auth, payments, on-chain, indexer); ongoing through submission.
 
-Pre-scaling upgrades called out explicitly: multisig admin + multisig upgrade authority + third-party audit before any meaningful mainnet deploy.
+Mainnet prerequisites called out explicitly: multisig admin + multisig upgrade authority + independent third-party audit. None of these are in place at v0.5; mainnet does not happen without all three.
 
 ---
 
