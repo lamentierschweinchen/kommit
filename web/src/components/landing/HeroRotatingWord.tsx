@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 const WORDS = [
   "billion dollar idea",
-  "breakthrough",
   "overnight sensation",
   "big dream",
   "dark horse",
@@ -13,7 +12,6 @@ const WORDS = [
   "garage startup",
   "dorm-room biz",
   "misfit",
-  "quiet revolution",
 ];
 
 export function HeroRotatingWord() {

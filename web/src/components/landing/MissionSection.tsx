@@ -60,8 +60,8 @@ export function MissionSection() {
           <div className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
             How a kommit accrues
           </div>
-          <Step n="01" body="Park capital you could have parked anywhere." />
-          <Step n="02" body="Stay through the pivots that reveal teams." />
+          <Step n="01" body="Back ambitious teams with money you keep." />
+          <Step n="02" body="Stay through the pivots that reveal who's serious." />
           <Step n="03" body="Earn standing — soulbound, public, redeemable." />
         </div>
       </div>

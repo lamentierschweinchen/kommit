@@ -251,7 +251,7 @@ export default function SandboxOnChainPage() {
             {!airdropResult ? (
               <div className="flex flex-col gap-3">
                 <p className="font-epilogue text-sm text-gray-700 leading-relaxed">
-                  Drops $100 of devnet test funds + ~0.05 SOL gas to your
+                  Drops $10,000 of devnet test funds + ~0.05 SOL gas to your
                   wallet. Idempotent — safe to retry.
                 </p>
                 <button
@@ -267,7 +267,7 @@ export default function SandboxOnChainPage() {
                     </>
                   ) : (
                     <>
-                      Get $100 in devnet funds
+                      Get $10,000 in devnet funds
                       <Icon name="arrow_forward" className="font-bold" />
                     </>
                   )}

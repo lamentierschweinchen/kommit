@@ -68,8 +68,8 @@ const GAS_THRESHOLD_LAMPORTS = 10_000_000; // 0.01 SOL — above this, skip
 const GAS_GRANT_LAMPORTS = 50_000_000; //     0.05 SOL — ~5K commits worth of gas
 
 const TOKEN_DECIMALS_DIVISOR = 10n ** BigInt(SANDBOX_MINT_DECIMALS);
-const TOKEN_THRESHOLD_USD = 10n; //  $10 floor — above this, skip
-const TOKEN_GRANT_USD = 100n; //     $100 grant
+const TOKEN_THRESHOLD_USD = 100n; //  $100 floor — above this, skip
+const TOKEN_GRANT_USD = 10_000n; //   $10,000 grant — the mint authority is ours, supply is unlimited; generous fund so judges don't run out
 const TOKEN_THRESHOLD_BASE = TOKEN_THRESHOLD_USD * TOKEN_DECIMALS_DIVISOR;
 const TOKEN_GRANT_BASE = TOKEN_GRANT_USD * TOKEN_DECIMALS_DIVISOR;
 

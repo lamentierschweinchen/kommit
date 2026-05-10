@@ -100,7 +100,7 @@ export default function DashboardPage() {
                 Sandbox preview
               </span>
               <Link
-                href="/visa-demo"
+                href="/"
                 className="font-epilogue font-bold uppercase tracking-widest text-[10px] text-gray-500 hover:text-black"
               >
                 Exit demo →
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                 className="bg-secondary text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
               >
                 <Icon name="add" size="sm" />
-                Add to your kommit
+                Add funds
               </Link>
             ) : null}
           </section>

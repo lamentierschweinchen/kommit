@@ -59,8 +59,7 @@ export default function ComingSoonPage() {
               </p>
               <p className="text-base font-medium text-gray-700 max-w-xl leading-relaxed">
                 One kommit accrues per dollar-hour committed. Your money
-                stays yours. Yield funds the platform — no fee on you, no fee
-                on founders.
+                stays yours. No fees, ever.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link

@@ -34,7 +34,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { visaDemo } from "@/lib/visa-demo-client";
-import { activateVisaMode } from "@/lib/visa-mode";
 import { activateDemoMode, isDemoMode } from "@/lib/demo-mode";
 import { activateSandboxOverlay } from "@/lib/sandbox-overlay";
 import { simulateCommit } from "@/lib/demo-engagement";
@@ -157,7 +156,12 @@ function SuccessContent() {
           //     judge into the Lukas persona — wrong identity).
           //   - No Privy session (or demo-mode already active) → keep
           //     the historical Lukas-persona behavior.
-          activateVisaMode();
+          // Visa-mode is no longer activated: the persistent flag was leaking
+          // EUR chrome ("Withdraw to card", "Sandbox preview", currency
+          // conversion) onto /dashboard and /[slug] surfaces post-flow,
+          // which Lukas's UX punch list flagged as confusing. The
+          // /visa-demo flow keeps its EUR display via page-local state;
+          // post-flow surfaces stay on the canonical USD presentation.
           const privyWallet = userWalletRef.current;
           const usePrivyOverlay =
             !!isSignedInRef.current && !!privyWallet && !isDemoMode();
