@@ -48,35 +48,47 @@ export type AcquireResult =
  * Attempt to claim the airdrop for `wallet`. Atomic across concurrent
  * callers: at most one returns "acquired"; the rest get "already-granted".
  *
- * Implementation: INSERT...ON CONFLICT DO NOTHING. PostgREST returns the
- * inserted row(s) on success and an empty array on conflict. We rely on
- * the `wallet` primary key to enforce uniqueness.
+ * Implementation: INSERT, relying on the partial unique index
+ * `sandbox_airdrops_airdrop_per_wallet` (migration 0008,
+ * `(wallet) WHERE kind='airdrop'`) to reject duplicates with a Postgres
+ * unique-violation (SQLSTATE 23505). PostgREST surfaces the SQLSTATE
+ * directly so we can branch on it without parsing the message string.
+ *
+ * Why a plain INSERT instead of upsert: the table's PK is now
+ * `(wallet, created_at)` so card-deposit rows can stack (handoff 64,
+ * migration 0008). PostgREST's `upsert(..., { onConflict: "wallet" })`
+ * needs a single-column unique constraint on `wallet` — which no longer
+ * exists, only the partial index does. The INSERT-and-catch-23505
+ * pattern works against the partial index without needing PostgREST to
+ * understand the WHERE clause.
  */
 export async function tryAcquireAirdropLock(
   wallet: string,
 ): Promise<AcquireResult> {
   const supabase = getSupabaseAdminClient();
-  // `upsert` with `ignoreDuplicates: true` maps to ON CONFLICT DO NOTHING.
-  // Selecting after the upsert returns the inserted row if a conflict did
-  // NOT happen, or an empty result if the wallet was already there.
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from(TABLE)
-    .upsert({ wallet }, { onConflict: "wallet", ignoreDuplicates: true })
-    .select("wallet");
-  if (error) {
-    return { kind: "error", message: error.message };
-  }
-  // `data` is the array of rows actually inserted. Empty = conflict.
-  if (Array.isArray(data) && data.length > 0) {
+    .insert({ wallet, kind: "airdrop" });
+  if (!error) {
     return { kind: "acquired" };
   }
-  return { kind: "already-granted" };
+  // 23505 = unique_violation. The partial index `(wallet) WHERE
+  // kind='airdrop'` rejected the insert because this wallet already has an
+  // airdrop row — that's the "already-granted" signal.
+  if (error.code === "23505") {
+    return { kind: "already-granted" };
+  }
+  return { kind: "error", message: error.message };
 }
 
 export type FundedKind = "sol" | "token";
 
-/** Stamp the funded-at column for the wallet. Idempotent: safe to call
- *  multiple times; the column gets the latest timestamp. */
+/** Stamp the funded-at column for the wallet's airdrop row. Idempotent:
+ *  safe to call multiple times; the column gets the latest timestamp.
+ *
+ *  Scoped to `kind='airdrop'` post-migration-0008 — without the filter
+ *  this would also stamp every card-deposit row for the same wallet,
+ *  which would silently overwrite the per-call deposit timestamps. */
 export async function markAirdropFunded(
   wallet: string,
   kind: FundedKind,
@@ -86,7 +98,8 @@ export async function markAirdropFunded(
   const { error } = await supabase
     .from(TABLE)
     .update({ [column]: new Date().toISOString() })
-    .eq("wallet", wallet);
+    .eq("wallet", wallet)
+    .eq("kind", "airdrop");
   if (error) {
     console.warn(
       `[sandbox-airdrop-store] markAirdropFunded(${wallet}, ${kind}) failed:`,
@@ -97,13 +110,75 @@ export async function markAirdropFunded(
 
 /** Release the lock so a future retry can re-acquire. Call from the route's
  *  catch block after a transfer failure. Idempotent — no row to delete is
- *  treated as success. */
+ *  treated as success.
+ *
+ *  Scoped to `kind='airdrop'` so a release after a failed airdrop never
+ *  accidentally wipes the wallet's card-deposit history rows added by
+ *  /api/sandbox/card-deposit (handoff 64). */
 export async function releaseAirdropLock(wallet: string): Promise<void> {
   const supabase = getSupabaseAdminClient();
-  const { error } = await supabase.from(TABLE).delete().eq("wallet", wallet);
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq("wallet", wallet)
+    .eq("kind", "airdrop");
   if (error) {
     console.warn(
       `[sandbox-airdrop-store] releaseAirdropLock(${wallet}) failed:`,
+      error.message,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card-deposit recording (handoff 64).
+//
+// `card-deposit` rows live in the same `sandbox_airdrops` table per migration
+// 0008. Unlike `airdrop`, they're NOT idempotent per wallet — the user
+// explicitly wants to deposit repeatedly (no lifetime cap, $1K cap per call).
+// So this is a straight INSERT, one row per successful card-deposit POST.
+// Burst protection is handled separately by the in-memory rate limiter
+// (60s/wallet) in the route.
+// ---------------------------------------------------------------------------
+
+export type CardDepositRecord = {
+  wallet: string;
+  amountUsd: number;
+  signature: string;
+};
+
+/**
+ * Insert a card-deposit row. Caller is `/api/sandbox/card-deposit` after
+ * the SPL mint tx has confirmed. Ordering note: the audit story is "the
+ * mint succeeded AND we recorded it" — a recorded row without an on-chain
+ * mint would be a phantom deposit, so the route must call this AFTER the
+ * `confirmTransaction` resolves.
+ *
+ * Failure to record is logged but not surfaced — the user already has
+ * the funds on-chain (the mint tx is the source of truth). A missing row
+ * affects audit/observability only, not user balance.
+ */
+export async function recordCardDeposit(
+  rec: CardDepositRecord,
+): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase.from(TABLE).insert({
+    wallet: rec.wallet,
+    kind: "card-deposit",
+    amount_usd: rec.amountUsd,
+    // Stamp `token_funded_at` to the mint-confirmation moment — same column
+    // the airdrop path uses, keeps "when did this wallet last receive
+    // tokens" queries simple.
+    token_funded_at: new Date().toISOString(),
+    // Note: `signature` is intentionally not stored — the migration didn't
+    // add a column for it, and we return it to the client which Solscans
+    // it for proof. Adding a column would mean another migration; the
+    // submission deadline is tight and the on-chain artifact is the
+    // canonical record.
+  });
+  if (error) {
+    console.warn(
+      `[sandbox-airdrop-store] recordCardDeposit(${rec.wallet}, $${rec.amountUsd}, sig=${rec.signature.slice(0, 8)}…) failed:`,
       error.message,
     );
   }
