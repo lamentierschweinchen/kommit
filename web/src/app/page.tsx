@@ -62,13 +62,22 @@ export default function ComingSoonPage() {
                 stays yours. Yield funds the platform — no fee on you, no fee
                 on founders.
               </p>
-              <Link
-                href="/manifesto"
-                className="inline-flex items-center gap-2 font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-b-[3px] border-black hover:bg-secondary px-2 py-1 transition-colors"
-              >
-                Read the manifesto
-                <span aria-hidden>→</span>
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/demo"
+                  className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform px-3 py-2"
+                >
+                  Walk Kommit in 60 seconds
+                  <span aria-hidden>→</span>
+                </Link>
+                <Link
+                  href="/manifesto"
+                  className="inline-flex items-center gap-2 font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-b-[3px] border-black hover:bg-secondary px-2 py-1 transition-colors"
+                >
+                  Read the manifesto
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
             </div>
 
             <div className="w-full">

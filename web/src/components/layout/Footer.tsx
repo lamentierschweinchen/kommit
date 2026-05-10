@@ -21,7 +21,7 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
         )}
       >
         <div className="text-black">
-          {isVisa ? "© 2026 Kommit · sandbox preview" : "© 2026 KOMMIT · MIT Licensed · Built on Solana"}
+          {isVisa ? "© 2026 Kommit · sandbox preview" : "© 2026 KOMMIT · Open source · Built on Solana"}
         </div>
         <div className="flex gap-6 font-bold">
           {!isVisa ? (
