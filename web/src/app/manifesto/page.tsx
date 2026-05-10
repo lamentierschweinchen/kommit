@@ -49,17 +49,7 @@ export default function ManifestoPage() {
             </h1>
             <p className="mt-6 text-base md:text-lg italic text-gray-700 leading-relaxed">
               A short thesis on why a new unit of measurement belongs in
-              early-stage capital. Released under{" "}
-              <a
-                href="https://creativecommons.org/publicdomain/zero/1.0/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black"
-              >
-                CC0
-              </a>
-              . Use it, fork it, refuse to credit us — the primitive is the
-              point.
+              early-stage capital.
             </p>
             <p className="mt-3 font-epilogue font-bold uppercase text-[11px] tracking-widest text-gray-500">
               Read time · ~7 minutes
@@ -328,9 +318,10 @@ export default function ManifestoPage() {
               . The primitive does not depend on us shipping it correctly.
             </p>
             <p>
-              We are publishing this thesis under CC0 specifically so that if a
-              better team builds a better version, the category does not depend
-              on us. We hope someone does. The unit is bigger than the platform.
+              If a better team builds a better version, the category does not
+              depend on us. We hope someone does. The unit is bigger than the
+              platform. Use it, fork it, refuse to credit us — the primitive
+              is the point.
             </p>
             <p>
               The mistake we&apos;re trying to avoid is the one made every
