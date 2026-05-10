@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { HeroRotatingWord } from "@/components/landing/HeroRotatingWord";
+import { TotalKommitsTicker } from "@/components/landing/TotalKommitsTicker";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { StatePill } from "@/components/common/Tape";
 import { PROJECTS } from "@/lib/data/projects";
@@ -9,7 +10,9 @@ import { formatUSD, formatNumber, kommitsFor } from "@/lib/kommit-math";
 import { Icon } from "@/components/common/Icon";
 
 export default function LandingPage() {
-  const featured = PROJECTS.slice(0, 3);
+  // Handoff 60: bump to 4 active projects (was 3) so the cohort feels lived-in
+  // and the grid lines up with the lg:grid-cols-4 brutalist pattern.
+  const activeProjects = PROJECTS.filter((p) => p.state === "active").slice(0, 4);
 
   return (
     <>
@@ -57,6 +60,10 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* TOTAL KOMMITS TICKER — handoff 60: above-the-fold "alive" signature
+            connected to the 4 active projects shown below. */}
+        <TotalKommitsTicker projects={activeProjects} />
 
         {/* HOW IT WORKS */}
         <section id="how-it-works" className="mt-32 pt-12 border-t-[8px] border-black">
@@ -119,11 +126,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FEATURED PROJECTS */}
+        {/* ACTIVE PROJECTS — handoff 60: hero-shaped header (matches the
+            dashboard h1 scale) + 4-up grid on lg. */}
         <section className="mt-32 pt-12 border-t-[8px] border-black">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-12">
-            <h2 className="font-epilogue font-black uppercase text-3xl md:text-4xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-              Featured projects
+            <h2 className="font-epilogue font-black uppercase text-4xl md:text-5xl lg:text-6xl tracking-tighter border-b-[6px] border-black pb-2 inline-flex max-w-fit">
+              Active projects
             </h2>
             <Link
               href="/projects"
@@ -132,8 +140,8 @@ export default function LandingPage() {
               All projects →
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {featured.map((p) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            {activeProjects.map((p) => (
               <ProjectCard key={p.slug} project={p} />
             ))}
           </div>
