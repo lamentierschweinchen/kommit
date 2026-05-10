@@ -6,7 +6,6 @@ import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommitmentRow } from "@/components/dashboard/CommitmentRow";
-import { ActivityHistory } from "@/components/dashboard/ActivityHistory";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthGate } from "@/components/auth/AuthGate";
@@ -207,20 +206,6 @@ export default function DashboardPage() {
                 )}
               </section>
 
-              {isSignedIn && user?.wallet && isDemo ? (
-                <section className="pt-10 border-t-[8px] border-black">
-                  <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                    My history
-                  </h2>
-                  <ActivityHistory
-                    wallet={user.wallet}
-                    kinds={["commit", "withdraw"]}
-                    defaultLimit={10}
-                    emptyHeadline="No history yet."
-                    emptyBody="Your kommits and withdrawals land here as you act."
-                  />
-                </section>
-              ) : null}
             </div>
 
             <aside className="lg:pt-10 lg:border-t-[8px] lg:border-black space-y-6">

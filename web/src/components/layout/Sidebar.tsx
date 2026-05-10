@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { avatarUrl } from "@/lib/data/users";
+import { useDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { ActivityHistory } from "@/components/dashboard/ActivityHistory";
 
 type Item = { href: string; label: string; icon: IconName; badge?: string | number };
 
@@ -21,6 +23,7 @@ export function Sidebar({
   const { user, switchRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
+  const isDemo = useDemoMode();
 
   const items: Item[] =
     variant === "founder" && founderSlug
@@ -37,12 +40,7 @@ export function Sidebar({
           { href: "/account", label: "Account", icon: "settings" },
         ]
       : [
-          // M2: drop separate "Withdraw" + "Overview" sidebar items — both
-          // collapsed into the consolidated "Your kommits" dashboard
-          // (transaction history, top stats, per-position cards). M1: "New
-          // kommit" reads as a transaction; the destination is just /projects.
           { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
-          { href: "/projects", label: "Browse projects", icon: "explore" },
           { href: "/account", label: "Account", icon: "settings" },
         ];
 
@@ -96,13 +94,8 @@ export function Sidebar({
         <div className="mb-8" />
       )}
 
-      <nav className="flex-1 flex flex-col gap-2 font-epilogue font-bold uppercase text-sm tracking-tight">
+      <nav className="flex flex-col gap-2 font-epilogue font-bold uppercase text-sm tracking-tight">
         {items.map((item, i) => {
-          // Pass-2 P1 #10 fix: only the FIRST item that points at the current
-          // pathname (with no anchor) is active. Anchor-link siblings
-          // (e.g. /dashboard#withdraw) aren't a separate route, so they
-          // shouldn't mirror the Overview's active state. Account / Public
-          // page / Browse projects (different paths) match strictly.
           const base = item.href.split("#")[0];
           const hasAnchor = item.href.includes("#");
           const isActive = hasAnchor
@@ -131,6 +124,24 @@ export function Sidebar({
           );
         })}
       </nav>
+
+      {variant === "kommitter" && isDemo && user?.wallet ? (
+        <div className="mt-8 flex-1 min-h-0 flex flex-col">
+          <div className="font-epilogue font-black uppercase text-[10px] text-gray-500 tracking-widest mb-3 px-1">
+            My history
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <ActivityHistory
+              wallet={user.wallet}
+              kinds={["commit", "withdraw"]}
+              defaultLimit={6}
+              compact
+              emptyHeadline="No history yet."
+              emptyBody="Your kommits and withdrawals land here."
+            />
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
