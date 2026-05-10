@@ -15,7 +15,7 @@ import { cn } from "@/lib/cn";
 import type { Project } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
 import { useDemoMode } from "@/lib/demo-mode";
-import { getDemoBalance, simulateCommit } from "@/lib/demo-engagement";
+import { getDemoBalance, saveBackerNote, simulateCommit } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 // USDC has 6 decimals on Solana. Mirror of `tx.ts:USDC_DECIMALS`; kept local
@@ -32,6 +32,8 @@ const QUICK_AMOUNTS_BASE = QUICK_AMOUNTS.map(
 const MAX_AMOUNT = 5000;
 const MAX_AMOUNT_BASE = BigInt(MAX_AMOUNT) * USDC_DECIMALS_DIVISOR;
 
+const NOTE_MAX = 280;
+
 export function CommitModal({
   open,
   onOpenChange,
@@ -45,6 +47,7 @@ export function CommitModal({
   onSuccess?: () => void;
 }) {
   const [raw, setRaw] = useState("100.00");
+  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
@@ -66,7 +69,10 @@ export function CommitModal({
   }, [open, isDemo, user?.wallet]);
 
   useEffect(() => {
-    if (open) setRaw("100.00");
+    if (open) {
+      setRaw("100.00");
+      setNote("");
+    }
   }, [open]);
 
   // Exact base-unit parse — disable + preset-active checks compare bigints
@@ -119,6 +125,8 @@ export function CommitModal({
         wallet: user.wallet,
         projectSlug: project.slug,
         principalUSD: displayUSD,
+        note: note.trim() || undefined,
+        authorName: user.displayName,
       });
       onOpenChange(false);
       setSubmitting(false);
@@ -138,6 +146,18 @@ export function CommitModal({
     setSubmitting(true);
     try {
       await commitToProject(client, new PublicKey(project.recipientWallet), raw);
+      // v0.5 stub: persist any backer note to localStorage tagged with the
+      // wallet — v1 rewires this to the real comments backend.
+      const trimmedNote = note.trim();
+      if (trimmedNote && user?.wallet) {
+        saveBackerNote({
+          projectSlug: project.slug,
+          wallet: user.wallet,
+          authorName: user.displayName,
+          principalUSD: displayUSD,
+          note: trimmedNote.slice(0, NOTE_MAX),
+        });
+      }
       onOpenChange(false);
       setSubmitting(false);
       setTimeout(
@@ -240,6 +260,30 @@ export function CommitModal({
             Max
           </button>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <label
+            htmlFor="kommit-note"
+            className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest"
+          >
+            Leave a note for the team (optional)
+          </label>
+          <span className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest tabular-nums">
+            {note.length}/{NOTE_MAX}
+          </span>
+        </div>
+        <textarea
+          id="kommit-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
+          placeholder="Why you're backing them. Stays public on their page."
+          rows={2}
+          maxLength={NOTE_MAX}
+          disabled={submitting}
+          className="w-full px-3 py-2.5 font-epilogue font-medium text-sm bg-white border-[3px] border-black shadow-brutal focus:translate-x-[-2px] focus:translate-y-[-2px] focus:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] outline-none transition-all resize-none placeholder:text-gray-400 disabled:opacity-60"
+        />
       </div>
 
       <div className="mt-5 bg-gray-100 border-[3px] border-black p-4 space-y-2">
