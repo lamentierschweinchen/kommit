@@ -134,7 +134,7 @@ export default function ManifestoPage() {
             </p>
             <p>
               <strong>Record held publicly.</strong> Every backer&apos;s
-              history is on-chain, soulbound (cannot be transferred away from
+              history is onchain, soulbound (cannot be transferred away from
               the wallet that earned it), readable by anyone with an internet
               connection. This is the part most readers don&apos;t immediately
               see the importance of. It&apos;s where the second-order effects
@@ -289,7 +289,7 @@ export default function ManifestoPage() {
               <strong>Curation is not solved.</strong> For now, an admin
               curates which projects can list. That&apos;s a single point of
               bias and a structural bottleneck. Less-centralized paths — DAO
-              curation, staked-reputation, on-chain reputation primitives — are
+              curation, staked-reputation, onchain reputation primitives — are
               research questions, not shipped product. We commit to walking the
               path; we do not claim to have walked it.
             </p>

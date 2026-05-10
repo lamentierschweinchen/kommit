@@ -36,7 +36,12 @@ import {
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { USERS, type Role, type User } from "@/lib/data/users";
-import { getStoredPersonaId, setStoredPersonaId, useDemoMode } from "@/lib/demo-mode";
+import {
+  getStoredPersonaId,
+  PERSONA_STORAGE_KEY,
+  setStoredPersonaId,
+  useDemoMode,
+} from "@/lib/demo-mode";
 
 type AuthState = {
   user: User | null;
@@ -204,6 +209,31 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* non-fatal */
     }
+  }, []);
+
+  // React to persona-key writes from anywhere (e.g. /demo's `enterAs` calling
+  // `activateDemoMode("julian")` while MockAuthProvider is already mounted as
+  // Lukas). Without this listener the React state stays at the original
+  // persona and `/founder/<slug>` renders the previous user's avatar until
+  // the page is refreshed.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => {
+      const stored = getStoredPersonaId();
+      const next = stored && USERS[stored] ? stored : null;
+      setUserId((prev) => (prev === next ? prev : next));
+      if (next) {
+        const role: Role = USERS[next].role === "founder" ? "founder" : "kommitter";
+        setActiveRole((prev) => (prev === role ? prev : role));
+      } else {
+        setActiveRole((prev) => (prev === "anon" ? prev : "anon"));
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === PERSONA_STORAGE_KEY || e.key === null) sync();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const user = useMemo<User | null>(() => (userId ? USERS[userId] ?? null : null), [userId]);

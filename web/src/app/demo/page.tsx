@@ -95,7 +95,7 @@ function DemoEntry() {
       if (!json.ok) {
         const messages: Record<string, string> = {
           "demo-api-disabled":
-            "The on-chain demo isn't currently active. Please come back later.",
+            "The onchain demo isn't currently active. Please come back later.",
           "fee-payer-not-configured":
             "Sandbox can't sponsor gas right now. Try again in a moment.",
           "mint-not-configured":
@@ -205,7 +205,7 @@ function DemoEntry() {
       ? "Funding your wallet…"
       : funding === "auth"
         ? "Signing in…"
-        : "Start the on-chain demo";
+        : "Start the onchain demo";
 
   return (
     <main className="flex-1 px-6 md:px-12 py-12 md:py-16 max-w-4xl mx-auto w-full">
@@ -244,10 +244,10 @@ function DemoEntry() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-epilogue font-black uppercase text-xl md:text-2xl tracking-tight">
-                On-chain demo
+                Onchain demo
               </span>
               <span className="inline-block bg-secondary text-black font-epilogue font-black uppercase text-[9px] tracking-widest px-1.5 py-0.5 border-[2px] border-black">
-                Canonical
+                Recommended
               </span>
             </div>
             <p className="text-sm md:text-base font-medium text-white/90 leading-relaxed">
@@ -358,7 +358,7 @@ function DemoEntry() {
       <div className="mt-10 max-w-2xl text-sm font-medium text-gray-600 leading-relaxed space-y-3">
         <p>
           <span className="font-epilogue font-bold uppercase tracking-widest text-[11px] text-black">
-            On-chain demo.
+            Onchain demo.
           </span>{" "}
           Real Privy sign-in, real Solana devnet wallet, real Anchor instructions
           on the kommit program. The $10K is a sandbox SPL token minted on

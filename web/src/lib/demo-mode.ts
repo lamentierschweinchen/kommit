@@ -79,8 +79,12 @@ export function activateDemoMode(initialPersonaId?: string) {
       window.localStorage.setItem(PERSONA_KEY, initialPersonaId);
     }
     // Manually fire a storage event for same-tab listeners — browsers only
-    // emit `storage` to OTHER tabs by default.
+    // emit `storage` to OTHER tabs by default. Dispatch one per key we
+    // touched so listeners scoped to a single key still fire.
     window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+    if (initialPersonaId) {
+      window.dispatchEvent(new StorageEvent("storage", { key: PERSONA_KEY }));
+    }
   } catch {}
 }
 
@@ -91,6 +95,7 @@ export function deactivateDemoMode() {
     window.localStorage.removeItem(STORAGE_KEY);
     window.localStorage.removeItem(PERSONA_KEY);
     window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+    window.dispatchEvent(new StorageEvent("storage", { key: PERSONA_KEY }));
   } catch {}
 }
 
@@ -110,8 +115,16 @@ export function setStoredPersonaId(id: string | null) {
   try {
     if (id) window.localStorage.setItem(PERSONA_KEY, id);
     else window.localStorage.removeItem(PERSONA_KEY);
+    // Same-tab listeners (MockAuthProvider) need an explicit dispatch —
+    // browsers only fire `storage` to OTHER tabs by default. Without this,
+    // `enterAs` from /demo writes a new persona but the already-mounted
+    // MockAuthProvider keeps the previous user's state until refresh.
+    window.dispatchEvent(new StorageEvent("storage", { key: PERSONA_KEY }));
   } catch {}
 }
+
+/** Public name of the persona-key event so listeners can scope correctly. */
+export const PERSONA_STORAGE_KEY = PERSONA_KEY;
 
 // ---------------------------------------------------------------------------
 // Frozen state — when on, demo-engagement mutators early-return without

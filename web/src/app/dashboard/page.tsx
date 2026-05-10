@@ -123,7 +123,7 @@ export default function DashboardPage() {
               </h1>
               {isVisa ? (
                 <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
-                  Card-funded · settled on-chain
+                  Card-funded · settled onchain
                 </p>
               ) : null}
             </div>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
               hint={
                 availableUSD !== null
                   ? isVisa
-                    ? "settled on-chain · ready to deploy"
+                    ? "settled onchain · ready to deploy"
                     : "ready to deploy"
                   : "Deposit to fund your kommits"
               }

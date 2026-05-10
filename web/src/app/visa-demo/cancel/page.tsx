@@ -25,7 +25,7 @@ export default function VisaDemoCancelPage() {
             No payment taken.
           </h1>
           <p className="font-epilogue text-base text-gray-700 mb-6">
-            You canceled before the card cleared. Nothing moved on-chain. Pick
+            You canceled before the card cleared. Nothing moved onchain. Pick
             an amount and try again whenever you&rsquo;re ready.
           </p>
           <Link

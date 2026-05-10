@@ -206,7 +206,7 @@ export default function SandboxOnChainPage() {
           </h1>
           <p className="mt-5 font-epilogue font-medium text-base md:text-lg text-gray-800 leading-snug max-w-2xl">
             Sign in, get devnet funds, then sign a real Anchor commit. Each
-            step surfaces its on-chain artifact.
+            step surfaces its onchain artifact.
           </p>
         </div>
 

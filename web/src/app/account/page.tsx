@@ -99,7 +99,7 @@ export default function AccountPage() {
               <Row
                 label="Payment method"
                 value="Card · MoonPay sandbox"
-                hint="Card details live with MoonPay's hosted checkout — we never see them. Withdrawals settle on-chain to your kommit balance."
+                hint="Card details live with MoonPay's hosted checkout — we never see them. Withdrawals settle onchain to your kommit balance."
                 actionLabel="Manage"
                 actionIcon="edit_note"
                 onAction={() => router.push("/visa-demo")}

@@ -143,7 +143,7 @@ export function FounderDashboardClient({ project }: { project: Project }) {
             ) : (
               <div className="bg-white border-[3px] border-black shadow-brutal p-6 max-w-3xl">
                 <p className="font-epilogue font-bold uppercase text-sm tracking-tight">
-                  This project isn&rsquo;t open for kommitments yet — posting is disabled until the on-chain account exists.
+                  This project isn&rsquo;t open for kommitments yet — posting is disabled until the onchain account exists.
                 </p>
               </div>
             )}

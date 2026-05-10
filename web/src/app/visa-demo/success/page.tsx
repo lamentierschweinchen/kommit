@@ -301,20 +301,20 @@ function PendingState({ status }: { status: SuccessOk | null }) {
     if (s === "settled") {
       return {
         headline: "Payment received",
-        body: "Settling your kommit on-chain — one more step.",
+        body: "Settling your kommit onchain — one more step.",
       };
     }
     if (s === "relay_pending") {
       return {
-        headline: "Settling on-chain…",
+        headline: "Settling onchain…",
         body: "Routing your USDC to your kommit wallet.",
       };
     }
     if (s === "relay_failed") {
       return {
-        headline: "Retrying on-chain settlement…",
+        headline: "Retrying onchain settlement…",
         body:
-          "MoonPay confirmed your payment. We're retrying the on-chain leg automatically.",
+          "MoonPay confirmed your payment. We're retrying the onchain leg automatically.",
       };
     }
     // pending / unknown — webhook hasn't arrived yet.
@@ -370,7 +370,7 @@ function TimeoutState({ status }: { status: SuccessOk | null }) {
         Taking longer than expected.
       </h1>
       <p className="font-epilogue text-base text-gray-700 mb-4">
-        Your card payment has been received. The on-chain settlement is
+        Your card payment has been received. The onchain settlement is
         still in flight — your kommit will appear once it lands. Refresh
         in a moment to re-check.
       </p>
