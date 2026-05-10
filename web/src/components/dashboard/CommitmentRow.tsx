@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { CommitModal } from "@/components/commit/CommitModal";
+import { CommitChooserModal } from "@/components/commit/CommitChooserModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { BrutalButton } from "@/components/common/BrutalButton";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
@@ -29,9 +29,9 @@ export function CommitmentRow({
   /** Fires after a successful withdraw OR top-up so callers can refresh. */
   onWithdrawSuccess?: () => void;
 }) {
-  const router = useRouter();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [commitOpen, setCommitOpen] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
 
@@ -166,7 +166,7 @@ export function CommitmentRow({
               iconLeft={<Icon name="add" size="xs" />}
               onClick={() => {
                 if (isVisa) {
-                  router.push(`/visa-demo?project=${project.slug}`);
+                  setChooserOpen(true);
                   return;
                 }
                 setCommitOpen(true);
@@ -190,6 +190,12 @@ export function CommitmentRow({
         onOpenChange={setCommitOpen}
         project={project}
         onSuccess={onWithdrawSuccess}
+      />
+      <CommitChooserModal
+        open={chooserOpen}
+        onOpenChange={setChooserOpen}
+        project={project}
+        onChooseBalance={() => setCommitOpen(true)}
       />
       <WithdrawModal
         open={withdrawOpen}
