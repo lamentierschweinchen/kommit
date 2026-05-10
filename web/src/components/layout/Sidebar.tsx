@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -7,9 +8,11 @@ import { avatarUrl } from "@/lib/data/users";
 import { useDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
-import { ActivityHistory } from "@/components/dashboard/ActivityHistory";
+import { MyHistoryModal } from "@/components/dashboard/MyHistoryModal";
 
-type Item = { href: string; label: string; icon: IconName; badge?: string | number };
+type LinkItem = { kind: "link"; href: string; label: string; icon: IconName; badge?: string | number };
+type ButtonItem = { kind: "button"; onClick: () => void; label: string; icon: IconName };
+type Item = LinkItem | ButtonItem;
 
 export function Sidebar({
   variant,
@@ -24,24 +27,38 @@ export function Sidebar({
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const isDemo = useDemoMode();
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const showHistory = variant === "kommitter" && isDemo && !!user?.wallet;
 
   const items: Item[] =
     variant === "founder" && founderSlug
       ? [
-          { href: `/founder/${founderSlug}`, label: "Overview", icon: "grid_view" },
-          { href: `/founder/${founderSlug}#post-update`, label: "Post update", icon: "edit_note" },
+          { kind: "link", href: `/founder/${founderSlug}`, label: "Overview", icon: "grid_view" },
+          { kind: "link", href: `/founder/${founderSlug}#post-update`, label: "Post update", icon: "edit_note" },
           {
+            kind: "link",
             href: `/founder/${founderSlug}#kommitters`,
             label: "Kommitters",
             icon: "groups",
             badge: founderKommittersCount,
           },
-          { href: `/projects/${founderSlug}`, label: "Public page", icon: "open_in_new" },
-          { href: "/account", label: "Account", icon: "settings" },
+          { kind: "link", href: `/projects/${founderSlug}`, label: "Public page", icon: "open_in_new" },
+          { kind: "link", href: "/account", label: "Account", icon: "settings" },
         ]
       : [
-          { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
-          { href: "/account", label: "Account", icon: "settings" },
+          { kind: "link", href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
+          { kind: "link", href: "/account", label: "Account", icon: "settings" },
+          ...(showHistory
+            ? [
+                {
+                  kind: "button" as const,
+                  onClick: () => setHistoryOpen(true),
+                  label: "My history",
+                  icon: "history" as IconName,
+                },
+              ]
+            : []),
         ];
 
   return (
@@ -96,6 +113,19 @@ export function Sidebar({
 
       <nav className="flex flex-col gap-2 font-epilogue font-bold uppercase text-sm tracking-tight">
         {items.map((item, i) => {
+          if (item.kind === "button") {
+            return (
+              <button
+                key={`button-${item.label}-${i}`}
+                type="button"
+                onClick={item.onClick}
+                className="flex items-center gap-3 border-[3px] border-black p-3 transition-all text-left text-black bg-white hover:bg-secondary hover:shadow-brutal active:translate-x-1 active:translate-y-1 active:shadow-none"
+              >
+                <Icon name={item.icon} size="md" />
+                <span className="flex-1">{item.label}</span>
+              </button>
+            );
+          }
           const base = item.href.split("#")[0];
           const hasAnchor = item.href.includes("#");
           const isActive = hasAnchor
@@ -125,22 +155,12 @@ export function Sidebar({
         })}
       </nav>
 
-      {variant === "kommitter" && isDemo && user?.wallet ? (
-        <div className="mt-8 flex-1 min-h-0 flex flex-col">
-          <div className="font-epilogue font-black uppercase text-[10px] text-gray-500 tracking-widest mb-3 px-1">
-            My history
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-            <ActivityHistory
-              wallet={user.wallet}
-              kinds={["commit", "withdraw"]}
-              defaultLimit={6}
-              compact
-              emptyHeadline="No history yet."
-              emptyBody="Your kommits and withdrawals land here."
-            />
-          </div>
-        </div>
+      {showHistory && user?.wallet ? (
+        <MyHistoryModal
+          wallet={user.wallet}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+        />
       ) : null}
     </aside>
   );
