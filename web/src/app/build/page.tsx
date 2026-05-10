@@ -75,6 +75,8 @@ export default function BuildApplicationPage() {
           </p>
         </section>
 
+        <FounderPitchBox />
+
         <form onSubmit={onSubmit} className="max-w-2xl mx-auto space-y-7">
           <Field
             label="Project name"
@@ -168,6 +170,66 @@ export default function BuildApplicationPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+/**
+ * Pitch panel that sits between the hero and the form. Translates the
+ * cohort-manifesto's case for kommitters into the four things a founder
+ * actually gets in return for listing here. Lives on /build only.
+ */
+function FounderPitchBox() {
+  const bullets: { title: string; body: string }[] = [
+    {
+      title: "Signal you can actually trust",
+      body: "Kommitters paid opportunity cost in real money over real time to back you. Read the count and learn something true — not opinion volume.",
+    },
+    {
+      title: "No platform fee on the round",
+      body: "Yield earned on parked capital funds the platform. We don't take 7-9% at the moment your round closes — that part is yours.",
+    },
+    {
+      title: "First-dibs cohort = pre-qualified angels",
+      body: "Backers who held through pivots get first-dibs at round price. They've watched you for months — your round closes faster.",
+    },
+    {
+      title: "Public legibility",
+      body: "“Backed by 50 kommitters with $200K committed across 18 months” is verifiable in seconds. Cap-table-adjacent legitimacy you didn't have before.",
+    },
+  ];
+  return (
+    <section className="max-w-2xl mx-auto mb-14 md:mb-16">
+      <article className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8">
+        <header>
+          <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+            What founders get
+          </h2>
+          <p className="mt-4 text-sm md:text-base font-medium text-gray-600 leading-snug">
+            What backing looks like when it&rsquo;s measured in patience, not pitches.
+          </p>
+        </header>
+        <ul className="mt-7 space-y-5">
+          {bullets.map((b) => (
+            <li key={b.title} className="flex gap-4">
+              <span
+                className="shrink-0 w-7 h-7 mt-0.5 bg-primary text-white border-[2px] border-black flex items-center justify-center"
+                aria-hidden
+              >
+                <Icon name="check" size="sm" />
+              </span>
+              <div>
+                <div className="font-epilogue font-black uppercase text-sm md:text-base tracking-tight">
+                  {b.title}
+                </div>
+                <p className="mt-1 text-sm md:text-base font-medium text-gray-800 leading-relaxed">
+                  {b.body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </article>
+    </section>
   );
 }
 
