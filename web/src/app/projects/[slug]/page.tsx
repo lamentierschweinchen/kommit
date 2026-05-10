@@ -102,7 +102,7 @@ export default async function ProjectDetailPage({
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 Recent kommitters
               </h2>
-              <KommittersList kommitters={project.kommitters} limit={7} />
+              <KommittersList kommitters={project.kommitters} projectSlug={project.slug} limit={7} />
               {project.kommitters.length > 7 ? (
                 <p className="mt-6 font-epilogue font-bold uppercase text-xs tracking-widest text-gray-500">
                   Showing 7 of {project.kommittersCount}
@@ -188,11 +188,17 @@ function ProjectHero({ project }: { project: Project }) {
           <Tape color="primary" size="md" rotation={-3} className="hidden" />
         ) : null}
 
-        {/* Hero stat strip — public-facing summary */}
+        {/* Hero stat strip — public-facing summary. Pre-launch projects
+            (no recipientWallet) reframe "Active since" as "Launch date"
+            so the date doesn't read as a past timestamp on a project that
+            hasn't opened for kommitments yet (handoff 58 #6). */}
         <div className="grid grid-cols-3 gap-2 max-w-md">
           <HeroStat label="Total kommitted" value={formatUSD(project.totalKommittedUSD, { compact: project.totalKommittedUSD >= 10_000 })} />
           <HeroStat label="Kommitters" value={formatNumber(project.kommittersCount)} />
-          <HeroStat label="Active since" value={shortDate(project.activeSinceISO)} />
+          <HeroStat
+            label={project.recipientWallet ? "Active since" : "Launch date"}
+            value={shortDate(project.activeSinceISO)}
+          />
         </div>
       </div>
       <div className="relative">
@@ -228,8 +234,13 @@ function ProjectInfoSection({ project }: { project: Project }) {
   // `totalKommitsGenerated` (cohort score). Plus a one-glance summary of the
   // existing metadata so kommitters get a "is this real" panel before diving
   // into the team/updates.
-  const stateLabel =
-    project.state === "graduated"
+  // Pre-launch projects (no recipientWallet) get a "Launching" stage label
+  // and reframe "Active since" → "Launching on" so the date reads as a
+  // forward-looking promise instead of a past timestamp (handoff 58 #6).
+  const isPreLaunch = !project.recipientWallet;
+  const stateLabel = isPreLaunch
+    ? "Launching"
+    : project.state === "graduated"
       ? "Graduated"
       : project.state === "just-listed"
         ? "Just listed"
@@ -239,7 +250,10 @@ function ProjectInfoSection({ project }: { project: Project }) {
   const items: Array<{ label: string; value: string }> = [
     { label: "Sector", value: project.sector },
     { label: "Stage", value: stateLabel },
-    { label: "Active since", value: longDate(project.activeSinceISO) },
+    {
+      label: isPreLaunch ? "Launching on" : "Active since",
+      value: longDate(project.activeSinceISO),
+    },
     {
       label: "Cohort kommits",
       value: cohortKommits > 0 ? formatNumber(cohortKommits) : "—",

@@ -124,7 +124,13 @@ export function ProjectCard({ project }: { project: Project }) {
               }
             />
             <Stat
-              label={isGraduated ? "Graduated" : "Active since"}
+              label={
+                isGraduated
+                  ? "Graduated"
+                  : isOpeningSoon
+                    ? "Launching"
+                    : "Active since"
+              }
               value={shortDate(
                 isGraduated && project.graduatedAtISO ? project.graduatedAtISO : project.activeSinceISO,
               )}
