@@ -7,7 +7,6 @@ import { findProjectPda } from "@/lib/kommit";
 import { PublicKey } from "@solana/web3.js";
 import { KommittersList } from "@/components/project/KommittersList";
 import { UserPositionCard } from "@/components/project/UserPositionCard";
-import { RecentUpdatesMini } from "@/components/project/RecentUpdatesMini";
 import { RoadmapCard } from "@/components/project/RoadmapCard";
 import { getProject, projectImageUrl, type Project } from "@/lib/data/projects";
 import { avatarUrl } from "@/lib/data/users";
@@ -127,11 +126,6 @@ export default async function ProjectDetailPage({
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
             <UserPositionCard project={project} />
-            <RecentUpdatesMini
-              projectSlug={project.slug}
-              projectPda={projectPda}
-              updates={project.updates}
-            />
           </aside>
         </div>
       </main>

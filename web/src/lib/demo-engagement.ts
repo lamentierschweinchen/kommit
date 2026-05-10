@@ -44,6 +44,11 @@ export const DEMO_DEFAULT_BALANCE_USD = 5000;
 type StoredPosition = {
   kommittedUSD: number;
   sinceISO: string;
+  /** Millisecond-precision commit timestamp — fresh demo commits set this so
+   *  the live-kommits hook can tick from the actual moment of commit instead
+   *  of from midnight UTC of the date. Absent on positions migrated from
+   *  before this field was introduced; the hook falls back to `sinceISO`. */
+  sinceMs?: number;
   pivotedAtISO?: string;
 };
 
@@ -315,6 +320,7 @@ export function getDemoPositions(wallet: string): Commitment[] {
     projectSlug,
     kommittedUSD: p.kommittedUSD,
     sinceISO: p.sinceISO,
+    ...(p.sinceMs ? { sinceMs: p.sinceMs } : {}),
     ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
   }));
 }
@@ -331,6 +337,7 @@ export function getDemoPosition(
     projectSlug,
     kommittedUSD: p.kommittedUSD,
     sinceISO: p.sinceISO,
+    ...(p.sinceMs ? { sinceMs: p.sinceMs } : {}),
     ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
   };
 }
@@ -350,7 +357,12 @@ export function simulateCommit(args: {
     // Frozen: return the existing position unchanged so callers don't break.
     const existing = readAllPositions()[wallet]?.[projectSlug];
     return existing
-      ? { projectSlug, kommittedUSD: existing.kommittedUSD, sinceISO: existing.sinceISO }
+      ? {
+          projectSlug,
+          kommittedUSD: existing.kommittedUSD,
+          sinceISO: existing.sinceISO,
+          ...(existing.sinceMs ? { sinceMs: existing.sinceMs } : {}),
+        }
       : { projectSlug, kommittedUSD: 0, sinceISO: nowISO().slice(0, 10) };
   }
   const all = readAllPositions();
@@ -362,6 +374,7 @@ export function simulateCommit(args: {
     all[wallet][projectSlug] = {
       kommittedUSD: round2(principalUSD),
       sinceISO: nowISO().slice(0, 10),
+      sinceMs: Date.now(),
     };
   }
   writeAllPositions(all);
@@ -372,6 +385,7 @@ export function simulateCommit(args: {
     projectSlug,
     kommittedUSD: pos.kommittedUSD,
     sinceISO: pos.sinceISO,
+    ...(pos.sinceMs ? { sinceMs: pos.sinceMs } : {}),
   };
 }
 
@@ -405,7 +419,12 @@ export function simulateWithdraw(args: {
   setDemoBalance(wallet, getDemoBalance(wallet) + amountUSD);
   appendDemoActivity({ kind: "withdraw", wallet, projectSlug, amountUSD });
   return next > 0
-    ? { projectSlug, kommittedUSD: next, sinceISO: pos.sinceISO }
+    ? {
+        projectSlug,
+        kommittedUSD: next,
+        sinceISO: pos.sinceISO,
+        ...(pos.sinceMs ? { sinceMs: pos.sinceMs } : {}),
+      }
     : null;
 }
 

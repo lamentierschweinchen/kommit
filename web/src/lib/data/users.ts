@@ -48,6 +48,30 @@ export function getUser(id: string): User | undefined {
   return USERS[id];
 }
 
+export function getUserByWallet(wallet: string): User | undefined {
+  if (!wallet) return undefined;
+  return Object.values(USERS).find((u) => u.wallet === wallet);
+}
+
+/**
+ * Resolve a wallet to a display label. Prefers the persona's `displayName`
+ * when the wallet matches a known cohort member; falls back to a truncated
+ * "VTg…AqC4" so on-chain authors outside the demo cohort still render
+ * something sensible. The `addressFallback` flag toggles whether unknown
+ * wallets render as the truncated address (default) or a generic label.
+ */
+export function walletDisplayName(
+  wallet: string,
+  opts: { genericLabel?: string } = {},
+): string {
+  if (!wallet) return opts.genericLabel ?? "—";
+  const u = getUserByWallet(wallet);
+  if (u) return u.displayName;
+  if (opts.genericLabel) return opts.genericLabel;
+  if (wallet.length < 10) return wallet;
+  return `${wallet.slice(0, 4)}…${wallet.slice(-4)}`;
+}
+
 export function avatarUrl(seed: number, size = 80): string {
   return `https://i.pravatar.cc/${size}?img=${seed}`;
 }

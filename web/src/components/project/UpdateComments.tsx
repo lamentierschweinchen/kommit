@@ -8,6 +8,7 @@ import { Icon } from "@/components/common/Icon";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { cn } from "@/lib/cn";
 import { relativeTime } from "@/lib/date-utils";
+import { walletDisplayName } from "@/lib/data/users";
 import type { RemoteComment } from "@/lib/api-types";
 
 const MAX_COMMENT_LEN = 2000;
@@ -124,7 +125,7 @@ export function UpdateComments({
                 className="bg-gray-50 border-[2px] border-black p-3"
               >
                 <div className="flex items-center gap-2 flex-wrap text-[10px] font-epilogue font-bold uppercase tracking-widest text-gray-500">
-                  <span className="font-black text-black">{shortWallet(c.author_wallet)}</span>
+                  <span className="font-black text-black">{walletDisplayName(c.author_wallet)}</span>
                   <span>·</span>
                   <span>{relativeTime(c.posted_at.slice(0, 10))}</span>
                   {isFounder ? (
@@ -191,10 +192,4 @@ export function UpdateComments({
       <SignInModal open={signInOpen} onOpenChange={setSignInOpen} />
     </div>
   );
-}
-
-function shortWallet(addr: string): string {
-  if (!addr) return "—";
-  if (addr.length < 10) return addr;
-  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 }

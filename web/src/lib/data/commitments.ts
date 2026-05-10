@@ -2,6 +2,15 @@ export type Commitment = {
   projectSlug: string;
   kommittedUSD: number;
   sinceISO: string;
+  /**
+   * Millisecond-precision deposit timestamp. Optional: seeded portfolio rows
+   * carry only `sinceISO` (date string, midnight UTC). Fresh commits — both
+   * on-chain (`depositTs * 1000`) and demo (`Date.now()`) — set this so the
+   * live-kommits hook ticks up from the actual commit moment, not from
+   * midnight-of-day (which would otherwise inflate fresh positions by up to
+   * 24 hours of accrual the user never earned).
+   */
+  sinceMs?: number;
   /** True when the project pivoted while user was kommitted. The dashboard row keeps showing the inline tag. */
   pivotedAtISO?: string;
 };
