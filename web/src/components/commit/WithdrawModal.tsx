@@ -136,7 +136,7 @@ export function WithdrawModal({
     ? `${formatEUR(displayUSD)} back in your kommit balance`
     : "Withdraw confirmed.";
   const successDetail = isVisa
-    ? `Returned from ${projectName}. Your card is unaffected — withdrawals stay on-chain to your kommit wallet.`
+    ? `Returned from ${projectName}. Your card is unaffected — withdrawals stay onchain to your kommit wallet.`
     : `Returned ${formatUSD(displayUSD)} from ${projectName}.`;
 
   const handleSubmit = async () => {

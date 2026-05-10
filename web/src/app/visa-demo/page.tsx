@@ -229,7 +229,7 @@ function VisaDemoEntry() {
                 </button>
                 <p className="mt-3 font-epilogue font-medium text-xs text-gray-600 leading-relaxed text-center">
                   Sandbox payments use MoonPay Commerce. Withdrawals stay
-                  on-chain to your kommit wallet — fiat off-ramp arrives in v1.
+                  onchain to your kommit wallet — fiat off-ramp arrives in v1.
                 </p>
               </div>
             </div>

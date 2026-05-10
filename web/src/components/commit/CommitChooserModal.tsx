@@ -71,7 +71,7 @@ export function CommitChooserModal({
               Add via card
             </span>
             <span className="block mt-0.5 text-sm font-medium text-gray-600">
-              Top up first, then kommit. Settles on-chain.
+              Top up first, then kommit. Settles onchain.
             </span>
           </span>
           <Icon name="arrow_outward" size="sm" className="shrink-0" />

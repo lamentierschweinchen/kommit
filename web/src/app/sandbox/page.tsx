@@ -6,7 +6,7 @@ import { Icon } from "@/components/common/Icon";
 export const metadata: Metadata = {
   title: "Sandbox · Kommit",
   description:
-    "Two ways to exercise the kommit primitive on devnet — fund on-chain or fund with a card-mock checkout.",
+    "Two ways to exercise the kommit primitive on devnet — fund onchain or fund with a card-mock checkout.",
   robots: { index: false, follow: false },
 };
 
@@ -22,7 +22,7 @@ export default function SandboxLandingPage() {
             Two ways to try the kommit primitive.
           </h1>
           <p className="mt-6 font-epilogue font-medium text-lg md:text-xl text-gray-800 leading-snug border-l-[4px] border-primary pl-5">
-            Both paths exercise the same on-chain commit logic. One drops you
+            Both paths exercise the same onchain commit logic. One drops you
             real devnet artifacts and signs an Anchor instruction; the other
             simulates the card-checkout UX so you can feel the funding side.
           </p>
@@ -30,11 +30,11 @@ export default function SandboxLandingPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
           <FundingCard
-            kicker="Path A · On-chain"
-            heading="Fund on-chain (devnet)"
+            kicker="Path A · Onchain"
+            heading="Fund onchain (devnet)"
             blurb="Real signed transactions, Solscan-traceable, no card needed."
             helper="$10,000 of devnet test funds + gas dropped to your wallet, then sign a real Anchor commit."
-            cta="Try the on-chain flow"
+            cta="Try the onchain flow"
             href="/sandbox/onchain"
             accent="primary"
           />

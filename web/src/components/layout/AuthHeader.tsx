@@ -12,17 +12,14 @@ import { avatarUrl } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 
-const PUBLIC_ROUTES = ["/", "/app", "/about", "/build", "/build/submitted"];
-
-function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some((r) => pathname === r);
-}
-
 const NAV_LINKS = [
   { href: "/projects", label: "Browse projects" },
   { href: "/build", label: "For founders" },
   { href: "/about", label: "About" },
 ];
+
+/** Nav links that only render for signed-in users (handoff 62 #5). */
+const SIGNED_IN_NAV_LINKS = [{ href: "/dashboard", label: "Dashboard" }];
 
 /**
  * Lane A architecture rollout: `/` is now the coming-soon waitlist; the
@@ -47,8 +44,13 @@ export function AuthHeader({
   const [signInOpen, setSignInOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const isPublic = forcePublic || isPublicRoute(pathname);
-  const showAnonHeader = isPublic || !isSignedIn;
+  // `forcePublic` lets callers explicitly opt into the anon header (no
+  // current consumers, kept for the rare surface that wants marketing chrome
+  // regardless of auth). Otherwise: signed-in users see their dropdown on
+  // every route — `/about` and `/build` previously forced the anon header
+  // even for signed-in users, which read as auth state vanishing on
+  // navigation. Handoff 62 #2.
+  const showAnonHeader = forcePublic || !isSignedIn;
   // Pass-2 P1 #5: header search dropped globally. The browse page has a
   // proper filter+sort+search toolbar; every other route had a header search
   // with no scope (search what? from /account?). One canonical search
@@ -68,7 +70,7 @@ export function AuthHeader({
             <Wordmark />
           </Link>
           <div className="hidden lg:flex gap-2">
-            {NAV_LINKS.map((link) => {
+            {[...(isSignedIn ? SIGNED_IN_NAV_LINKS : []), ...NAV_LINKS].map((link) => {
               const isActive =
                 pathname === link.href ||
                 (link.href === "/projects" && pathname.startsWith("/projects"));
