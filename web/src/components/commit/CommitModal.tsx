@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { Modal } from "@/components/common/Modal";
@@ -17,6 +17,9 @@ import { Icon } from "@/components/common/Icon";
 import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance, saveBackerNote, simulateCommit } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
+import { getSandboxProjects } from "@/lib/sandbox-projects";
+import { useSandboxBalance } from "@/lib/hooks/useSandboxBalance";
 
 // USDC has 6 decimals on Solana. Mirror of `tx.ts:USDC_DECIMALS`; kept local
 // so this UI module doesn't reach into the tx layer just for the constant.
@@ -55,18 +58,36 @@ export function CommitModal({
   const { user } = useAuth();
   const router = useRouter();
 
-  // Available USDC balance — H3. Demo personas carry a localStorage-backed
-  // simulated balance; production reads on-chain (TODO once a balance hook
-  // lands). Show as a small line above the amount input.
-  const [availableUSD, setAvailableUSD] = useState<number | null>(null);
+  // On-chain demo path (real Privy): when sandbox is configured for this
+  // project's slug, swap the recipient wallet + commit mint so the tx hits
+  // the sandbox-locked escrow with the sandbox SPL token. Without this swap,
+  // a real-Privy commit would target the production-USDC-locked escrow with
+  // a sandbox-token deposit and fail Anchor's `token::mint` constraint.
+  const sandboxMint = useMemo(() => (isDemo ? null : getSandboxMintOrNull()), [
+    isDemo,
+  ]);
+  const sandboxProject = useMemo(() => {
+    if (isDemo) return null;
+    if (!sandboxMint) return null;
+    return getSandboxProjects().find((p) => p.slug === project.slug) ?? null;
+  }, [isDemo, project.slug, sandboxMint]);
+
+  // Available balance — demo personas carry a localStorage-backed simulated
+  // balance; real-Privy reads the sandbox SPL ATA. Both surface as the same
+  // "Available" line above the amount input.
+  const sandboxBalance = useSandboxBalance(
+    !isDemo && open ? user?.wallet ?? null : null,
+  );
+  const [demoBalance, setDemoBalance] = useState<number | null>(null);
   useEffect(() => {
     if (!open) return;
     if (isDemo && user?.wallet) {
-      setAvailableUSD(getDemoBalance(user.wallet));
+      setDemoBalance(getDemoBalance(user.wallet));
     } else {
-      setAvailableUSD(null);
+      setDemoBalance(null);
     }
   }, [open, isDemo, user?.wallet]);
+  const availableUSD = isDemo ? demoBalance : sandboxBalance;
 
   useEffect(() => {
     if (open) {
@@ -90,10 +111,14 @@ export function CommitModal({
   // it never feeds into TX construction or boundary checks.
   const displayUSD = parseFloat(raw) || 0;
 
-  const isOnChain = !!project.recipientWallet;
+  // The sandbox path doesn't need the static catalog wallet to be set —
+  // sandbox-projects.json carries its own recipientWallet, derived by
+  // setup-sandbox-projects.mjs. Treat the project as on-chain-eligible when
+  // either source is wired.
+  const isOnChain = !!project.recipientWallet || !!sandboxProject;
   const walletReady = isDemo ? !!user?.wallet : !!client;
   const overBalance =
-    isDemo && availableUSD !== null && displayUSD > availableUSD;
+    availableUSD !== null && displayUSD > availableUSD;
   const submitDisabled =
     !isOnChain ||
     !walletReady ||
@@ -142,10 +167,23 @@ export function CommitModal({
       return;
     }
 
-    if (!client || !project.recipientWallet) return;
+    if (!client) return;
+    // Real-Privy mode — pick the sandbox recipient + mint when configured,
+    // else fall through to the production catalog wallet + USDC default.
+    const recipient: PublicKey | null = sandboxProject
+      ? sandboxProject.recipientWallet
+      : project.recipientWallet
+        ? new PublicKey(project.recipientWallet)
+        : null;
+    if (!recipient) return;
     setSubmitting(true);
     try {
-      await commitToProject(client, new PublicKey(project.recipientWallet), raw);
+      await commitToProject(
+        client,
+        recipient,
+        raw,
+        sandboxMint ?? undefined,
+      );
       // v0.5 stub: persist any backer note to localStorage tagged with the
       // wallet — v1 rewires this to the real comments backend.
       const trimmedNote = note.trim();

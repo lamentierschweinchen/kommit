@@ -197,31 +197,50 @@ export async function getCommitmentForUserAndProject(
   }
 
   const project = PROJECTS.find((p) => p.slug === projectSlug);
-  if (!project?.recipientWallet) {
+  // Sandbox PDA candidate — distinct from the static catalog wallet. A user
+  // who kommitted via /sandbox/onchain or the on-chain demo entry has their
+  // position keyed under this PDA, not under the production-USDC-locked
+  // escrow that `project.recipientWallet` would derive.
+  const sandboxRecord = getSandboxProjects().find((p) => p.slug === projectSlug);
+
+  if (!project?.recipientWallet && !sandboxRecord) {
     // Even without on-chain wiring, a sandbox-overlay user may have a
     // simulated position from the visa-demo card-mock flow.
     return isSandboxOverlayActive() ? getDemoPosition(walletStr, projectSlug) : null;
   }
 
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
-  const projectPda = findProjectPda(new PublicKey(project.recipientWallet));
   const program = getReadProgram();
-
-  // Single-account fetch by computed PDA — cheaper than memcmp.
   const { findCommitmentPda } = await import("@/lib/kommit");
-  const commitmentPda = findCommitmentPda(userKey, projectPda);
+
+  // Try the catalog PDA first, then the sandbox PDA. First hit wins. Real-
+  // Privy users in the current devnet deploy only have sandbox positions, so
+  // they fall through to the sandbox candidate; preserved-from-prod state is
+  // unaffected.
+  const candidatePdas: PublicKey[] = [];
+  if (project?.recipientWallet) {
+    candidatePdas.push(findProjectPda(new PublicKey(project.recipientWallet)));
+  }
+  if (sandboxRecord) {
+    candidatePdas.push(sandboxRecord.projectPda);
+  }
+
   let onChain: Commitment | null = null;
-  try {
-    const account = await program.account.commitment.fetch(commitmentPda);
-    const depositTs = Number(account.depositTs);
-    onChain = {
-      projectSlug,
-      kommittedUSD: baseUnitsToUSD(BigInt(account.principal.toString())),
-      sinceISO: unixToISO(depositTs),
-      sinceMs: depositTs * 1000,
-    };
-  } catch {
-    onChain = null;
+  for (const pda of candidatePdas) {
+    const commitmentPda = findCommitmentPda(userKey, pda);
+    try {
+      const account = await program.account.commitment.fetch(commitmentPda);
+      const depositTs = Number(account.depositTs);
+      onChain = {
+        projectSlug,
+        kommittedUSD: baseUnitsToUSD(BigInt(account.principal.toString())),
+        sinceISO: unixToISO(depositTs),
+        sinceMs: depositTs * 1000,
+      };
+      break;
+    } catch {
+      /* fall through to next candidate */
+    }
   }
 
   if (!isSandboxOverlayActive()) return onChain;
