@@ -17,12 +17,19 @@ const MS_PER_HOUR = 3_600_000;
  * kommit accrues per dollar-hour committed. A $100 position visibly ticks
  * up by ~$100/3600 ≈ 0.0278 kommits per second.
  *
- * The first render is SSR-safe: it returns the same value the server would
- * compute (DEMO-pinned `kommitsFor`-equivalent) until the client effect
- * starts ticking, so there's no hydration mismatch.
+ * The optional `sinceMsOverride` is the millisecond-precision commit
+ * timestamp — used by fresh demo / on-chain commits so the count starts at
+ * exactly $0 × 0h = 0 instead of inflating by however many hours of "today"
+ * have elapsed since the date string's midnight UTC. Falls back to
+ * `parseISODate(sinceISO)` (midnight UTC of the date) when the position has
+ * only date-level provenance (seeded portfolio rows).
  */
-export function useLiveKommits(usdAmount: number, sinceISO: string): number {
-  const sinceMs = parseISODate(sinceISO).getTime();
+export function useLiveKommits(
+  usdAmount: number,
+  sinceISO: string,
+  sinceMsOverride?: number,
+): number {
+  const sinceMs = sinceMsOverride ?? parseISODate(sinceISO).getTime();
   // Guard against negative durations (sinceISO in the future) — clamp to 0.
   const [now, setNow] = useState<number>(() => sinceMs);
 
@@ -87,7 +94,7 @@ export function formatLiveKommits(n: number): string {
  * rules-of-hooks (variable-length list) or burn N timers.
  */
 export function useLiveKommitsTotal(
-  positions: Array<{ kommittedUSD: number; sinceISO: string }>,
+  positions: Array<{ kommittedUSD: number; sinceISO: string; sinceMs?: number }>,
 ): number {
   const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -118,7 +125,7 @@ export function useLiveKommitsTotal(
 
   let sum = 0;
   for (const p of positions) {
-    const sinceMs = parseISODate(p.sinceISO).getTime();
+    const sinceMs = p.sinceMs ?? parseISODate(p.sinceISO).getTime();
     const hours = Math.max(0, (now - sinceMs) / MS_PER_HOUR);
     sum += p.kommittedUSD * hours;
   }

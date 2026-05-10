@@ -59,7 +59,11 @@ export function CommitmentRow({
       cancelled = true;
     };
   }, [project.recipientWallet]);
-  const liveKommits = useLiveKommits(commitment.kommittedUSD, commitment.sinceISO);
+  const liveKommits = useLiveKommits(
+    commitment.kommittedUSD,
+    commitment.sinceISO,
+    commitment.sinceMs,
+  );
   const kommitsDisplay =
     liveKommits > 0
       ? formatLiveKommits(liveKommits)

@@ -19,6 +19,7 @@ export function UserPositionCard({ project }: { project: Project }) {
   const { user, isSignedIn } = useAuth();
   const [committedUSD, setCommittedUSD] = useState<number | undefined>(undefined);
   const [sinceISO, setSinceISO] = useState<string | undefined>(undefined);
+  const [sinceMs, setSinceMs] = useState<number | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
@@ -27,6 +28,7 @@ export function UserPositionCard({ project }: { project: Project }) {
     if (!isSignedIn || !user?.wallet || !project.recipientWallet) {
       setCommittedUSD(undefined);
       setSinceISO(undefined);
+      setSinceMs(undefined);
       return;
     }
     let cancelled = false;
@@ -36,9 +38,11 @@ export function UserPositionCard({ project }: { project: Project }) {
         if (c) {
           setCommittedUSD(c.kommittedUSD);
           setSinceISO(c.sinceISO);
+          setSinceMs(c.sinceMs);
         } else {
           setCommittedUSD(undefined);
           setSinceISO(undefined);
+          setSinceMs(undefined);
         }
       })
       .catch((e) => {
@@ -58,6 +62,7 @@ export function UserPositionCard({ project }: { project: Project }) {
       variant={variant}
       committedUSD={committedUSD}
       sinceISO={sinceISO}
+      sinceMs={sinceMs}
       onTxSuccess={refresh}
     />
   );

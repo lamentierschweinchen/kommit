@@ -20,6 +20,7 @@ export function PositionCard({
   variant,
   committedUSD,
   sinceISO,
+  sinceMs,
   graduatedRecord,
   onTxSuccess,
 }: {
@@ -28,6 +29,11 @@ export function PositionCard({
   /** User's committed amount in this project — required for "active" variant */
   committedUSD?: number;
   sinceISO?: string;
+  /** Millisecond-precision commit timestamp. Optional: when present, the live
+   *  hook ticks from that exact moment instead of from midnight UTC of the
+   *  `sinceISO` date — preventing fresh commits from showing up to ~24 hours
+   *  of unearned accrual the moment they hit the dashboard. */
+  sinceMs?: number;
   /** Graduated archival record */
   graduatedRecord?: {
     finalKommitsKept: number;
@@ -92,7 +98,11 @@ export function PositionCard({
           Your position
         </div>
         {variant === "active" && committedUSD && sinceISO ? (
-          <ActivePositionDisplay committedUSD={committedUSD} sinceISO={sinceISO} />
+          <ActivePositionDisplay
+            committedUSD={committedUSD}
+            sinceISO={sinceISO}
+            sinceMs={sinceMs}
+          />
         ) : project.kommittersCount === 0 ? (
           <>
             <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
@@ -185,16 +195,21 @@ export function PositionCard({
 function ActivePositionDisplay({
   committedUSD,
   sinceISO,
+  sinceMs,
 }: {
   committedUSD: number;
   sinceISO: string;
+  sinceMs?: number;
 }) {
-  const liveKommits = useLiveKommits(committedUSD, sinceISO);
+  const liveKommits = useLiveKommits(committedUSD, sinceISO, sinceMs);
   const isVisa = useVisaMode();
   // Until the visibility-effect mounts and triggers the first tick, show the
   // SSR-pinned demo number so the headline never reads "0.00". formatKommits
   // matches formatLiveKommits's compact rule (≥1M → "3.88M") so the value
-  // doesn't visually jump on hydration.
+  // doesn't visually jump on hydration. For fresh commits (sinceISO ≥
+  // DEMO_TODAY_ISO) `kommitsFor` clamps to 0 — exactly the value the live
+  // hook will return on its first tick once `sinceMs` is plumbed through, so
+  // there's no visible jump from "10 per dollar" → real time.
   const display = liveKommits > 0
     ? formatLiveKommits(liveKommits)
     : formatKommits(kommitsFor(committedUSD, sinceISO));

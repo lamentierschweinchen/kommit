@@ -66,10 +66,14 @@ function mergeCommitments(
       continue;
     }
     const earlier = existing.sinceISO < o.sinceISO ? existing.sinceISO : o.sinceISO;
+    const existingMs = existing.sinceMs ?? Date.parse(`${existing.sinceISO}T00:00:00Z`);
+    const overlayMs = o.sinceMs ?? Date.parse(`${o.sinceISO}T00:00:00Z`);
+    const earlierMs = Math.min(existingMs, overlayMs);
     bySlug.set(o.projectSlug, {
       ...existing,
       kommittedUSD: existing.kommittedUSD + o.kommittedUSD,
       sinceISO: earlier,
+      sinceMs: earlierMs,
       pivotedAtISO: existing.pivotedAtISO ?? o.pivotedAtISO,
     });
   }
@@ -169,6 +173,7 @@ export async function getCommitmentsForUser(
       projectSlug: project.slug,
       kommittedUSD: baseUnitsToUSD(principalBig),
       sinceISO: unixToISO(depositTs),
+      sinceMs: depositTs * 1000,
     });
   }
   return mergeCommitments(out, sandboxOverlayCommitmentsFor(walletStr));
@@ -208,10 +213,12 @@ export async function getCommitmentForUserAndProject(
   let onChain: Commitment | null = null;
   try {
     const account = await program.account.commitment.fetch(commitmentPda);
+    const depositTs = Number(account.depositTs);
     onChain = {
       projectSlug,
       kommittedUSD: baseUnitsToUSD(BigInt(account.principal.toString())),
-      sinceISO: unixToISO(Number(account.depositTs)),
+      sinceISO: unixToISO(depositTs),
+      sinceMs: depositTs * 1000,
     };
   } catch {
     onChain = null;
@@ -222,10 +229,14 @@ export async function getCommitmentForUserAndProject(
   const overlay = getDemoPosition(walletStr, projectSlug);
   if (!overlay) return onChain;
   if (!onChain) return overlay;
+  const onChainMs = onChain.sinceMs ?? Date.parse(`${onChain.sinceISO}T00:00:00Z`);
+  const overlayMs = overlay.sinceMs ?? Date.parse(`${overlay.sinceISO}T00:00:00Z`);
+  const earlierMs = Math.min(onChainMs, overlayMs);
   return {
     projectSlug,
     kommittedUSD: onChain.kommittedUSD + overlay.kommittedUSD,
     sinceISO: onChain.sinceISO < overlay.sinceISO ? onChain.sinceISO : overlay.sinceISO,
+    sinceMs: earlierMs,
     pivotedAtISO: onChain.pivotedAtISO ?? overlay.pivotedAtISO,
   };
 }
