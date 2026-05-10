@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
+import { BrutalButton } from "@/components/common/BrutalButton";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
@@ -82,8 +83,13 @@ export function CommitmentRow({
     <>
       <article
         className={cn(
-          "bg-white border-[3px] border-black p-5 grid grid-cols-1 md:grid-cols-[1.2fr_1fr_auto] gap-5 items-center relative",
-          isPivot ? "shadow-brutal-purple" : "shadow-brutal",
+          // Pass-3 layout fix (Option A): two-zone single-row.
+          // Image (shrink-0) | info zone (flex-1 min-w-0, name/pitch/meta) |
+          // right zone (shrink-0, stat above actions, items-end).
+          // Stacks vertically at narrow widths.
+          "bg-white border-[3px] border-black p-5 relative",
+          "flex flex-col md:flex-row md:items-center gap-4 md:gap-6",
+          isPivot ? "shadow-brutal-purple mt-3" : "shadow-brutal",
         )}
       >
         {isPivot ? (
@@ -94,14 +100,16 @@ export function CommitmentRow({
             </span>
           </div>
         ) : null}
-        {/* H5 — project name + image area links to the public page; the
-            inner action buttons stop propagation so withdraw still works. */}
+
+        {/* IMAGE — fixed 64×64. Linked, but the info zone has its own link below
+            so the click target on the name + pitch reads as the same affordance. */}
         <Link
           href={`/projects/${project.slug}`}
-          className="flex items-center gap-4 group"
+          className="shrink-0 group block"
           aria-label={`View ${project.name}`}
+          tabIndex={-1}
         >
-          <div className="w-16 h-16 bg-gray-900 border-[3px] border-black shrink-0 relative overflow-hidden">
+          <div className="w-16 h-16 bg-gray-900 border-[3px] border-black overflow-hidden relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={projectImageUrl(project.imageSeed, 200, 200)}
@@ -112,61 +120,69 @@ export function CommitmentRow({
               {project.name.slice(0, 3).toUpperCase()}
             </span>
           </div>
-          <div>
-            <div className="font-epilogue font-black uppercase text-lg tracking-tight group-hover:underline">
-              {project.name}
-            </div>
-            <div className="text-sm font-medium text-gray-700">{project.pitch}</div>
-            <div className="text-xs text-gray-500 mt-0.5">by {founder.name}</div>
+        </Link>
+
+        {/* INFO ZONE — flex-1 min-w-0 lets the truncate / line-clamp actually
+            kick in instead of pushing the row width past the viewport. */}
+        <Link
+          href={`/projects/${project.slug}`}
+          className="flex-1 min-w-0 group"
+        >
+          <div className="font-epilogue font-black uppercase text-lg tracking-tight truncate group-hover:underline">
+            {project.name}
+          </div>
+          <div className="mt-0.5 text-sm font-medium text-gray-700 line-clamp-1">
+            {project.pitch}
+          </div>
+          <div className="mt-1 text-xs font-medium text-gray-500 truncate">
+            by {founder.name} · since {shortDate(commitment.sinceISO)}
           </div>
         </Link>
-        {/* H2 — kommits as the headline number; committed USD + since date drop to secondary chips. */}
-        <div>
-          <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
-            Kommits
+
+        {/* RIGHT ZONE — stat above actions, both right-aligned at md+,
+            left-aligned (default flex-col) on narrow viewports. */}
+        <div className="shrink-0 flex flex-col md:items-end gap-3">
+          <div className="text-left md:text-right">
+            <div
+              className="font-epilogue font-black text-2xl md:text-3xl tracking-tighter tabular-nums leading-none"
+              aria-live="polite"
+            >
+              {kommitsDisplay}
+            </div>
+            <div className="mt-1 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+              kommits · {moneyLabel} committed
+            </div>
           </div>
-          <div
-            className="mt-1 font-epilogue font-black text-3xl md:text-4xl tracking-tighter tabular-nums"
-            aria-live="polite"
-          >
-            {kommitsDisplay}
+
+          <div className="flex items-center gap-2">
+            {newCount > 0 ? (
+              <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+                {newCount} new
+              </span>
+            ) : null}
+            <BrutalButton
+              size="xs"
+              variant="primary"
+              iconLeft={<Icon name="add" size="xs" />}
+              onClick={() => {
+                if (isVisa) {
+                  router.push(`/visa-demo?project=${project.slug}`);
+                  return;
+                }
+                setCommitOpen(true);
+              }}
+            >
+              Kommit
+            </BrutalButton>
+            <BrutalButton
+              size="xs"
+              variant="outline"
+              iconLeft={<Icon name="remove" size="xs" />}
+              onClick={() => setWithdrawOpen(true)}
+            >
+              {isVisa ? "Withdraw to card" : "Withdraw"}
+            </BrutalButton>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
-              {moneyLabel} committed
-            </span>
-            <span className="inline-block bg-white border-[2px] border-black px-2 py-0.5 shadow-brutal-sm font-epilogue font-black uppercase text-[10px] tracking-widest">
-              Since {shortDate(commitment.sinceISO)}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {newCount > 0 ? (
-            <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
-              {newCount} New
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              if (isVisa) {
-                router.push(`/visa-demo?project=${project.slug}`);
-                return;
-              }
-              setCommitOpen(true);
-            }}
-            className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform inline-flex items-center gap-1.5"
-          >
-            <Icon name="add" size="sm" />
-            Kommit more
-          </button>
-          <button
-            type="button"
-            onClick={() => setWithdrawOpen(true)}
-            className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-xs px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform"
-          >
-            {isVisa ? "Withdraw to card" : "Withdraw"}
-          </button>
         </div>
       </article>
       <CommitModal
