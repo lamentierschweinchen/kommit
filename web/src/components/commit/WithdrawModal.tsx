@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { Modal } from "@/components/common/Modal";
@@ -16,6 +16,8 @@ import { useDemoMode } from "@/lib/demo-mode";
 import { simulateWithdraw } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useVisaMode, formatEUR } from "@/lib/visa-mode";
+import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
+import { getSandboxProjects } from "@/lib/sandbox-projects";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -76,6 +78,20 @@ export function WithdrawModal({
   const { user } = useAuth();
   const router = useRouter();
 
+  // On-chain demo path (real Privy): swap to the sandbox recipient + mint
+  // when the project has a sandbox-projects entry. Mirrors CommitModal's
+  // swap so a position kommitted via /sandbox or the on-chain demo entry
+  // can be withdrawn against the same sandbox-locked escrow.
+  const sandboxMint = useMemo(() => (isDemo ? null : getSandboxMintOrNull()), [
+    isDemo,
+  ]);
+  const sandboxProject = useMemo(() => {
+    if (isDemo) return null;
+    if (!sandboxMint) return null;
+    if (!projectSlug) return null;
+    return getSandboxProjects().find((p) => p.slug === projectSlug) ?? null;
+  }, [isDemo, projectSlug, sandboxMint]);
+
   useEffect(() => {
     if (open) setRaw(presetDecimals[0] ?? "0");
     // presetDecimals derives from committedUSD; depend on that primitive.
@@ -96,7 +112,7 @@ export function WithdrawModal({
   // Display-only values; never feed into TX construction or boundary checks.
   const displayUSD = parseFloat(raw) || 0;
 
-  const isOnChain = !!recipientWallet;
+  const isOnChain = !!recipientWallet || !!sandboxProject;
   const walletReady = isDemo ? !!user?.wallet : !!client;
   const submitDisabled =
     !isOnChain ||
@@ -149,10 +165,16 @@ export function WithdrawModal({
       return;
     }
 
-    if (!client || !recipientWallet || parsedBaseUnits === 0n || overMax) return;
+    if (!client || parsedBaseUnits === 0n || overMax) return;
+    const recipient: PublicKey | null = sandboxProject
+      ? sandboxProject.recipientWallet
+      : recipientWallet
+        ? new PublicKey(recipientWallet)
+        : null;
+    if (!recipient) return;
     setSubmitting(true);
     try {
-      await withdrawFromProject(client, new PublicKey(recipientWallet), raw);
+      await withdrawFromProject(client, recipient, raw, sandboxMint ?? undefined);
       onOpenChange(false);
       setSubmitting(false);
       setTimeout(

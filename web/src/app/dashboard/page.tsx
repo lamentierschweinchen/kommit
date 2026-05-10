@@ -17,6 +17,7 @@ import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommi
 import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance } from "@/lib/demo-engagement";
 import { useVisaMode, formatEUR } from "@/lib/visa-mode";
+import { useSandboxBalance } from "@/lib/hooks/useSandboxBalance";
 import { Icon } from "@/components/common/Icon";
 import { DepositModal } from "@/components/account/DepositModal";
 
@@ -68,15 +69,23 @@ export default function DashboardPage() {
   const liveTotalKommits = useLiveKommitsTotal(commitments);
   const isDemo = useDemoMode();
   const isVisa = useVisaMode();
-  const [availableUSD, setAvailableUSD] = useState<number | null>(null);
+  // In real-Privy mode the available balance is the user's sandbox SPL
+  // balance on devnet (post-/demo on-chain entry, that's the $10K airdrop).
+  // Demo mode keeps reading the localStorage-backed simulated balance.
+  const sandboxBalance = useSandboxBalance(
+    !isDemo && isSignedIn ? user?.wallet ?? null : null,
+    refreshKey,
+  );
+  const [demoBalance, setDemoBalance] = useState<number | null>(null);
   useEffect(() => {
     if (!isSignedIn || !user?.wallet) {
-      setAvailableUSD(null);
+      setDemoBalance(null);
       return;
     }
-    if (isDemo) setAvailableUSD(getDemoBalance(user.wallet));
-    else setAvailableUSD(null); // TODO: live USDC balance via wallet machinery
+    if (isDemo) setDemoBalance(getDemoBalance(user.wallet));
+    else setDemoBalance(null);
   }, [isSignedIn, user?.wallet, isDemo, refreshKey]);
+  const availableUSD = isDemo ? demoBalance : sandboxBalance;
 
   // In visa mode the dashboard reads in EUR. The kommit *score* stays
   // unitless (kommits are kommits), but every dollar amount converts to a
@@ -168,9 +177,7 @@ export default function DashboardPage() {
                 availableUSD !== null
                   ? isVisa
                     ? "settled on-chain · ready to deploy"
-                    : isDemo
-                      ? "ready to deploy"
-                      : "USDC in your wallet"
+                    : "ready to deploy"
                   : "Deposit to fund your kommits"
               }
             />
