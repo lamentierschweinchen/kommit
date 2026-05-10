@@ -16,7 +16,7 @@
  * Solscan tx detail.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -30,6 +30,7 @@ import {
   getSandboxProjects,
   isSandboxProjectsConfigured,
 } from "@/lib/sandbox-projects";
+import { deactivateVisaMode } from "@/lib/visa-mode";
 import { Icon } from "@/components/common/Icon";
 import { SolscanLink } from "@/components/sandbox/SolscanLink";
 import { cn } from "@/lib/cn";
@@ -52,6 +53,15 @@ export default function SandboxOnChainPage() {
   const { user, isSignedIn, signIn } = useAuth();
   const client = useKommitProgram();
   const { confirm, error: toastError } = useToast();
+
+  // The on-chain sandbox runs in USD chrome — visa-mode (EUR) is scoped
+  // strictly to the /visa-demo card-mock flow. A prior visit to
+  // /visa-demo/success leaves `kommit:visa = "1"` in localStorage, which
+  // would otherwise bleed EUR formatting into the dashboard the user
+  // lands on after their on-chain commit (handoff 58 #5).
+  useEffect(() => {
+    deactivateVisaMode();
+  }, []);
 
   // Codex Pass 1 H1 closure: the picker pulls from sandbox-projects.json
   // (fresh on-chain Project PDAs whose escrows are uninitialized at deploy

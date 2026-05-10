@@ -63,7 +63,10 @@ export function ProjectCardSmall({ project }: { project: Project }) {
               value={formatUSD(project.totalKommittedUSD, { compact: true })}
             />
             <SmallStat label="Kommitters" value={formatNumber(project.kommittersCount)} />
-            <SmallStat label="Active" value={shortDate(project.activeSinceISO)} />
+            <SmallStat
+              label={project.recipientWallet ? "Active" : "Launches"}
+              value={shortDate(project.activeSinceISO)}
+            />
           </div>
         </div>
       </article>

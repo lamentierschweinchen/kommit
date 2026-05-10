@@ -420,7 +420,7 @@ const CADENCE: Project = {
     "MasterClass had no follow-through; Cadence is the follow-through.",
   ],
   sector: "Edu",
-  state: "active",
+  state: "just-listed",
   founders: [
     {
       name: "Olivia Brand",
@@ -430,11 +430,12 @@ const CADENCE: Project = {
     },
   ],
   // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
-  // doesn't render "X kommitters" alongside "Launching soon".
+  // doesn't render "X kommitters" alongside "Launching soon". `activeSinceISO`
+  // doubles as the launch date for pre-launch listings (handoff 58 #6).
   kommittersCount: 0,
   totalKommittedUSD: 0,
   totalKommitsGenerated: 0,
-  activeSinceISO: "2026-03-04",
+  activeSinceISO: "2026-06-01",
   imageSeed: "cadence",
   titleSize: "normal",
   updates: [
@@ -456,7 +457,7 @@ const FORGE_HEALTH: Project = {
     "Live in three U.S. health systems. Targeting consumer beta in June.",
   ],
   sector: "Health",
-  state: "active",
+  state: "just-listed",
   founders: [
     {
       name: "Marcus Doyle",
@@ -466,11 +467,12 @@ const FORGE_HEALTH: Project = {
     },
   ],
   // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
-  // doesn't render "X kommitters" alongside "Launching soon".
+  // doesn't render "X kommitters" alongside "Launching soon". `activeSinceISO`
+  // doubles as the launch date for pre-launch listings (handoff 58 #6).
   kommittersCount: 0,
   totalKommittedUSD: 0,
   totalKommitsGenerated: 0,
-  activeSinceISO: "2026-03-19",
+  activeSinceISO: "2026-06-15",
   imageSeed: "forge",
   titleSize: "tight",
   updates: [
@@ -492,7 +494,7 @@ const VERITY_BOOKS: Project = {
     "Targeting the 1.7M annual self-publishers who aren't getting served by enterprise royalty software.",
   ],
   sector: "Media",
-  state: "active",
+  state: "just-listed",
   founders: [
     {
       name: "Hannah Park",
@@ -502,11 +504,12 @@ const VERITY_BOOKS: Project = {
     },
   ],
   // Pre-launch (no recipientWallet) — cohort counters stay zero so the page
-  // doesn't render "X kommitters" alongside "Launching soon".
+  // doesn't render "X kommitters" alongside "Launching soon". `activeSinceISO`
+  // doubles as the launch date for pre-launch listings (handoff 58 #6).
   kommittersCount: 0,
   totalKommittedUSD: 0,
   totalKommitsGenerated: 0,
-  activeSinceISO: "2026-04-21",
+  activeSinceISO: "2026-06-22",
   imageSeed: "verity",
   titleSize: "tight",
   updates: [

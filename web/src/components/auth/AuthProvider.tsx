@@ -149,33 +149,60 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 const DEFAULT_MOCK_USER_ID = "lukas";
 
 function MockAuthProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(DEFAULT_MOCK_USER_ID);
-  const [activeRole, setActiveRole] = useState<Role>("kommitter");
-
-  // Hydrate from `?as=` query (deep links) OR localStorage (set by the
-  // /demo entry page or by switchUser → setStoredPersonaId). Query wins
-  // when both are present so `?as=julian` always overrides a saved Lukas.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const as = params.get("as");
-    if (as === "anon") {
-      setUserId(null);
-      setStoredPersonaId(null);
-      return;
-    }
-    if (as && USERS[as]) {
-      setUserId(as);
-      const u = USERS[as];
-      setActiveRole(u.role === "founder" ? "founder" : "kommitter");
-      setStoredPersonaId(as);
-      return;
+  // Read persona from localStorage synchronously in the useState initializer
+  // so the FIRST render is correct (handoff 58 #2). The previous shape —
+  // initialise to lukas, then re-set in a useEffect — left every fresh mount
+  // (e.g. when DemoControls switches persona and routes to /founder/<slug>,
+  // re-mounting the AuthProvider tree under a new layout) flashing the
+  // default persona before the effect fired. Result: "Lukas appeared first"
+  // even after clicking Julian. Reading from storage in the initializer
+  // races nothing — by the time MockAuthProvider mounts, the demo flag is
+  // already set, which means localStorage is reachable and the persona key
+  // has been written.
+  //
+  // The MockAuthProvider only ever mounts under `<Providers ssr:false>`
+  // (see ProvidersMount), so this initializer never runs on the server —
+  // there's no hydration mismatch to guard against.
+  const initialPersonaId = (() => {
+    if (typeof window === "undefined") return DEFAULT_MOCK_USER_ID;
+    // ?as=<id> in the URL beats stored persona for deep-link entries.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const as = params.get("as");
+      if (as === "anon") return null;
+      if (as && USERS[as]) return as;
+    } catch {
+      /* fallthrough */
     }
     const stored = getStoredPersonaId();
-    if (stored && USERS[stored]) {
-      setUserId(stored);
-      const u = USERS[stored];
-      setActiveRole(u.role === "founder" ? "founder" : "kommitter");
+    if (stored && USERS[stored]) return stored;
+    return DEFAULT_MOCK_USER_ID;
+  })();
+  const initialRole: Role = initialPersonaId
+    ? USERS[initialPersonaId]?.role === "founder"
+      ? "founder"
+      : "kommitter"
+    : "anon";
+
+  const [userId, setUserId] = useState<string | null>(initialPersonaId);
+  const [activeRole, setActiveRole] = useState<Role>(initialRole);
+
+  // Persist the resolved persona on first mount so a deep-link entry
+  // (`?as=julian`) carries through subsequent navigations. Storage is
+  // already correct for the localStorage-only path, so this is a no-op
+  // in the common case.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const as = params.get("as");
+      if (as === "anon") {
+        setStoredPersonaId(null);
+      } else if (as && USERS[as]) {
+        setStoredPersonaId(as);
+      }
+    } catch {
+      /* non-fatal */
     }
   }, []);
 

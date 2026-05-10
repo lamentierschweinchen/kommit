@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PublicKey } from "@solana/web3.js";
 import { useRouter, useSearchParams } from "next/navigation";
 import { activateDemoMode, deactivateDemoMode, useDemoMode } from "@/lib/demo-mode";
+import { deactivateVisaMode } from "@/lib/visa-mode";
 import { clearDemoEngagement, seedDemoCohort } from "@/lib/demo-engagement";
 import { findProjectPda } from "@/lib/kommit";
 import { USERS, avatarUrl } from "@/lib/data/users";
@@ -79,6 +80,12 @@ function DemoEntry() {
   const enterAs = (personaId: string | null) => {
     if (typeof window === "undefined") return;
     setPickedPersona(personaId);
+    // Persona-demo always runs in USD chrome; visa-mode is scoped strictly
+    // to the /visa-demo card-mock flow. Without this clear, a prior
+    // /visa-demo/success visit (which sets `kommit:visa = "1"`) leaves the
+    // EUR chrome bleeding into the persona-demo dashboard the next time
+    // someone enters via /demo. Handoff 58 #5.
+    deactivateVisaMode();
     activateDemoMode(personaId ?? undefined);
     // Idempotent seed — populates Lukas's portfolio + every project's update
     // history into demo-engagement state so reactions/comments work on

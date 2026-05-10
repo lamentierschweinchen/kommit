@@ -309,6 +309,26 @@ function writeAllPositions(all: Record<string, Record<string, StoredPosition>>) 
 }
 
 /**
+ * Notify same-tab listeners that the positions store changed. Browsers
+ * only fire `storage` events to OTHER tabs, so a kommit in this tab
+ * leaves components like the project page's KommittersList and
+ * UpdatesPanel reading stale data until reload. Dispatching a synthetic
+ * StorageEvent on the positions key lets those listeners re-fetch
+ * without coupling them to the commit modal's onSuccess callback.
+ */
+function notifyPositionsChanged() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new StorageEvent("storage", { key: KEY_POSITIONS }));
+  } catch {
+    /* non-fatal */
+  }
+}
+
+/** Storage key clients can watch to react to position mutations. */
+export const DEMO_POSITIONS_STORAGE_KEY = KEY_POSITIONS;
+
+/**
  * Read the demo-mode positions for a wallet. Returned shape matches the
  * `Commitment` rows the dashboard already consumes, so swapping this in for
  * the on-chain read in queries.ts is a one-line change.
@@ -343,9 +363,19 @@ export function getDemoPosition(
 }
 
 /**
- * Simulate a kommit. Tops up an existing position (preserving sinceISO so
- * the lifetime kommit accrual isn't reset) or creates a new one. Debits the
- * persona's available USDC balance.
+ * Simulate a kommit. Tops up an existing position (preserving accrued
+ * kommits via a weighted re-derivation of `sinceMs`, see below) or creates
+ * a new one. Debits the persona's available USDC balance.
+ *
+ * Top-up math (handoff 58 #1): naively summing kommittedUSD while keeping
+ * the original `sinceISO/sinceMs` retroactively reattributes the new
+ * principal to the original commit time, producing a massive jump in the
+ * live-ticker (`newUSD × oldHours` instead of `oldUSD × oldHours +
+ * newUSD × 0h`). Solution: re-derive `sinceMs` so the existing accrued
+ * kommits stay invariant — the new principal then accrues from "now".
+ *   oldKommits = oldUSD × (now - oldSinceMs) / hourMs
+ *   newSinceMs = now - (oldKommits × hourMs) / newUSD
+ * The `sinceISO` legacy field is rebuilt from `newSinceMs`.
  */
 export function simulateCommit(args: {
   wallet: string;
@@ -369,7 +399,20 @@ export function simulateCommit(args: {
   if (!all[wallet]) all[wallet] = {};
   const existing = all[wallet][projectSlug];
   if (existing) {
-    existing.kommittedUSD = round2(existing.kommittedUSD + principalUSD);
+    const now = Date.now();
+    const HOUR_MS = 3_600_000;
+    const oldSinceMs =
+      existing.sinceMs ?? new Date(`${existing.sinceISO}T00:00:00Z`).getTime();
+    const oldKommits = Math.max(
+      0,
+      existing.kommittedUSD * ((now - oldSinceMs) / HOUR_MS),
+    );
+    const newUSD = round2(existing.kommittedUSD + principalUSD);
+    const newSinceMs =
+      newUSD > 0 ? now - (oldKommits * HOUR_MS) / newUSD : now;
+    existing.kommittedUSD = newUSD;
+    existing.sinceMs = newSinceMs;
+    existing.sinceISO = new Date(newSinceMs).toISOString().slice(0, 10);
   } else {
     all[wallet][projectSlug] = {
       kommittedUSD: round2(principalUSD),
@@ -380,6 +423,7 @@ export function simulateCommit(args: {
   writeAllPositions(all);
   setDemoBalance(wallet, getDemoBalance(wallet) - principalUSD);
   appendDemoActivity({ kind: "commit", wallet, projectSlug, amountUSD: principalUSD });
+  notifyPositionsChanged();
   const pos = all[wallet][projectSlug];
   return {
     projectSlug,
@@ -418,6 +462,7 @@ export function simulateWithdraw(args: {
   writeAllPositions(all);
   setDemoBalance(wallet, getDemoBalance(wallet) + amountUSD);
   appendDemoActivity({ kind: "withdraw", wallet, projectSlug, amountUSD });
+  notifyPositionsChanged();
   return next > 0
     ? {
         projectSlug,

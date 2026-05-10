@@ -8,6 +8,7 @@ import { UpdateComments } from "@/components/project/UpdateComments";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getCommitmentForUserAndProject } from "@/lib/queries";
 import { authedFetch } from "@/lib/api-client";
+import { DEMO_POSITIONS_STORAGE_KEY } from "@/lib/demo-engagement";
 import type { RemoteUpdate } from "@/lib/api-types";
 
 /**
@@ -39,6 +40,22 @@ export function UpdatesPanel({
   const [updates, setUpdates] = useState<RemoteUpdate[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [isKommitter, setIsKommitter] = useState(false);
+  // Bumped on synthetic storage events from `simulateCommit` /
+  // `simulateWithdraw`, forcing the kommitter-of-this-project effect
+  // to re-fire so the comment + reaction gates flip the moment the
+  // demo modal closes (handoff 58 #4). Without this the kommit lands
+  // in localStorage but the gate stays "Kommit to comment" until reload.
+  const [positionsTick, setPositionsTick] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === DEMO_POSITIONS_STORAGE_KEY || e.key === null) {
+        setPositionsTick((t) => t + 1);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Resolve kommitter-of-this-project state for the sybil gate UX.
   useEffect(() => {
@@ -57,7 +74,7 @@ export function UpdatesPanel({
     return () => {
       cancelled = true;
     };
-  }, [isSignedIn, user?.wallet, projectSlug]);
+  }, [isSignedIn, user?.wallet, projectSlug, positionsTick]);
 
   useEffect(() => {
     if (!projectPda) return;
