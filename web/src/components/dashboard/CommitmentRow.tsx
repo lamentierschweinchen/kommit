@@ -180,7 +180,7 @@ export function CommitmentRow({
               iconLeft={<Icon name="remove" size="xs" />}
               onClick={() => setWithdrawOpen(true)}
             >
-              {isVisa ? "Withdraw to card" : "Withdraw"}
+              Withdraw
             </BrutalButton>
           </div>
         </div>

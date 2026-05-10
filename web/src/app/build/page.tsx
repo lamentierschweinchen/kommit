@@ -186,11 +186,11 @@ function FounderPitchBox() {
     },
     {
       title: "Signal you can trust",
-      body: "Kommitters paid opportunity cost in real money over real time to back you. Read the count and learn something true — not opinion volume.",
+      body: "Kommitters back you with real money over real time. Read the count and learn something true — not opinion volume.",
     },
     {
-      title: "No platform fee on the round",
-      body: "Yield earned on parked capital funds the platform. We don't take 7-9% when your round closes.",
+      title: "Your round is yours",
+      body: "Zero platform cut when you raise. No carry, no success fee, no fine print.",
     },
     {
       title: "First-dibs cohort, earned through patience",

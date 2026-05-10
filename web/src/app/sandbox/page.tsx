@@ -33,7 +33,7 @@ export default function SandboxLandingPage() {
             kicker="Path A · On-chain"
             heading="Fund on-chain (devnet)"
             blurb="Real signed transactions, Solscan-traceable, no card needed."
-            helper="$100 of devnet test funds + gas dropped to your wallet, then sign a real Anchor commit."
+            helper="$10,000 of devnet test funds + gas dropped to your wallet, then sign a real Anchor commit."
             cta="Try the on-chain flow"
             href="/sandbox/onchain"
             accent="primary"

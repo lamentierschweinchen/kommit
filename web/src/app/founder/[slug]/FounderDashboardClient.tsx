@@ -409,70 +409,10 @@ function OnChainCohortSection({
         />
       </div>
 
-      {!projectPda ? (
-        <OnChainCohortNotice
-          title="Project not yet on-chain"
-          body="The recipient wallet for this project hasn't been published on devnet — once it does, your backers will flow in here automatically."
-        />
-      ) : loading ? (
-        <OnChainCohortNotice
-          title="Loading…"
-          body="Reading the latest backer list from devnet."
-        />
-      ) : error ? (
-        <OnChainCohortNotice
-          title="Read failed"
-          body={`Could not load backers: ${error}.`}
-          tone="warn"
-        />
-      ) : records && records.length > 0 ? (
+      {records && records.length > 0 ? (
         <OnChainCohortTable records={records} />
-      ) : (
-        <OnChainCohortNotice
-          title="No backers yet"
-          body="Your backer list will populate here as kommits land on devnet."
-        />
-      )}
-
-      <p className="mt-6 font-epilogue font-medium text-[11px] text-gray-500 tracking-tight max-w-2xl">
-        Pulled live from devnet via the open-source{" "}
-        <a
-          href="https://github.com/lamentierschweinchen/kommit/tree/main/app/packages/kommit-reader"
-          target="_blank"
-          rel="noreferrer"
-          className="underline underline-offset-2 hover:text-black"
-        >
-          @kommitapp/reader
-        </a>{" "}
-        SDK — any Solana product can read the same cohort the same way.
-      </p>
+      ) : null}
     </section>
-  );
-}
-
-function OnChainCohortNotice({
-  title,
-  body,
-  tone,
-}: {
-  title: string;
-  body: string;
-  tone?: "warn";
-}) {
-  return (
-    <div
-      className={cn(
-        "border-[3px] border-black p-6 max-w-3xl",
-        tone === "warn" ? "bg-secondary" : "bg-white",
-      )}
-    >
-      <h3 className="font-epilogue font-black uppercase text-base md:text-lg tracking-tight">
-        {title}
-      </h3>
-      <p className="mt-2 font-medium text-sm text-gray-700 leading-relaxed">
-        {body}
-      </p>
-    </div>
   );
 }
 
