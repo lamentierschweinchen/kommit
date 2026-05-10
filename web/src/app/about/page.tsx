@@ -22,40 +22,31 @@ export default function AboutPage() {
       <AuthHeader />
       <main className="flex-1 px-6 md:px-12 pb-32">
         <div className="max-w-5xl mx-auto">
-          {/* Hero one-liner — small, top, single line. Sets the page's
-              signature and gets out of the way. The headline of the page is
-              the numbered list below, not this. */}
-          <section className="pt-16 md:pt-24">
-            <h1 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tight leading-tight">
-              Kommit turns{" "}
-              <span className="inline-block bg-black text-white px-2 py-0.5 border-[3px] border-black shadow-brutal-purple-sm">
-                conviction
-              </span>{" "}
-              into currency.
-            </h1>
-          </section>
-
           {/* The numbered list — the entire visual product of the page.
-              Three struck-out old ways, then 04 alive. Same row shape across
+              Three struck-out options, then 04 alive. Same row shape across
               all four; the difference between "old" and "new" is carried by
-              strikethrough vs. green fill, not by separate sections. */}
-          <section className="mt-20 md:mt-28">
+              strikethrough vs. green fill, not by separate sections. The
+              eyebrow reads in the present tense ("you need to") because the
+              strikethrough does the "used to" work — the reader sees three
+              dead options and one live one. */}
+          <section className="pt-20 md:pt-28">
             <p className="font-epilogue font-bold uppercase tracking-widest text-sm md:text-base text-gray-600 mb-10 md:mb-14">
-              To be early, you used to need to:
+              To be early, you need to:
             </p>
 
             <ul className="space-y-7 md:space-y-9">
               <StruckOption num="01">Be rich.</StruckOption>
               <StruckOption num="02">Be lucky.</StruckOption>
-              <StruckOption num="03">Be willing to lose your money.</StruckOption>
+              <StruckOption num="03">Risk your money.</StruckOption>
             </ul>
 
             {/* Row 04 — the answer. Same horizontal alignment as 01/02/03
                 (numeral column + content column), but no strikethrough and
-                fills with the brand green. The Kommit line is the heading;
-                the supporting line is the body; the four perk chips define
-                "Get rewarded"; the CTAs close the block. Everything that
-                used to live across three different sections lives here. */}
+                fills with the brand green. The single line "Kommit: turn
+                conviction into currency." is both the brand promise and the
+                punchline — it doubles as the page's hero (no separate hero
+                section), and the four perk chips below define what "currency"
+                actually means. */}
             <div className="mt-10 md:mt-12">
               <div className="bg-secondary border-[3px] border-black shadow-brutal-lg p-6 md:p-10">
                 <div className="flex items-baseline gap-5 md:gap-7">
@@ -66,13 +57,11 @@ export default function AboutPage() {
                     04
                   </span>
                   <p className="font-epilogue font-black uppercase text-2xl md:text-4xl lg:text-5xl tracking-tighter leading-tight">
-                    Kommit.
+                    Kommit:
+                    <br />
+                    turn conviction into currency.
                   </p>
                 </div>
-
-                <p className="mt-5 md:mt-6 ml-[4.75rem] md:ml-[7.75rem] font-epilogue font-bold uppercase text-lg md:text-2xl tracking-tight leading-snug">
-                  Back early. Keep your money. Get rewarded.
-                </p>
 
                 {/* Four perk chips — evidence of "Get rewarded." Smaller
                     than tile-scale on purpose: subordinate to 04, not a
