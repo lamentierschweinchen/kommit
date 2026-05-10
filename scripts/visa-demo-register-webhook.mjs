@@ -7,12 +7,24 @@
  * shared token returned at registration time. This script creates the
  * registration and prints the `sharedToken` for `HELIO_WEBHOOK_SHARED_TOKEN`.
  *
+ * MoonPay Commerce auth model is two-key: the public API key (the dotted
+ * JWT visible in the dashboard's "Public API Key" field) goes in the
+ * `?apiKey=` query parameter as the merchant identifier, and the secret
+ * API key (the `+`-separated value in the "Secret API Key" field) goes in
+ * the `Authorization: Bearer …` header as the actual credential. Both are
+ * required for /v1/webhook/* endpoints.
+ *
  * Usage:
  *
- *   HELIO_API_KEY=<your-jwt> \
+ *   HELIO_PUBLIC_API_KEY=<dotted-jwt> \
+ *     HELIO_SECRET_API_KEY=<plus-separated-secret> \
  *     HELIO_PAYMENT_REQUEST_ID=<paylink-id> \
  *     WEBHOOK_TARGET_URL=https://kommit.now/api/visa-demo/webhook \
  *     node app/scripts/visa-demo-register-webhook.mjs
+ *
+ * Backward compat: legacy HELIO_API_KEY is still accepted as a fallback for
+ * HELIO_PUBLIC_API_KEY (the prior single-key shape that worked for
+ * /v1/paylink/create/api-key).
  *
  * The target URL must be reachable from the public internet. For local
  * dev, expose your dev server via ngrok / Cloudflare Tunnel and pass that
@@ -25,12 +37,23 @@
 
 const HELIO_BASE_URL =
   process.env.HELIO_BASE_URL?.trim() || "https://api.dev.hel.io";
-const HELIO_API_KEY = process.env.HELIO_API_KEY?.trim();
+const HELIO_PUBLIC_API_KEY =
+  process.env.HELIO_PUBLIC_API_KEY?.trim() ||
+  process.env.HELIO_API_KEY?.trim();
+const HELIO_SECRET_API_KEY = process.env.HELIO_SECRET_API_KEY?.trim();
 const HELIO_PAYMENT_REQUEST_ID = process.env.HELIO_PAYMENT_REQUEST_ID?.trim();
 const WEBHOOK_TARGET_URL = process.env.WEBHOOK_TARGET_URL?.trim();
 
-if (!HELIO_API_KEY) {
-  console.error("HELIO_API_KEY not set");
+if (!HELIO_PUBLIC_API_KEY) {
+  console.error(
+    "HELIO_PUBLIC_API_KEY (or legacy HELIO_API_KEY) not set — the dotted JWT from the dashboard's 'Public API Key' field",
+  );
+  process.exit(1);
+}
+if (!HELIO_SECRET_API_KEY) {
+  console.error(
+    "HELIO_SECRET_API_KEY not set — the '+'-separated value from the dashboard's 'Secret API Key' field",
+  );
   process.exit(1);
 }
 if (!HELIO_PAYMENT_REQUEST_ID) {
@@ -47,7 +70,7 @@ if (!WEBHOOK_TARGET_URL) {
 }
 
 const url = `${HELIO_BASE_URL}/v1/webhook/paylink/transaction?apiKey=${encodeURIComponent(
-  HELIO_API_KEY,
+  HELIO_PUBLIC_API_KEY,
 )}`;
 
 const body = {
@@ -59,7 +82,7 @@ const body = {
 const res = await fetch(url, {
   method: "POST",
   headers: {
-    Authorization: `Bearer ${HELIO_API_KEY}`,
+    Authorization: `Bearer ${HELIO_SECRET_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify(body),
