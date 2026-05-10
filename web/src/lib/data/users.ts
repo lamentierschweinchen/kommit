@@ -1,5 +1,17 @@
 export type Role = "kommitter" | "founder" | "anon";
 
+/**
+ * Social account URLs for a user. Same shape as `Founder.socials` on
+ * `data/projects.ts` so a single render component can take either. Empty
+ * keys/objects are treated as "not set"; the renderer hides sections with
+ * no entries.
+ */
+export type SocialLinks = {
+  linkedin?: string;
+  twitter?: string;
+  website?: string;
+};
+
 export type User = {
   id: string;
   displayName: string;
@@ -9,6 +21,10 @@ export type User = {
   wallet: string;
   /** Slug of the project this user owns (founder only) */
   ownsProject?: string;
+  /** Public-profile blurb shown on /account and on founder cards. */
+  bio?: string;
+  /** Public-profile social URLs. Render hides any missing entries. */
+  socials?: SocialLinks;
 };
 
 // Mock wallets are real-format base58 32-byte Solana pubkeys (44 chars) so
@@ -24,6 +40,12 @@ export const USERS: Record<string, User> = {
     avatarSeed: 68,
     email: "lukas@example.com",
     wallet: "VTg41QkSp7K44RmDgerBgWxqnm2ySjcN7qCytkxhgAa",
+    bio: "Building Kommit. Backing climate + bio. Reading more than I write.",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/lukasseel",
+      twitter: "https://twitter.com/lukasseel",
+      website: "https://kommit.now",
+    },
   },
   julian: {
     id: "julian",
@@ -33,6 +55,12 @@ export const USERS: Record<string, User> = {
     email: "julian@caldera.io",
     wallet: "CYzMs8zagf6jaanndLkR1Lv6h3x8nzAnoACGQfyBKMTF",
     ownsProject: "caldera",
+    bio: "Heat-pump engineer turned founder. Building Caldera so commercial buildings can decarbonise without shutting down.",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/julianvance",
+      twitter: "https://twitter.com/julianvance",
+      website: "https://caldera.energy",
+    },
   },
   sara: {
     id: "sara",
@@ -41,6 +69,10 @@ export const USERS: Record<string, User> = {
     avatarSeed: 32,
     email: "sara@example.com",
     wallet: "HjTDMvHr3tuyoBuQweq4zoJjY1E5zNfJbt9ncgQujJoq",
+    bio: "Backing teams that ship physical things. Patience > pitches.",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/sarachen",
+    },
   },
 };
 

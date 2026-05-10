@@ -8,12 +8,14 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ExportKeyModal } from "@/components/account/ExportKeyModal";
 import { StubModal } from "@/components/account/StubModal";
 import { DepositModal } from "@/components/account/DepositModal";
+import { SignInMethods } from "@/components/account/SignInMethods";
+import { AboutMeSection } from "@/components/account/AboutMeSection";
+import { RecentActivity } from "@/components/account/RecentActivity";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useToast } from "@/components/common/ToastProvider";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
-import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 import { truncateAddress } from "@/lib/wallet-display";
 import { useVisaMode } from "@/lib/visa-mode";
 
@@ -27,7 +29,6 @@ export default function AccountPage() {
   const [depositOpen, setDepositOpen] = useState(false);
   const [changeNameOpen, setChangeNameOpen] = useState(false);
   const [changeEmailOpen, setChangeEmailOpen] = useState(false);
-  const [addMethodOpen, setAddMethodOpen] = useState(false);
   const [connectWalletOpen, setConnectWalletOpen] = useState(false);
 
   const handleSignOut = () => {
@@ -116,28 +117,19 @@ export default function AccountPage() {
               />
             )}
 
-            {/* Sign-in methods — audit fix #12: status pill treatment */}
-            <article className="bg-white border-[3px] border-black shadow-brutal p-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-center">
-              <div>
-                <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
-                  Sign-in methods
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <StatusPill icon="mail" label="Email" />
-                  <StatusPill customGlyph={<GoogleGlyph />} label="Google" />
-                  <StatusPill icon="fingerprint" label="Touch ID" />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAddMethodOpen(true)}
-                className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm px-5 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2"
-              >
-                <Icon name="add" size="sm" />
-                Add method
-              </button>
-            </article>
+            <SignInMethods />
+
+            <AboutMeSection />
           </section>
+
+          {user?.wallet ? (
+            <section className="mt-20 pt-10 border-t-[8px] border-black max-w-3xl">
+              <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+                Recent activity
+              </h2>
+              <RecentActivity wallet={user.wallet} />
+            </section>
+          ) : null}
 
           {!isVisa ? (
           <section className="mt-20 pt-10 border-t-[8px] border-black max-w-3xl">
@@ -229,14 +221,6 @@ export default function AccountPage() {
         successCopy="Confirmation sent. Click the link in your inbox."
       />
       <StubModal
-        open={addMethodOpen}
-        onOpenChange={setAddMethodOpen}
-        title="Add sign-in method"
-        fieldLabel="Method (email, social, passkey)"
-        submitLabel="Add"
-        successCopy="Method added."
-      />
-      <StubModal
         open={connectWalletOpen}
         onOpenChange={setConnectWalletOpen}
         title="Connect external wallet"
@@ -300,24 +284,3 @@ function Row({
   );
 }
 
-/**
- * Audit fix #12: status pill — drops the brutal-button shadow, keeps 2px border,
- * green bg, green-on-black filled check glyph. Reads as "✓ connected" not "click me".
- */
-function StatusPill({
-  icon,
-  label,
-  customGlyph,
-}: {
-  icon?: IconName;
-  label: string;
-  customGlyph?: React.ReactNode;
-}) {
-  return (
-    <span className="inline-flex items-center gap-2 bg-secondary border-[2px] border-black px-3 py-1.5 font-epilogue font-black uppercase text-xs tracking-tight">
-      {customGlyph ?? (icon ? <Icon name={icon} size="sm" /> : null)}
-      {label}
-      <Icon name="check" size="sm" className="ml-0.5 bg-black text-secondary w-5 h-5 p-0.5" />
-    </span>
-  );
-}
