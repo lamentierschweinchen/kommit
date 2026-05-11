@@ -27,6 +27,7 @@
 
 import type { RemoteComment, RemoteUpdate } from "@/lib/api-types";
 import type { Commitment } from "@/lib/data/commitments";
+import { getProject } from "@/lib/data/projects";
 import { isDemoFrozen } from "@/lib/demo-mode";
 
 const NS = "demo:v1:";
@@ -58,6 +59,13 @@ type StoredPosition = {
    *  before this field was introduced; the hook falls back to `sinceISO`. */
   sinceMs?: number;
   pivotedAtISO?: string;
+  /** Handoff 65 B2: a full withdraw zeroes `kommittedUSD` but keeps the row
+   *  with `withdrawnAtMs` set so the dashboard renders a "WITHDRAWN" tile
+   *  with the kommit count frozen at this moment. */
+  withdrawnAtMs?: number;
+  /** Lifetime kommits snapshot at the moment the position froze (full
+   *  withdraw). Live ticking stops; the dashboard sum holds steady. */
+  frozenKommits?: number;
 };
 
 function readStore<T>(key: string, fallback: T): T {
@@ -336,6 +344,13 @@ function notifyPositionsChanged() {
 /** Storage key clients can watch to react to position mutations. */
 export const DEMO_POSITIONS_STORAGE_KEY = KEY_POSITIONS;
 
+/** Storage key flipped to "1" the first time the engagement seed completes
+ *  (reactions + comments for pivot/graduation updates). Clients listen on
+ *  `storage` events for this key to refetch after the seed lands — handoff
+ *  65 B3 fixes the race where UpdateComments mounted before the seed wrote
+ *  its 6 quire-chess pivot comments. */
+export const DEMO_ENGAGEMENT_SEEDED_KEY = KEY_ENGAGEMENT_SEEDED;
+
 /**
  * Read the demo-mode positions for a wallet. Returned shape matches the
  * `Commitment` rows the dashboard already consumes, so swapping this in for
@@ -344,13 +359,21 @@ export const DEMO_POSITIONS_STORAGE_KEY = KEY_POSITIONS;
 export function getDemoPositions(wallet: string): Commitment[] {
   if (!wallet) return [];
   const byWallet = readAllPositions()[wallet] ?? {};
-  return Object.entries(byWallet).map(([projectSlug, p]) => ({
+  return Object.entries(byWallet).map(([projectSlug, p]) =>
+    toCommitment(projectSlug, p),
+  );
+}
+
+function toCommitment(projectSlug: string, p: StoredPosition): Commitment {
+  return {
     projectSlug,
     kommittedUSD: p.kommittedUSD,
     sinceISO: p.sinceISO,
     ...(p.sinceMs ? { sinceMs: p.sinceMs } : {}),
     ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
-  }));
+    ...(p.withdrawnAtMs ? { withdrawnAtMs: p.withdrawnAtMs } : {}),
+    ...(p.frozenKommits != null ? { frozenKommits: p.frozenKommits } : {}),
+  };
 }
 
 /** Single-position lookup for the project detail page's UserPositionCard. */
@@ -361,13 +384,7 @@ export function getDemoPosition(
   if (!wallet) return null;
   const p = readAllPositions()[wallet]?.[projectSlug];
   if (!p) return null;
-  return {
-    projectSlug,
-    kommittedUSD: p.kommittedUSD,
-    sinceISO: p.sinceISO,
-    ...(p.sinceMs ? { sinceMs: p.sinceMs } : {}),
-    ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
-  };
+  return toCommitment(projectSlug, p);
 }
 
 /**
@@ -478,8 +495,32 @@ export function simulateWithdraw(args: {
   if (!pos) return null;
   const next = round2(Math.max(0, pos.kommittedUSD - amountUSD));
   if (next <= 0) {
-    delete all[wallet][projectSlug];
-    if (Object.keys(all[wallet]).length === 0) delete all[wallet];
+    // Handoff 65 B2: "soulbound, yours forever". Don't delete the row on a
+    // full withdraw — keep it at $0 with a frozen kommit snapshot so the
+    // dashboard renders a "WITHDRAWN" tile and the lifetime stat doesn't
+    // regress.
+    const now = Date.now();
+    const HOUR_MS = 3_600_000;
+    const sinceMs =
+      pos.sinceMs ?? new Date(`${pos.sinceISO}T00:00:00Z`).getTime();
+    // If the project is already graduated, accrual froze earlier — cap the
+    // snapshot at the graduation moment so a late withdraw doesn't credit
+    // post-graduation hours.
+    const gradISO = getProject(projectSlug)?.graduatedAtISO;
+    const gradMs = gradISO
+      ? new Date(`${gradISO}T00:00:00Z`).getTime()
+      : null;
+    const capMs = gradMs ? Math.min(now, gradMs) : now;
+    const accruedKommits = Math.max(
+      0,
+      pos.kommittedUSD * ((capMs - sinceMs) / HOUR_MS),
+    );
+    const frozenKommits = round2(
+      (pos.frozenKommits ?? 0) + accruedKommits,
+    );
+    pos.kommittedUSD = 0;
+    pos.withdrawnAtMs = now;
+    pos.frozenKommits = frozenKommits;
   } else {
     pos.kommittedUSD = next;
   }
@@ -487,14 +528,7 @@ export function simulateWithdraw(args: {
   setDemoBalance(wallet, getDemoBalance(wallet) + amountUSD);
   appendDemoActivity({ kind: "withdraw", wallet, projectSlug, amountUSD });
   notifyPositionsChanged();
-  return next > 0
-    ? {
-        projectSlug,
-        kommittedUSD: next,
-        sinceISO: pos.sinceISO,
-        ...(pos.sinceMs ? { sinceMs: pos.sinceMs } : {}),
-      }
-    : null;
+  return toCommitment(projectSlug, pos);
 }
 
 // ---- Balances --------------------------------------------------------------
@@ -740,6 +774,13 @@ export function seedDemoCohort(args: {
     writeAllComments(allComments);
     try {
       window.localStorage.setItem(KEY_ENGAGEMENT_SEEDED, "1");
+      // Browsers fire `storage` events only to OTHER tabs — dispatch a
+      // synthetic one in this tab so components that mounted before the
+      // seed (handoff 65 B3: UpdateComments on the quire-chess pivot)
+      // can refetch and surface the just-written seeded comments.
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: KEY_ENGAGEMENT_SEEDED }),
+      );
     } catch {
       /* non-fatal */
     }

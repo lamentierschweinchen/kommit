@@ -80,6 +80,7 @@ export function UpdateReactions({
   initialMine,
   canReact,
   disabledReason,
+  staticHint,
 }: {
   updateId: string;
   initialCounts: Record<string, number>;
@@ -89,6 +90,11 @@ export function UpdateReactions({
   initialMine: Set<ReactionToken>;
   canReact: boolean;
   disabledReason?: string;
+  /** Static catalog hint (handoff 65 B1). When the update is rendered via
+   *  `SeedUpdateRow` and isn't yet in Supabase, this lets the real-Privy
+   *  reactions route lazy-upsert the parent update before the reaction
+   *  insert. Demo mode ignores it (demoFetch matches on path, not query). */
+  staticHint?: { slug: string; atISO: string };
 }) {
   const { user, isSignedIn } = useAuth();
   const { error } = useToast();
@@ -120,7 +126,10 @@ export function UpdateReactions({
     persistMine(updateId, nextMine);
 
     try {
-      const res = await authedFetch(`/api/updates/${updateId}/reactions`, {
+      const hintQS = staticHint
+        ? `?slug=${encodeURIComponent(staticHint.slug)}&atISO=${encodeURIComponent(staticHint.atISO)}`
+        : "";
+      const res = await authedFetch(`/api/updates/${updateId}/reactions${hintQS}`, {
         method: wasActive ? "DELETE" : "POST",
         body: JSON.stringify({ emoji: token }),
         mockWallet: user?.wallet ?? null,

@@ -16,6 +16,7 @@ import { z } from "zod";
 import { requireCallerWallet } from "@/lib/auth-server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
+import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
 
 export const runtime = "nodejs";
 
@@ -51,7 +52,7 @@ export async function POST(
   const sb = getSupabaseAdminClient();
 
   // 1. Parent update lookup → project_pda for the sybil gate.
-  const { data: update, error: updateErr } = await sb
+  const { data: existing, error: updateErr } = await sb
     .from("project_updates")
     .select("id, project_pda")
     .eq("id", updateId)
@@ -62,6 +63,20 @@ export async function POST(
       { status: 500 },
     );
   }
+
+  // Lazy-upsert path (handoff 65 B1): static catalog updates from
+  // `projects.ts` are rendered with a hash-derived id but never written to
+  // Supabase. When the row is missing AND the client passed slug+atISO hints
+  // on the URL, promote the parent update into project_updates so the
+  // FK-bearing comment insert can proceed.
+  let update = existing;
+  if (!update) {
+    update = await lazyUpsertStaticUpdate(sb, updateId, {
+      slug: req.nextUrl.searchParams.get("slug"),
+      atISO: req.nextUrl.searchParams.get("atISO"),
+    });
+  }
+
   if (!update) {
     return NextResponse.json({ error: "update-not-found" }, { status: 404 });
   }

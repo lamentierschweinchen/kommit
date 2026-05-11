@@ -28,6 +28,13 @@ export function useLiveKommits(
   usdAmount: number,
   sinceISO: string,
   sinceMsOverride?: number,
+  /** Handoff 65 B2: accrual freezes at the earliest of (now, graduation,
+   *  full withdraw). Callers pass `min(graduatedAtMs, withdrawnAtMs)` —
+   *  `now` is capped to this value so the live ticker stops ticking. */
+  freezeAtMs?: number,
+  /** Pre-frozen kommits snapshot. When set (e.g. withdrawn position at $0
+   *  principal where the live formula would yield 0), used directly. */
+  frozenKommits?: number,
 ): number {
   const sinceMs = sinceMsOverride ?? parseISODate(sinceISO).getTime();
   // Guard against negative durations (sinceISO in the future) — clamp to 0.
@@ -61,8 +68,13 @@ export function useLiveKommits(
     };
   }, []);
 
-  const fractionalHours = Math.max(0, (now - sinceMs) / MS_PER_HOUR);
-  return usdAmount * fractionalHours;
+  const cappedNow = freezeAtMs != null ? Math.min(now, freezeAtMs) : now;
+  const fractionalHours = Math.max(0, (cappedNow - sinceMs) / MS_PER_HOUR);
+  const live = usdAmount * fractionalHours;
+  // Withdrawn positions: usdAmount is 0 so `live` is 0 — the snapshot stored
+  // at withdrawal moment is the lifetime-kommit truth.
+  if (frozenKommits != null) return Math.max(live, frozenKommits);
+  return live;
 }
 
 /**
@@ -94,7 +106,15 @@ export function formatLiveKommits(n: number): string {
  * rules-of-hooks (variable-length list) or burn N timers.
  */
 export function useLiveKommitsTotal(
-  positions: Array<{ kommittedUSD: number; sinceISO: string; sinceMs?: number }>,
+  positions: Array<{
+    kommittedUSD: number;
+    sinceISO: string;
+    sinceMs?: number;
+    /** Handoff 65 B2: per-position freeze cap (graduation or withdrawal). */
+    freezeAtMs?: number;
+    /** Frozen snapshot for withdrawn positions (usd=0 → live formula = 0). */
+    frozenKommits?: number;
+  }>,
 ): number {
   const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -126,8 +146,10 @@ export function useLiveKommitsTotal(
   let sum = 0;
   for (const p of positions) {
     const sinceMs = p.sinceMs ?? parseISODate(p.sinceISO).getTime();
-    const hours = Math.max(0, (now - sinceMs) / MS_PER_HOUR);
-    sum += p.kommittedUSD * hours;
+    const capNow = p.freezeAtMs != null ? Math.min(now, p.freezeAtMs) : now;
+    const hours = Math.max(0, (capNow - sinceMs) / MS_PER_HOUR);
+    const live = p.kommittedUSD * hours;
+    sum += p.frozenKommits != null ? Math.max(live, p.frozenKommits) : live;
   }
   return sum;
 }
