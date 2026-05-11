@@ -17,6 +17,7 @@ import { Icon } from "@/components/common/Icon";
 import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance, saveBackerNote, simulateCommit } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { KOMMIT_TX_EVENT } from "@/components/project/KommittersList";
 import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
 import { useSandboxBalance } from "@/lib/hooks/useSandboxBalance";
@@ -163,6 +164,9 @@ export function CommitModal({
           }),
         220,
       );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(KOMMIT_TX_EVENT));
+      }
       onSuccess?.();
       return;
     }
@@ -206,6 +210,9 @@ export function CommitModal({
           }),
         220,
       );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(KOMMIT_TX_EVENT));
+      }
       onSuccess?.();
     } catch (e) {
       // C2: never sign-out or hard-navigate on tx error. Stay on the page,
