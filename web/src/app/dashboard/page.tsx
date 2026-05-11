@@ -234,7 +234,11 @@ export default function DashboardPage() {
         </main>
       </div>
       <Footer withSidebarOffset />
-      <DepositModal open={depositOpen} onOpenChange={setDepositOpen} />
+      <DepositModal
+        open={depositOpen}
+        onOpenChange={setDepositOpen}
+        onDepositSuccess={refresh}
+      />
     </>
   );
 }
