@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { HeroRotatingWord } from "@/components/landing/HeroRotatingWord";
-import { TotalKommitsTicker } from "@/components/landing/TotalKommitsTicker";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { StatePill } from "@/components/common/Tape";
 import { PROJECTS } from "@/lib/data/projects";
@@ -60,10 +59,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
-        {/* TOTAL KOMMITS TICKER — handoff 60: above-the-fold "alive" signature
-            connected to the 4 active projects shown below. */}
-        <TotalKommitsTicker projects={activeProjects} />
 
         {/* HOW IT WORKS */}
         <section id="how-it-works" className="mt-32 pt-12 border-t-[8px] border-black">
@@ -254,10 +249,14 @@ export default function LandingPage() {
 function HeroLivePanel() {
   const totalKommitters = PROJECTS.reduce((acc, p) => acc + p.kommittersCount, 0);
   const totalUSD = PROJECTS.reduce((acc, p) => acc + p.totalKommittedUSD, 0);
-  const projectCount = PROJECTS.length;
-  // Aggregate kommits across all kommitters of all projects, computed live
-  // from each kommitter's USD × days held. Caps the hero figure at a clean
-  // round value so first paint isn't a long animated number.
+  // "Active projects" in the cohort sense: anything currently kommittable.
+  // Excludes graduated (round closed) and just-listed (pre-launch). Lukas's
+  // smoketest: should read 9 today (5 active + 4 just-listed).
+  const livePlatformProjectCount = PROJECTS.filter((p) => p.state !== "graduated").length;
+  // Aggregate kommits across all kommitters of all projects, computed from
+  // each kommitter's USD × days held. The dedicated section ticker that
+  // used to live below the hero is collapsed into this stat — one alive
+  // signature in the hero box, not two competing surfaces.
   const totalKommits = PROJECTS.reduce((acc, p) => {
     return (
       acc +
@@ -283,22 +282,20 @@ function HeroLivePanel() {
             Live
           </span>
         </div>
-        <span className="font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
-          {projectCount} active
-        </span>
       </div>
 
-      <div className="relative z-10 space-y-4 md:space-y-5">
+      <div className="relative z-10 space-y-3 md:space-y-4">
         <Stat
           label="Kommitted"
           value={formatUSD(totalUSD, { compact: totalUSD >= 10_000 })}
         />
         <Stat label="Kommitters" value={formatNumber(totalKommitters)} />
-        <Stat label="Kommits" value={formatNumber(totalKommits)} accent />
+        <Stat label="Total kommits" value={formatNumber(totalKommits)} accent />
+        <Stat label="Active projects" value={formatNumber(livePlatformProjectCount)} />
       </div>
 
       <div className="relative z-10 font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500 text-center">
-        Real teams · Real backers · Real money never locks
+        Real teams · Real backers · Real money
       </div>
     </div>
   );

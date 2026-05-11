@@ -102,7 +102,7 @@ export default function AboutPage() {
                 href="/manifesto"
                 className="inline-flex items-center gap-3 font-epilogue font-black uppercase tracking-tight text-base md:text-lg border-b-[4px] border-black hover:bg-secondary px-2 py-1 transition-colors"
               >
-                Read the full manifesto
+                Read our manifesto
                 <Icon name="arrow_forward" className="font-bold" />
               </Link>
             </div>

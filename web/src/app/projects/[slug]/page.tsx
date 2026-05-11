@@ -47,9 +47,12 @@ export default async function ProjectDetailPage({
 
         <div className="mt-24 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 lg:gap-14">
           <div className="space-y-20">
-            {project.state === "graduated" && project.roadmap?.length ? (
-              <ProjectRoadmapSection milestones={project.roadmap} />
-            ) : null}
+            {/* Section order per Lukas's recording-day smoketest:
+                1. Pitch  →  2. Project info  →  3. Team  →  4. Updates  →
+                5. Roadmap  →  6. What kommitters get (graduated only)  →
+                7. Kommit notes  →  8. Recent kommitters  →  9. How it works.
+                Track 8 (handoff 69) will make Updates / Roadmap / Kommit
+                notes / Recent kommitters collapsable. */}
 
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
@@ -61,10 +64,6 @@ export default async function ProjectDetailPage({
                 ))}
               </div>
             </section>
-
-            {project.state === "graduated" && project.kommitterBenefits?.length ? (
-              <KommitterBenefitsSection project={project} />
-            ) : null}
 
             <ProjectInfoSection project={project} />
 
@@ -109,12 +108,6 @@ export default async function ProjectDetailPage({
               </div>
             </section>
 
-            <BackerNotes projectSlug={project.slug} />
-
-            {project.state !== "graduated" && project.roadmap?.length ? (
-              <ProjectRoadmapSection milestones={project.roadmap} />
-            ) : null}
-
             <section id="updates">
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 Updates
@@ -125,6 +118,16 @@ export default async function ProjectDetailPage({
                 fallback={project.updates}
               />
             </section>
+
+            {project.roadmap?.length ? (
+              <ProjectRoadmapSection milestones={project.roadmap} />
+            ) : null}
+
+            {project.state === "graduated" && project.kommitterBenefits?.length ? (
+              <KommitterBenefitsSection project={project} />
+            ) : null}
+
+            <BackerNotes projectSlug={project.slug} />
 
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
@@ -140,7 +143,7 @@ export default async function ProjectDetailPage({
 
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                What&rsquo;s next
+                How it works
               </h2>
               <RoadmapCard />
             </section>

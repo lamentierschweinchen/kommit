@@ -34,7 +34,7 @@ export function BackerNotes({ projectSlug }: { projectSlug: string }) {
   return (
     <section>
       <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-        Backer notes
+        Kommit notes
       </h2>
       <ul className="space-y-3">
         {notes.map((n, i) => (

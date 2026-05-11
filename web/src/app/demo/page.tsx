@@ -230,8 +230,8 @@ function DemoEntry() {
           Try Kommit.
         </h1>
         <p className="mt-5 font-epilogue font-medium text-base md:text-lg text-gray-800 leading-snug max-w-2xl">
-          Two ways in. Sign in for the real thing on devnet, or walk a populated
-          persona without the signup.{" "}
+          Two ways in. Sign in via Privy or walk a populated persona without
+          the signup.{" "}
           {isDemo ? (
             <span className="font-bold text-primary">
               Persona demo is already active.
@@ -368,26 +368,6 @@ function DemoEntry() {
         </div>
       </div>
 
-      <div className="mt-10 max-w-2xl text-sm font-medium text-gray-600 leading-relaxed space-y-3">
-        <p>
-          <span className="font-epilogue font-bold uppercase tracking-widest text-[11px] text-black">
-            Onchain demo.
-          </span>{" "}
-          Real Privy sign-in, real Solana devnet wallet, real Anchor instructions
-          on the kommit program. The $10K is a sandbox SPL token minted on
-          demand — distinct from Circle&rsquo;s rate-limited devnet USDC faucet
-          so judges never run out.
-        </p>
-        <p>
-          <span className="font-epilogue font-bold uppercase tracking-widest text-[11px] text-black">
-            Try our demo.
-          </span>{" "}
-          Posts you write, reactions you click, comments you leave during the
-          persona demo persist in your browser only. Funds, withdrawals, and
-          faucet flows are simulated. Switching personas keeps the same shared
-          cohort state in this browser.
-        </p>
-      </div>
     </main>
   );
 }
