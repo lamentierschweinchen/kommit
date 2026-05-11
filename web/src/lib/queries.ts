@@ -134,23 +134,44 @@ export async function getCommitmentsForUser(
       sinceMs: depositTs * 1000,
     });
   }
-  // Real-Privy withdrawn-state overlay: when a user fully withdrew, the
-  // Anchor account closed. Surface the frozen snapshot so the lifetime
-  // kommits stat doesn't regress and the row still appears with the
-  // WITHDRAWN pill. Skip overlay entries that already have an on-chain
-  // position (re-kommitted) — the on-chain row is the truth.
+  // Real-Privy withdrawn-state overlay. The Anchor `withdraw` handler does
+  // NOT close the Commitment account on full withdraw — it sets principal=0
+  // and active_score=0 but the PDA stays alive. So `commitment.all` still
+  // returns the row, just with principal=0. Without enrichment from the
+  // localStorage snapshot the row reads as a fresh $0 position: no
+  // WITHDRAWN pill, lifetime ticker = 0, "kommits soulbound" promise broken.
+  //
+  // Two-pass merge:
+  //   1. Enrich on-chain rows whose principal hit zero with the snapshot's
+  //      withdrawnAtMs + frozenKommits (the actual production failure mode).
+  //   2. Append snapshot-only rows for slugs absent from the on-chain set —
+  //      future-proofs against an eventual v0.5.x program update that adds
+  //      `close = user` on full withdraw.
+  // Skip on-chain rows whose principal is non-zero: they've been re-kommitted
+  // and CommitModal's `clearWithdrawn` will (or already has) wiped the
+  // overlay; the on-chain row is the truth.
   const overlay = getWithdrawnOverlay(walletStr);
-  const onChainSlugs = new Set(out.map((c) => c.projectSlug));
-  for (const w of overlay) {
-    if (onChainSlugs.has(w.projectSlug)) continue;
-    out.push({
-      projectSlug: w.projectSlug,
-      kommittedUSD: 0,
-      sinceISO: w.sinceISO,
-      sinceMs: w.sinceMs,
-      withdrawnAtMs: w.withdrawnAtMs,
-      frozenKommits: w.frozenKommits,
-    });
+  if (overlay.length > 0) {
+    const overlayBySlug = new Map(overlay.map((w) => [w.projectSlug, w]));
+    for (const row of out) {
+      if (row.kommittedUSD > 0) continue;
+      const snap = overlayBySlug.get(row.projectSlug);
+      if (!snap) continue;
+      row.withdrawnAtMs = snap.withdrawnAtMs;
+      row.frozenKommits = snap.frozenKommits;
+    }
+    const onChainSlugs = new Set(out.map((c) => c.projectSlug));
+    for (const w of overlay) {
+      if (onChainSlugs.has(w.projectSlug)) continue;
+      out.push({
+        projectSlug: w.projectSlug,
+        kommittedUSD: 0,
+        sinceISO: w.sinceISO,
+        sinceMs: w.sinceMs,
+        withdrawnAtMs: w.withdrawnAtMs,
+        frozenKommits: w.frozenKommits,
+      });
+    }
   }
   return out;
 }
@@ -217,12 +238,18 @@ export async function getCommitmentForUserAndProject(
     }
   }
 
-  if (onChain) return onChain;
-
-  // No on-chain position — check the withdrawn-state overlay. If the user
-  // closed this position, surface the snapshot so the project page can
-  // render the WITHDRAWN tile + frozen kommit count.
+  // Withdrawn-state overlay merge — mirrors the list-read in
+  // `getCommitmentsForUser`. The on-chain account stays alive at
+  // principal=0 after a full withdraw, so enrich rather than only
+  // falling back when on-chain is absent.
   const withdrawn = getWithdrawnForProject(walletStr, projectSlug);
+  if (onChain) {
+    if (withdrawn && onChain.kommittedUSD <= 0) {
+      onChain.withdrawnAtMs = withdrawn.withdrawnAtMs;
+      onChain.frozenKommits = withdrawn.frozenKommits;
+    }
+    return onChain;
+  }
   if (withdrawn) {
     return {
       projectSlug,
