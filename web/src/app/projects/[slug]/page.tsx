@@ -9,6 +9,7 @@ import { PublicKey } from "@solana/web3.js";
 import { KommittersList } from "@/components/project/KommittersList";
 import { UserPositionCard } from "@/components/project/UserPositionCard";
 import { RoadmapCard } from "@/components/project/RoadmapCard";
+import { RoadmapPanel } from "@/components/project/RoadmapPanel";
 import { getProject, projectImageUrl, type Project } from "@/lib/data/projects";
 import { avatarUrl } from "@/lib/data/users";
 import { formatUSD, formatNumber } from "@/lib/kommit-math";
@@ -46,6 +47,10 @@ export default async function ProjectDetailPage({
 
         <div className="mt-24 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 lg:gap-14">
           <div className="space-y-20">
+            {project.state === "graduated" && project.roadmap?.length ? (
+              <ProjectRoadmapSection milestones={project.roadmap} />
+            ) : null}
+
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 The pitch
@@ -96,6 +101,10 @@ export default async function ProjectDetailPage({
 
             <BackerNotes projectSlug={project.slug} />
 
+            {project.state !== "graduated" && project.roadmap?.length ? (
+              <ProjectRoadmapSection milestones={project.roadmap} />
+            ) : null}
+
             <section id="updates">
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
                 Updates
@@ -134,6 +143,21 @@ export default async function ProjectDetailPage({
       </main>
       <Footer />
     </>
+  );
+}
+
+function ProjectRoadmapSection({
+  milestones,
+}: {
+  milestones: NonNullable<Project["roadmap"]>;
+}) {
+  return (
+    <section id="roadmap">
+      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+        Roadmap
+      </h2>
+      <RoadmapPanel milestones={milestones} />
+    </section>
   );
 }
 
