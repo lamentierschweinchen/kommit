@@ -138,6 +138,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  /**
+   * `/pitch` serves the static pitch deck (`public/pitch.html`). The deck is
+   * a self-contained HTML file with inline styles + a tiny inline script for
+   * arrow-key slide nav — fonts come from Google Fonts (already allow-listed
+   * in the CSP `font-src` / `style-src` directives above). Hosted on
+   * kommit.now/pitch so the submission link unfurls cleanly without an
+   * `.html` suffix.
+   */
+  async rewrites() {
+    return [{ source: "/pitch", destination: "/pitch.html" }];
+  },
 };
 
 export default nextConfig;
