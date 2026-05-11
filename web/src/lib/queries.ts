@@ -19,6 +19,10 @@ import { type Commitment } from "@/lib/data/commitments";
 import { isDemoMode } from "@/lib/demo-mode";
 import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
+import {
+  getWithdrawnOverlay,
+  getWithdrawnForProject,
+} from "@/lib/withdrawn-overlay";
 
 /**
  * Demo-mode reads short-circuit Anchor entirely: the persona wallets aren't
@@ -130,6 +134,24 @@ export async function getCommitmentsForUser(
       sinceMs: depositTs * 1000,
     });
   }
+  // Real-Privy withdrawn-state overlay: when a user fully withdrew, the
+  // Anchor account closed. Surface the frozen snapshot so the lifetime
+  // kommits stat doesn't regress and the row still appears with the
+  // WITHDRAWN pill. Skip overlay entries that already have an on-chain
+  // position (re-kommitted) — the on-chain row is the truth.
+  const overlay = getWithdrawnOverlay(walletStr);
+  const onChainSlugs = new Set(out.map((c) => c.projectSlug));
+  for (const w of overlay) {
+    if (onChainSlugs.has(w.projectSlug)) continue;
+    out.push({
+      projectSlug: w.projectSlug,
+      kommittedUSD: 0,
+      sinceISO: w.sinceISO,
+      sinceMs: w.sinceMs,
+      withdrawnAtMs: w.withdrawnAtMs,
+      frozenKommits: w.frozenKommits,
+    });
+  }
   return out;
 }
 
@@ -195,5 +217,22 @@ export async function getCommitmentForUserAndProject(
     }
   }
 
-  return onChain;
+  if (onChain) return onChain;
+
+  // No on-chain position — check the withdrawn-state overlay. If the user
+  // closed this position, surface the snapshot so the project page can
+  // render the WITHDRAWN tile + frozen kommit count.
+  const withdrawn = getWithdrawnForProject(walletStr, projectSlug);
+  if (withdrawn) {
+    return {
+      projectSlug,
+      kommittedUSD: 0,
+      sinceISO: withdrawn.sinceISO,
+      sinceMs: withdrawn.sinceMs,
+      withdrawnAtMs: withdrawn.withdrawnAtMs,
+      frozenKommits: withdrawn.frozenKommits,
+    };
+  }
+
+  return null;
 }

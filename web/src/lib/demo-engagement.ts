@@ -715,8 +715,8 @@ export function seedDemoCohort(args: {
       }
       continue;
     }
-    allUpdates[p.pda] = p.seed.map((u, i) => {
-      const id = seedFallbackUpdateId(p.slug, u.atISO, i);
+    allUpdates[p.pda] = p.seed.map((u) => {
+      const id = seedFallbackUpdateId(p.slug, u.atISO);
       updateIdBySlugAndDate.set(`${p.slug}|${u.atISO}`, id);
       return {
         id,
@@ -943,12 +943,13 @@ function stableId(pda: string, atISO: string, idx: number): string {
   return `${hex}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${(hex + hex).slice(0, 12)}`;
 }
 
-export function seedFallbackUpdateId(
-  slug: string,
-  atISO: string,
-  idx: number,
-): string {
-  const seed = `seed:${slug}|${atISO}|${idx}`;
+export function seedFallbackUpdateId(slug: string, atISO: string): string {
+  // (slug, atISO) is unique per static update — no project has two updates on
+  // the same date. Dropping the previous `idx` parameter makes the id stable
+  // even if the order of `project.updates` changes (e.g. inserting a new
+  // older update). The old idx-keyed id orphans past interactions; this is
+  // the one-time cost of stabilization.
+  const seed = `seed:${slug}|${atISO}`;
   let h = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);

@@ -19,8 +19,8 @@ export function ProjectCardSmall({ project }: { project: Project }) {
     <Link href={`/projects/${project.slug}`} className="block group relative">
       {isLaunchingSoon ? (
         <div className="absolute -top-2 left-3 z-20">
-          <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-0.5 border-[2px] border-black shadow-brutal-sm">
-            Launching soon
+          <span className="inline-block bg-secondary text-black font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-0.5 border-[2px] border-black shadow-brutal-sm">
+            Launching soon!
           </span>
         </div>
       ) : null}

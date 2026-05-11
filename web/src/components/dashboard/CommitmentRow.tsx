@@ -262,6 +262,8 @@ export function CommitmentRow({
         projectSlug={project.slug}
         committedUSD={commitment.kommittedUSD}
         recipientWallet={project.recipientWallet}
+        sinceISO={commitment.sinceISO}
+        sinceMs={commitment.sinceMs}
         onSuccess={onWithdrawSuccess}
       />
       <ClaimBenefitsModal
