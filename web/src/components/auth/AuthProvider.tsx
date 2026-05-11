@@ -39,6 +39,7 @@ import { USERS, type Role, type SocialLinks, type User } from "@/lib/data/users"
 import { flagAndCountryLabel } from "@/lib/country-flag";
 import { fetchMe } from "@/lib/me-client";
 import type { FounderLink, FounderRecord } from "@/lib/founder-types";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import {
   getStoredPersonaId,
   PERSONA_STORAGE_KEY,
@@ -108,12 +109,13 @@ function linksToSocials(links: FounderLink[]): SocialLinks | undefined {
   if (!links || links.length === 0) return undefined;
   const out: SocialLinks = {};
   for (const { label, url } of links) {
-    if (!url) continue;
+    const safeUrl = sanitizeExternalUrl(url);
+    if (!safeUrl) continue;
     const key = label.trim().toLowerCase();
-    if (key === "twitter" || key === "x") out.twitter = url;
-    else if (key === "linkedin") out.linkedin = url;
-    else if (key === "github") out.github = url;
-    else if (key === "website" || key === "site") out.website = url;
+    if (key === "twitter" || key === "x") out.twitter = safeUrl;
+    else if (key === "linkedin") out.linkedin = safeUrl;
+    else if (key === "github") out.github = safeUrl;
+    else if (key === "website" || key === "site") out.website = safeUrl;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }

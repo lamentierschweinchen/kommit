@@ -22,7 +22,6 @@ import { getProject } from "@/lib/data/projects";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
-const USDC_DECIMALS_DIVISOR = 10n ** BigInt(USDC_DECIMALS);
 
 // Codex L1: percent presets compose as exact bigint fractions of the user's
 // committed base-unit balance — no Math.round on a float dollar value.

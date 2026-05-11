@@ -14,6 +14,7 @@
  */
 
 import { isDemoFrozen } from "@/lib/demo-mode";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import type { SocialLinks } from "@/lib/data/users";
 
 export type ProfileOverride = {
@@ -57,8 +58,11 @@ export function saveProfileOverride(wallet: string, value: ProfileOverride): boo
  */
 export function compactSocials(input: SocialLinks): SocialLinks {
   const out: SocialLinks = {};
-  if (input.linkedin?.trim()) out.linkedin = input.linkedin.trim();
-  if (input.twitter?.trim()) out.twitter = input.twitter.trim();
-  if (input.website?.trim()) out.website = input.website.trim();
+  const linkedin = sanitizeExternalUrl(input.linkedin);
+  const twitter = sanitizeExternalUrl(input.twitter);
+  const website = sanitizeExternalUrl(input.website);
+  if (linkedin) out.linkedin = linkedin;
+  if (twitter) out.twitter = twitter;
+  if (website) out.website = website;
   return out;
 }

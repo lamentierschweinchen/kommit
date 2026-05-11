@@ -6,6 +6,7 @@ import { Icon, type IconName } from "@/components/common/Icon";
 import { avatarUrl, type SocialLinks, type User } from "@/lib/data/users";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
 import type { FounderRecord } from "@/lib/founder-types";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 
 type ProfileHeaderProps = {
   /** Persona — when present, every field on the page renders rich. */
@@ -128,14 +129,17 @@ export function ProfileHeader({
 }
 
 function SocialRow({ socials }: { socials: SocialLinks }) {
-  const entries = SOCIAL_LABELS.filter(({ key }) => !!socials[key]);
+  const entries = SOCIAL_LABELS.flatMap(({ key, label, icon }) => {
+    const url = sanitizeExternalUrl(socials[key]);
+    return url ? [{ key, label, icon, url }] : [];
+  });
   if (entries.length === 0) return null;
   return (
     <div className="mt-5 flex flex-wrap gap-3">
-      {entries.map(({ key, label, icon }) => (
+      {entries.map(({ key, label, icon, url }) => (
         <a
           key={key}
-          href={socials[key]}
+          href={url}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 font-epilogue font-bold uppercase text-[11px] tracking-widest px-3 py-1.5 border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"

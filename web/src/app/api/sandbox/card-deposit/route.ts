@@ -10,8 +10,8 @@
  *
  * What it does on success:
  *   1. Verifies Privy session, parses + validates the requested USD amount.
- *   2. Mints `amount * 10^6` sandbox SPL base units to the caller's ATA
- *      (creating the ATA idempotently if missing).
+ *   2. Mints `amount * 10^6` sandbox SPL base units to the caller's existing
+ *      ATA. The /demo airdrop must create that ATA first.
  *   3. Records the deposit as a `kind='card-deposit'` row in
  *      `sandbox_airdrops` (migration 0008).
  *   4. Returns `{ amountUsd, txSignature }` so the client can toast +
@@ -27,10 +27,10 @@
  *   - Amount is caller-supplied (1 ≤ usd ≤ 1000) instead of fixed at
  *     $10K. The cap is enforced both at the input (request body) and
  *     downstream (multiplied into mint base units only after validation).
- *   - No SOL top-up. The user has already passed through the /demo
- *     entry by the time they see DepositModal; they have devnet SOL
- *     from that route. Skipping SOL here keeps the fee-payer drain
- *     per call to (mint tx fee + 0 transfer).
+ *   - No SOL top-up and no ATA creation. The user has already passed through
+ *     the /demo entry by the time they see DepositModal; if they call this
+ *     route directly from a fresh wallet, it fails before the fee-payer spends
+ *     rent on their token account.
  *
  * Cluster confinement, mint config, fee-payer config: same gates as the
  * airdrop route. Failing any of them returns the same structured error
@@ -42,14 +42,15 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import {
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountIdempotentInstruction,
   createMintToInstruction,
+  getAccount,
   getAssociatedTokenAddressSync,
+  TokenAccountNotFoundError,
+  TokenInvalidAccountOwnerError,
 } from "@solana/spl-token";
 
 import { requireCallerWallet } from "@/lib/auth-server";
+import { callerIP } from "@/lib/server/request-ip";
 import { takeRateLimit } from "@/lib/sandbox-rate-limit";
 import { isSandboxApiEnabled } from "@/lib/sandbox-mode";
 import {
@@ -74,6 +75,7 @@ type ErrorCode =
   | "wrong-cluster"
   | "mint-not-configured"
   | "fee-payer-not-configured"
+  | "airdrop-required"
   | "invalid-amount";
 
 type SuccessBody = {
@@ -146,10 +148,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<ResponseBody>
     return jsonError("invalid-amount", 400);
   }
 
-  // 3. Rate limit (60s/wallet) — burst protection for double-click and
-  // brief retries. The handoff explicitly does NOT want lifetime
-  // dedupe; this is purely "don't accidentally mint twice in 5 seconds."
-  if (!takeRateLimit(`card:${walletStr}`, RATE_LIMIT_MS)) {
+  // 3. Rate limit (60s/wallet + 60s/IP) — burst protection for double-click,
+  // brief retries, and cheap new-wallet rotation against the fee-payer.
+  if (!takeRateLimit(`card:wallet:${walletStr}`, RATE_LIMIT_MS)) {
+    return jsonError("rate-limit", 429);
+  }
+  if (!takeRateLimit(`card:ip:${callerIP(req)}`, RATE_LIMIT_MS)) {
     return jsonError("rate-limit", 429);
   }
 
@@ -183,26 +187,29 @@ export async function POST(req: NextRequest): Promise<NextResponse<ResponseBody>
     return jsonError("rpc", 502);
   }
 
-  // 7. Build + send the mint tx. `createAssociatedTokenAccountIdempotentInstruction`
-  // is a no-op if the ATA already exists (the airdrop route created it on
-  // first /demo entry), so this tx is safe for both first-and-Nth deposit
-  // paths.
+  // 7. Build + send the mint tx. The airdrop route must have created the
+  // caller's ATA already; card-deposit refuses to create it because that makes
+  // the fee-payer cover rent for arbitrary fresh wallets.
   const conn = getDevnetConnection();
   const fp = getFeePayer();
   const ata = getAssociatedTokenAddressSync(mint, wallet, false);
   const mintBase = BigInt(amountUsd) * TOKEN_DECIMALS_DIVISOR;
 
+  try {
+    await getAccount(conn, ata);
+  } catch (e) {
+    if (e instanceof TokenAccountNotFoundError) {
+      return jsonError("airdrop-required", 409);
+    }
+    if (e instanceof TokenInvalidAccountOwnerError) {
+      console.warn("[sandbox/card-deposit] ATA exists but is not a token account:", e);
+      return jsonError("rpc", 502);
+    }
+    console.warn("[sandbox/card-deposit] getAccount failed:", e);
+    return jsonError("rpc", 502);
+  }
+
   const tx = new Transaction();
-  tx.add(
-    createAssociatedTokenAccountIdempotentInstruction(
-      fp.publicKey,
-      ata,
-      wallet,
-      mint,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-    ),
-  );
   tx.add(createMintToInstruction(mint, ata, fp.publicKey, mintBase));
   tx.feePayer = fp.publicKey;
 
