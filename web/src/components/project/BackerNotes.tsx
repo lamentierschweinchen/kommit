@@ -15,7 +15,16 @@ import {
  * v1 rewires to a server-backed comments store. Hidden when there are no
  * notes so the page doesn't grow an empty panel for fresh projects.
  */
-export function BackerNotes({ projectSlug }: { projectSlug: string }) {
+export function BackerNotes({
+  projectSlug,
+  omitHeader = false,
+}: {
+  projectSlug: string;
+  /** When the parent renders its own section header (e.g. a
+   *  CollapsableSection wrapper), skip the inline h2 + section wrapping —
+   *  handoff 69 B12. */
+  omitHeader?: boolean;
+}) {
   const [notes, setNotes] = useState<BackerNote[]>([]);
 
   useEffect(() => {
@@ -29,14 +38,19 @@ export function BackerNotes({ projectSlug }: { projectSlug: string }) {
     return () => window.removeEventListener("storage", onStorage);
   }, [projectSlug]);
 
-  if (notes.length === 0) return null;
+  if (notes.length === 0) {
+    if (omitHeader) {
+      return (
+        <p className="font-epilogue font-bold uppercase text-[11px] tracking-widest text-gray-500">
+          No kommit notes yet.
+        </p>
+      );
+    }
+    return null;
+  }
 
-  return (
-    <section>
-      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-        Kommit notes
-      </h2>
-      <ul className="space-y-3">
+  const list = (
+    <ul className="space-y-3">
         {notes.map((n, i) => (
           <li
             key={`${n.atISO}-${i}`}
@@ -59,6 +73,16 @@ export function BackerNotes({ projectSlug }: { projectSlug: string }) {
           </li>
         ))}
       </ul>
+  );
+
+  if (omitHeader) return list;
+
+  return (
+    <section>
+      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+        Kommit notes
+      </h2>
+      {list}
     </section>
   );
 }

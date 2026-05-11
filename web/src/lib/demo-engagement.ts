@@ -716,7 +716,7 @@ export function seedDemoCohort(args: {
       continue;
     }
     allUpdates[p.pda] = p.seed.map((u, i) => {
-      const id = stableId(p.pda, u.atISO, i);
+      const id = seedFallbackUpdateId(p.slug, u.atISO, i);
       updateIdBySlugAndDate.set(`${p.slug}|${u.atISO}`, id);
       return {
         id,
@@ -914,10 +914,25 @@ function buildLukasSeedActivity(
   return out;
 }
 
+/**
+ * Stable update id keyed by (slug, atISO, idx) — same FNV scheme + format as
+ * `seedFallbackId` in UpdatesPanel so the demo seed and the static-fallback
+ * render path produce identical ids. Handoff 69 B10: when demoFetch's update
+ * GET returns empty (rare, but possible after localStorage churn or a
+ * cross-tab clear during the seed window), UpdatesPanel renders
+ * `SeedUpdateRow` instead of `RemoteUpdateRow`, and previously its
+ * `seedFallbackId(slug,...)` lookup didn't match the seed's `stableId(pda,...)`
+ * write, so the 6 pivot comments stayed invisible. Unifying on (slug, atISO,
+ * idx) closes that gap end-to-end.
+ *
+ * Exported so demo seed callers and the UpdatesPanel fallback can share the
+ * one truth.
+ */
+/** Generic FNV-1a UUID-shaped id used for seed comment rows (keyed off
+ *  updateId + postedAtISO + idx). Update ids themselves use the
+ *  slug-keyed `seedFallbackUpdateId` below so the demo seed and the static
+ *  fallback render path agree. */
 function stableId(pda: string, atISO: string, idx: number): string {
-  // FNV-1a 32-bit on (pda + atISO + idx) → format as a UUID-ish string. The
-  // API route accepts any string for update_id; reactions/comments key off
-  // it. Stable across reloads because the inputs are stable.
   const seed = `${pda}|${atISO}|${idx}`;
   let h = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {
@@ -925,13 +940,23 @@ function stableId(pda: string, atISO: string, idx: number): string {
     h = (h * 0x01000193) >>> 0;
   }
   const hex = h.toString(16).padStart(8, "0");
-  // Build a v4-ish UUID — passes the regex on the real /api/updates/[id]/* routes.
-  const a = hex;
-  const b = hex.slice(0, 4);
-  const c = "4" + hex.slice(1, 4);
-  const d = "8" + hex.slice(1, 4);
-  const e = (hex + hex).slice(0, 12);
-  return `${a}-${b}-${c}-${d}-${e}`;
+  return `${hex}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${(hex + hex).slice(0, 12)}`;
+}
+
+export function seedFallbackUpdateId(
+  slug: string,
+  atISO: string,
+  idx: number,
+): string {
+  const seed = `seed:${slug}|${atISO}|${idx}`;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  const hex = h.toString(16).padStart(8, "0");
+  // v4-ish UUID — passes the regex on the real /api/updates/[id]/* routes.
+  return `${hex}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${(hex + hex).slice(0, 12)}`;
 }
 
 function round2(n: number): number {

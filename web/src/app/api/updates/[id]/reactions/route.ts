@@ -17,6 +17,7 @@ import { z } from "zod";
 import { requireCallerWallet } from "@/lib/auth-server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
+import { hasOnChainCommitment } from "@/lib/server/lazy-sybil";
 
 export const runtime = "nodejs";
 
@@ -84,6 +85,9 @@ async function authorizeReact(
   }
 
   // 2. Sybil gate — caller must be a kommitter of the parent project.
+  // Supabase commitments first; falls back to a live RPC commitment-account
+  // check (handoff 69 B1: v0.5 has no indexer, and real-Privy users commit
+  // under the sandbox Project PDA, not the catalog one).
   const { data: kommit, error: kommitErr } = await sb
     .from("commitments")
     .select("pda")
@@ -102,13 +106,20 @@ async function authorizeReact(
     };
   }
   if (!kommit) {
-    return {
-      ok: false,
-      res: NextResponse.json(
-        { error: "not-a-kommitter-of-this-project" },
-        { status: 403 },
-      ),
-    };
+    const onChain = await hasOnChainCommitment(
+      callerWallet,
+      update.project_pda,
+      req.nextUrl.searchParams.get("slug"),
+    );
+    if (!onChain) {
+      return {
+        ok: false,
+        res: NextResponse.json(
+          { error: "not-a-kommitter-of-this-project" },
+          { status: 403 },
+        ),
+      };
+    }
   }
 
   return { ok: true, wallet: callerWallet, projectPda: update.project_pda };

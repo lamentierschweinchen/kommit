@@ -8,7 +8,7 @@ import { UpdateComments } from "@/components/project/UpdateComments";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getCommitmentForUserAndProject } from "@/lib/queries";
 import { authedFetch } from "@/lib/api-client";
-import { DEMO_POSITIONS_STORAGE_KEY } from "@/lib/demo-engagement";
+import { DEMO_POSITIONS_STORAGE_KEY, seedFallbackUpdateId } from "@/lib/demo-engagement";
 import { findSeedEngagement } from "@/lib/data/seed-engagement";
 import type { RemoteUpdate } from "@/lib/api-types";
 
@@ -248,7 +248,7 @@ function SeedUpdateRow({
   // there too. (No real-auth project hits this branch in v0.5: every
   // catalog project with a recipientWallet flows through `RemoteUpdateRow`.)
   const fallbackId = useMemo(
-    () => seedFallbackId(projectSlug, update.atISO, index),
+    () => seedFallbackUpdateId(projectSlug, update.atISO, index),
     [projectSlug, update.atISO, index],
   );
   // Pivot/graduation seeds carry pre-populated reaction counts. Resolve via
@@ -317,17 +317,3 @@ function SeedUpdateRow({
   );
 }
 
-/** FNV-1a 32-bit hash, formatted as a v4-ish UUID. Same shape the demo
- *  cohort seed uses for remote updates, so the fallback path can speak the
- *  same id namespace if a future migration ever promotes seed rows to
- *  remote rows. */
-function seedFallbackId(slug: string, atISO: string, idx: number): string {
-  const seed = `seed:${slug}|${atISO}|${idx}`;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = (h * 0x01000193) >>> 0;
-  }
-  const hex = h.toString(16).padStart(8, "0");
-  return `${hex}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${(hex + hex).slice(0, 12)}`;
-}
