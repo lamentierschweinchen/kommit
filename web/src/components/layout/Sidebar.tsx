@@ -27,22 +27,36 @@ export function Sidebar({
   // page reads on-chain commitments when there's no demo activity log.
   const showHistory = variant === "kommitter" && !!user?.wallet;
 
+  // Profile slug for the "My Profile" link — persona id when available
+  // (lukas, julian, ...); falls back to the wallet so real-Privy users
+  // still get a profile page (slimmer, no bio/interests).
+  const profileSlug = user?.id ?? user?.wallet ?? "";
+
   const items: Item[] =
     variant === "founder" && founderSlug
       ? [
           { href: `/founder/${founderSlug}`, label: "Overview", icon: "grid_view" },
-          { href: `/founder/${founderSlug}#post-update`, label: "Post update", icon: "edit_note" },
           {
-            href: `/founder/${founderSlug}#kommitters`,
-            label: "Kommitters",
+            href: `/founder/${founderSlug}/cohort`,
+            label: "Cohort",
             icon: "groups",
             badge: founderKommittersCount,
           },
+          { href: `/founder/${founderSlug}#post-update`, label: "Post update", icon: "edit_note" },
           { href: `/projects/${founderSlug}`, label: "Public page", icon: "open_in_new" },
           { href: "/account", label: "Account", icon: "settings" },
         ]
       : [
-          { href: "/dashboard", label: "Dashboard", icon: "workspace_premium" },
+          ...(profileSlug
+            ? [
+                {
+                  href: `/profile/${profileSlug}`,
+                  label: "My profile",
+                  icon: "person" as IconName,
+                },
+              ]
+            : []),
+          { href: "/dashboard", label: "My dashboard", icon: "grid_view" },
           ...(showHistory
             ? [{ href: "/account/history", label: "My history", icon: "history" as IconName }]
             : []),

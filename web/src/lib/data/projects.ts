@@ -16,6 +16,8 @@ export type Founder = {
   role: string;
   bio: string;
   avatarSeed: number;
+  /** Linked user id when this founder is a known user (e.g. julian) — drives /profile/[slug] links from project pages. */
+  userId?: string;
   /**
    * Social account URLs surfaced on the project detail founder card. If none
    * are present the icon row hides entirely — no dead links to nowhere.
@@ -111,6 +113,7 @@ const CALDERA: Project = {
   founders: [
     {
       name: "Dr. Julian Vance",
+      userId: "julian",
       role: "CEO · ex-DOE building energy",
       bio: "Ran the DOE's commercial heat-pump pilot. PhD in geothermics. Has put pumps in eighty-six buildings on three continents.",
       avatarSeed: 12,
@@ -122,6 +125,7 @@ const CALDERA: Project = {
     },
     {
       name: "Priya Singh",
+      userId: "priya",
       role: "CTO · ex-Tesla Energy",
       bio: "Designed Tesla's commercial-energy planner. Authored a chunk of the borefield-thermal models now in production. Lives in code; ships in calendar quarters, not sprints.",
       avatarSeed: 49,
@@ -176,19 +180,19 @@ const CALDERA: Project = {
   kommitters: [
     { name: "Lukas", avatarSeed: 68, userId: "lukas", kommittedUSD: 200, sinceISO: "2026-03-12" },
     { name: "Sana", avatarSeed: 49, kommittedUSD: 500, sinceISO: "2026-03-14" },
-    { name: "Miriam", avatarSeed: 20, kommittedUSD: 50, sinceISO: "2026-03-28" },
-    { name: "Jordan", avatarSeed: 33, kommittedUSD: 1_000, sinceISO: "2026-03-22" },
+    { name: "Miriam", avatarSeed: 20, userId: "miriam", kommittedUSD: 50, sinceISO: "2026-03-28" },
+    { name: "Jordan", avatarSeed: 33, userId: "jordan", kommittedUSD: 1_000, sinceISO: "2026-03-22" },
     { name: "Yuki", avatarSeed: 15, kommittedUSD: 25, sinceISO: "2026-04-14" },
     { name: "Rosa", avatarSeed: 44, kommittedUSD: 100, sinceISO: "2026-04-07" },
-    { name: "Theo", avatarSeed: 58, kommittedUSD: 300, sinceISO: "2026-04-02" },
-    { name: "Aiko", avatarSeed: 24, kommittedUSD: 150, sinceISO: "2026-03-15" },
+    { name: "Theo", avatarSeed: 58, userId: "theo", kommittedUSD: 300, sinceISO: "2026-04-02" },
+    { name: "Aiko", avatarSeed: 24, userId: "aiko", kommittedUSD: 150, sinceISO: "2026-03-15" },
     { name: "Ben", avatarSeed: 11, kommittedUSD: 75, sinceISO: "2026-03-19" },
-    { name: "Carmen", avatarSeed: 47, kommittedUSD: 400, sinceISO: "2026-03-21" },
-    { name: "Dmitri", avatarSeed: 5, kommittedUSD: 600, sinceISO: "2026-03-25" },
+    { name: "Carmen", avatarSeed: 47, userId: "carmen", kommittedUSD: 400, sinceISO: "2026-03-21" },
+    { name: "Dmitri", avatarSeed: 5, userId: "dmitri", kommittedUSD: 600, sinceISO: "2026-03-25" },
     { name: "Elena", avatarSeed: 32, kommittedUSD: 120, sinceISO: "2026-03-30" },
     { name: "Farouk", avatarSeed: 22, kommittedUSD: 250, sinceISO: "2026-04-04" },
     { name: "Greta", avatarSeed: 41, kommittedUSD: 80, sinceISO: "2026-04-08" },
-    { name: "Henry", avatarSeed: 7, kommittedUSD: 350, sinceISO: "2026-04-11" },
+    { name: "Henry", avatarSeed: 7, userId: "henry", kommittedUSD: 350, sinceISO: "2026-04-11" },
     { name: "Iris", avatarSeed: 36, kommittedUSD: 50, sinceISO: "2026-04-15" },
     { name: "Jules", avatarSeed: 13, kommittedUSD: 800, sinceISO: "2026-04-17" },
     { name: "Kira", avatarSeed: 28, kommittedUSD: 175, sinceISO: "2026-04-19" },
@@ -210,6 +214,7 @@ const LIGHTHOUSE: Project = {
   founders: [
     {
       name: "Maya Chen",
+      userId: "maya",
       role: "CEO · ex-NOAA forecaster",
       bio: "Spent six years at NOAA building short-range forecast models. Grew up in an orchard family in Oregon.",
       avatarSeed: 47,
@@ -269,6 +274,7 @@ const AURORA: Project = {
   founders: [
     {
       name: "Tomás Reyes",
+      userId: "tomas",
       role: "CEO · ex-Stripe payments",
       bio: "Led cross-border product at Stripe. Latin-America-first; banked in two currencies before he was twelve.",
       avatarSeed: 33,
@@ -339,6 +345,7 @@ const QUIRE_CHESS: Project = {
   founders: [
     {
       name: "Sofia Ahlberg",
+      userId: "sofia",
       role: "CEO · WIM",
       bio: "Woman International Master. Spent five years as a chess streamer; knows where adult improvers stall.",
       avatarSeed: 24,
@@ -393,6 +400,7 @@ const FRAME_STUDIO: Project = {
   founders: [
     {
       name: "Ren Tanaka",
+      userId: "ren",
       role: "CEO · ex-Frame.io",
       bio: "Built Frame.io's mobile review app. Left to do this without Adobe's roadmap pulling on it.",
       avatarSeed: 15,
@@ -440,6 +448,7 @@ const BEACON_SCI: Project = {
   founders: [
     {
       name: "Dr. Anika Patel",
+      userId: "anika",
       role: "CEO · ex-bioRxiv",
       bio: "Spent four years at bioRxiv. Believes peer review should be portable infrastructure, not a journal moat.",
       avatarSeed: 58,
@@ -488,6 +497,7 @@ const CADENCE: Project = {
   founders: [
     {
       name: "Olivia Brand",
+      userId: "olivia",
       role: "CEO · ex-Bon Appétit",
       bio: "Ran video at Bon Appétit. Knows the difference between content people watch and content people learn from.",
       avatarSeed: 11,
@@ -525,6 +535,7 @@ const FORGE_HEALTH: Project = {
   founders: [
     {
       name: "Marcus Doyle",
+      userId: "marcus",
       role: "CEO · ex-Epic interoperability",
       bio: "Ten years at Epic on the interop team. Knows why this is hard, doing it anyway.",
       avatarSeed: 5,
@@ -562,6 +573,7 @@ const VERITY_BOOKS: Project = {
   founders: [
     {
       name: "Hannah Park",
+      userId: "hannah",
       role: "CEO · indie author",
       bio: "Self-published twelve books. Got tired of doing royalty math on the kitchen table at 2am.",
       avatarSeed: 44,
@@ -599,6 +611,7 @@ const MARGIN_HOUSE: Project = {
   founders: [
     {
       name: "Lina Park",
+      userId: "lina",
       role: "Founder · ex-urban-planning Oakland",
       bio: "Worked on Oakland's neighborhood-scale planning for six years. Margin House is what she'd want on her own block.",
       avatarSeed: 20,
