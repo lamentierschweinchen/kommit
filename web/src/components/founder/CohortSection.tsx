@@ -301,9 +301,6 @@ function CohortAnalyticsPanel({ project }: { project: Project }) {
             </li>
           ))}
         </ul>
-        <p className="mt-4 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
-          Mock · indexer ships v1
-        </p>
       </article>
 
       <article className="bg-white border-[3px] border-black shadow-brutal p-5">
@@ -319,9 +316,6 @@ function CohortAnalyticsPanel({ project }: { project: Project }) {
           </span>
         </div>
         <Sparkline points={growth} className="mt-4" />
-        <p className="mt-3 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
-          Mock curve · final point exact
-        </p>
       </article>
 
       <article className="bg-white border-[3px] border-black shadow-brutal p-5">

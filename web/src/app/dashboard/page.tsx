@@ -140,7 +140,7 @@ export default function DashboardPage() {
           <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <div>
               <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
-                Your kommits
+                Dashboard
               </h1>
               {isVisa ? (
                 <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">

@@ -207,7 +207,7 @@ export function CommitmentRow({
                       setCommitOpen(true);
                     }}
                   >
-                    Kommit again
+                    Rekommit
                   </BrutalButton>
                 ) : null}
               </>

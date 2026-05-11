@@ -50,7 +50,7 @@ export function MissionSection() {
             href={FULL_HREF}
             className="inline-flex items-center gap-2 font-epilogue font-black uppercase tracking-tight text-sm border-b-[3px] border-black hover:bg-secondary px-2 transition-colors"
           >
-            Read the full manifesto
+            Read our manifesto
             <Icon name="arrow_forward" />
           </Link>
         </div>
