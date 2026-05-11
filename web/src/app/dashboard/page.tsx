@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AuthHeader } from "@/components/layout/AuthHeader";
 import { Footer } from "@/components/layout/Footer";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -11,6 +12,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { getCommitmentsForUser } from "@/lib/queries";
 import { getProject } from "@/lib/data/projects";
+import { parseISODate } from "@/lib/date-utils";
 import type { Commitment } from "@/lib/data/commitments";
 import { formatNumber, formatUSD } from "@/lib/kommit-math";
 import { useLiveKommitsTotal, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
@@ -18,7 +20,18 @@ import { useDemoMode } from "@/lib/demo-mode";
 import { getDemoBalance } from "@/lib/demo-engagement";
 import { useSandboxBalance } from "@/lib/hooks/useSandboxBalance";
 import { Icon } from "@/components/common/Icon";
+import { cn } from "@/lib/cn";
 import { DepositModal } from "@/components/account/DepositModal";
+
+type DashboardSortKey = "kommitted" | "kommits" | "recent" | "alphabetical";
+const DASHBOARD_SORT_LABELS: Record<DashboardSortKey, string> = {
+  kommitted: "Most kommitted",
+  kommits: "Most kommits",
+  recent: "Newest",
+  alphabetical: "A → Z",
+};
+const DASHBOARD_DEFAULT_SORT: DashboardSortKey = "kommitted";
+const MS_PER_HOUR = 3_600_000;
 
 export default function DashboardPage() {
   const { user, isSignedIn } = useAuth();
@@ -26,6 +39,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<DashboardSortKey>(DASHBOARD_DEFAULT_SORT);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -106,6 +120,48 @@ export default function DashboardPage() {
   }, [isSignedIn, user?.wallet, isDemo, refreshKey]);
   const availableUSD = isDemo ? demoBalance : sandboxBalance;
 
+  // Sorted view of the user's positions. The lifetime-kommits sort uses the
+  // same additive formula as the row display (live + frozen) so the order
+  // lines up with what the user sees on each row. Snapshot at render-tick —
+  // we deliberately don't re-sort every second, because the per-second
+  // accrual delta is tiny (kommittedUSD / 3600 per sec) and continuous
+  // re-ordering would feel noisy.
+  const sortedCommitments = useMemo(() => {
+    const now = Date.now();
+    const withScore = commitments.map((c) => {
+      const project = getProject(c.projectSlug);
+      const graduatedAtMs = project?.graduatedAtISO
+        ? new Date(`${project.graduatedAtISO}T00:00:00Z`).getTime()
+        : undefined;
+      const freezeAtMs =
+        graduatedAtMs != null && c.withdrawnAtMs != null
+          ? Math.min(graduatedAtMs, c.withdrawnAtMs)
+          : graduatedAtMs ?? c.withdrawnAtMs;
+      const sinceMs = c.sinceMs ?? parseISODate(c.sinceISO).getTime();
+      const capNow = freezeAtMs != null ? Math.min(now, freezeAtMs) : now;
+      const hours = Math.max(0, (capNow - sinceMs) / MS_PER_HOUR);
+      const lifetime = c.kommittedUSD * hours + (c.frozenKommits ?? 0);
+      return { commitment: c, project, lifetime };
+    });
+    withScore.sort((a, b) => {
+      switch (sortKey) {
+        case "kommits":
+          return b.lifetime - a.lifetime;
+        case "recent":
+          return b.commitment.sinceISO.localeCompare(a.commitment.sinceISO);
+        case "alphabetical": {
+          const an = a.project?.name ?? a.commitment.projectSlug;
+          const bn = b.project?.name ?? b.commitment.projectSlug;
+          return an.localeCompare(bn, "en", { sensitivity: "base" });
+        }
+        case "kommitted":
+        default:
+          return b.commitment.kommittedUSD - a.commitment.kommittedUSD;
+      }
+    });
+    return withScore;
+  }, [commitments, sortKey]);
+
   return (
     <>
       <AuthHeader homeHref="/app" />
@@ -172,9 +228,14 @@ export default function DashboardPage() {
           <div className="mt-20 grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,400px)] gap-10">
             <div className="space-y-20">
               <section className="pt-10 border-t-[8px] border-black">
-                <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                  Your kommits
-                </h2>
+                <div className="mb-8 flex items-end justify-between flex-wrap gap-3">
+                  <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+                    Your kommits
+                  </h2>
+                  {isSignedIn && commitments.length > 1 ? (
+                    <DashboardSortDropdown value={sortKey} onChange={setSortKey} />
+                  ) : null}
+                </div>
                 {!isSignedIn ? (
                   <SignInPrompt />
                 ) : loading ? (
@@ -183,8 +244,7 @@ export default function DashboardPage() {
                   <EmptyCommitments />
                 ) : (
                   <div className="space-y-5">
-                    {commitments.map((c) => {
-                      const project = getProject(c.projectSlug);
+                    {sortedCommitments.map(({ commitment: c, project }) => {
                       if (!project) return null;
                       return (
                         <CommitmentRow
@@ -226,6 +286,55 @@ export default function DashboardPage() {
         onDepositSuccess={refresh}
       />
     </>
+  );
+}
+
+function DashboardSortDropdown({
+  value,
+  onChange,
+}: {
+  value: DashboardSortKey;
+  onChange: (k: DashboardSortKey) => void;
+}) {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          className="bg-white text-black font-epilogue font-black uppercase text-sm tracking-tight px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
+        >
+          <span className="font-epilogue font-bold text-gray-500 text-xs">
+            Sort by
+          </span>
+          <span>{DASHBOARD_SORT_LABELS[value]}</span>
+          <Icon name="expand_more" size="sm" />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="bg-white border-[3px] border-black shadow-brutal min-w-[180px] p-2 z-[60]"
+        >
+          {(Object.keys(DASHBOARD_SORT_LABELS) as DashboardSortKey[]).map(
+            (key) => (
+              <DropdownMenu.Item
+                key={key}
+                onSelect={() => onChange(key)}
+                className={cn(
+                  "px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight cursor-pointer outline-none",
+                  value === key
+                    ? "bg-primary text-white"
+                    : "data-[highlighted]:bg-gray-100",
+                )}
+              >
+                {DASHBOARD_SORT_LABELS[key]}
+              </DropdownMenu.Item>
+            ),
+          )}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
