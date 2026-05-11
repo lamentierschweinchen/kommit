@@ -19,6 +19,7 @@ export function PositionCard({
   committedUSD,
   sinceISO,
   sinceMs,
+  frozenKommits,
   graduatedRecord,
   onTxSuccess,
 }: {
@@ -32,6 +33,9 @@ export function PositionCard({
    *  `sinceISO` date — preventing fresh commits from showing up to ~24 hours
    *  of unearned accrual the moment they hit the dashboard. */
   sinceMs?: number;
+  /** Lifetime accumulator from earlier withdraw cycles. Added to the live
+   *  ticker so a re-kommitted position still shows its soulbound history. */
+  frozenKommits?: number;
   /** Graduated archival record */
   graduatedRecord?: {
     finalKommitsKept: number;
@@ -100,6 +104,7 @@ export function PositionCard({
             committedUSD={committedUSD}
             sinceISO={sinceISO}
             sinceMs={sinceMs}
+            frozenKommits={frozenKommits}
           />
         ) : project.kommittersCount === 0 ? (
           <>
@@ -226,20 +231,29 @@ function ActivePositionDisplay({
   committedUSD,
   sinceISO,
   sinceMs,
+  frozenKommits,
 }: {
   committedUSD: number;
   sinceISO: string;
   sinceMs?: number;
+  frozenKommits?: number;
 }) {
-  const liveKommits = useLiveKommits(committedUSD, sinceISO, sinceMs);
+  const liveKommits = useLiveKommits(
+    committedUSD,
+    sinceISO,
+    sinceMs,
+    undefined,
+    frozenKommits,
+  );
   // Until the visibility-effect mounts and triggers the first tick, show the
   // SSR-pinned demo number so the headline never reads "0.00". formatKommits
   // matches formatLiveKommits's compact rule (≥1M → "3.88M") so the value
-  // doesn't visually jump on hydration.
+  // doesn't visually jump on hydration. Include frozen so a re-kommitted
+  // position doesn't briefly drop to the live-only count before the timer mounts.
   const kommitsDisplay =
     liveKommits > 0
       ? formatLiveKommits(liveKommits)
-      : formatKommits(kommitsFor(committedUSD, sinceISO));
+      : formatKommits(kommitsFor(committedUSD, sinceISO) + (frozenKommits ?? 0));
   const moneyDisplay = formatUSD(committedUSD);
 
   return (

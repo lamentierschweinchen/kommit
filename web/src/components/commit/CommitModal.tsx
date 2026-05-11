@@ -33,8 +33,11 @@ const QUICK_AMOUNTS = [50, 100, 500] as const;
 const QUICK_AMOUNTS_BASE = QUICK_AMOUNTS.map(
   (n) => BigInt(n) * USDC_DECIMALS_DIVISOR,
 );
-const MAX_AMOUNT = 5000;
-const MAX_AMOUNT_BASE = BigInt(MAX_AMOUNT) * USDC_DECIMALS_DIVISOR;
+// The Max chip used to set the input to a hardcoded $5,000 — a leftover from
+// the earlier card-deposit cap. It silently ignored the user's actual balance,
+// so a kommitter with $10K available would still be capped to half their
+// funds. Now resolved at render time from `availableUSD`, with the validator
+// cap below following the same source. See #2 in handoff 72.
 
 const NOTE_MAX = 280;
 
@@ -106,7 +109,23 @@ export function CommitModal({
   } catch {
     parsedBaseUnits = 0n;
   }
-  const validationError = raw.trim().length > 0 ? validateAmount(raw, USDC_DECIMALS, MAX_AMOUNT_BASE) : null;
+  // Cap validation at the user's actual available balance, not a hardcoded
+  // sanity number. When the balance hasn't loaded yet (null), skip the cap —
+  // the `overBalance` check below already gates submit, and showing
+  // "Amount exceeds $5,000" before the real balance is known was the visible
+  // form of the #2 bug.
+  const availableBaseUnits = useMemo(() => {
+    if (availableUSD == null || availableUSD <= 0) return undefined;
+    try {
+      return parseTokenAmount(availableUSD.toFixed(USDC_DECIMALS), USDC_DECIMALS);
+    } catch {
+      return undefined;
+    }
+  }, [availableUSD]);
+  const validationError =
+    raw.trim().length > 0
+      ? validateAmount(raw, USDC_DECIMALS, availableBaseUnits)
+      : null;
 
   // Display value — parseFloat is OK for the human-readable button label;
   // it never feeds into TX construction or boundary checks.
@@ -200,14 +219,12 @@ export function CommitModal({
           note: trimmedNote.slice(0, NOTE_MAX),
         });
       }
-      // Clear any stale withdrawn-overlay for this (wallet, slug) — the
-      // user just re-kommitted, so the on-chain position is the truth from
-      // here on. Otherwise queries.ts would surface the old frozen
-      // snapshot alongside the new position.
-      if (user?.wallet) {
-        const { clearWithdrawn } = await import("@/lib/withdrawn-overlay");
-        clearWithdrawn(user.wallet, project.slug);
-      }
+      // NOTE: the withdrawn-overlay snapshot is deliberately preserved on
+      // re-kommit. The unit is soulbound — lifetime kommits = live + frozen,
+      // where frozen is the accumulator across past cycles (see
+      // useLiveKommits). Clearing the snapshot here would zero the lifetime
+      // count for a kommitter who withdrew then re-kommitted. `clearWithdrawn`
+      // stays exported for an explicit manual-clear path if ever needed.
       onOpenChange(false);
       setSubmitting(false);
       setTimeout(
@@ -303,11 +320,18 @@ export function CommitModal({
           })}
           <button
             type="button"
-            onClick={() => setRaw(String(MAX_AMOUNT))}
-            disabled={submitting}
+            onClick={() => {
+              if (availableUSD == null || availableUSD <= 0) return;
+              // Format with cent precision so the input value round-trips
+              // through parseTokenAmount without rejecting trailing zeros.
+              setRaw(availableUSD.toFixed(2));
+            }}
+            disabled={submitting || availableUSD == null || availableUSD <= 0}
             className={cn(
               "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
-              parsedBaseUnits === MAX_AMOUNT_BASE ? "bg-primary text-white" : "bg-black text-white",
+              availableBaseUnits != null && parsedBaseUnits === availableBaseUnits
+                ? "bg-primary text-white"
+                : "bg-black text-white",
             )}
           >
             Max

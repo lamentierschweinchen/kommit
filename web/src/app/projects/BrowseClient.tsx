@@ -29,7 +29,13 @@ const VALID_SECTORS: Sector[] = [
   "Community",
 ];
 const VALID_STAGES: StageOption[] = ["active", "just-listed", "graduated"];
-const VALID_SORTS: SortKey[] = ["recent", "kommitted", "kommitters"];
+const VALID_SORTS: SortKey[] = [
+  "kommitted",
+  "kommitters",
+  "recent",
+  "alphabetical",
+];
+const DEFAULT_SORT: SortKey = "kommitted";
 
 /**
  * Audit pass-2 P1 #14: filter / sort / search state lives in the URL so that
@@ -51,7 +57,7 @@ function parseFilters(params: URLSearchParams): BrowseFilters {
   const sortRaw = params.get("sort");
   const sort: SortKey = VALID_SORTS.includes(sortRaw as SortKey)
     ? (sortRaw as SortKey)
-    : "recent";
+    : DEFAULT_SORT;
   return { sectors, stages, query, sort };
 }
 
@@ -60,7 +66,7 @@ function serializeFilters(filters: BrowseFilters): string {
   if (filters.sectors.length) sp.set("sector", filters.sectors.join(","));
   if (filters.stages.length) sp.set("stage", filters.stages.join(","));
   if (filters.query.trim()) sp.set("q", filters.query.trim());
-  if (filters.sort !== "recent") sp.set("sort", filters.sort);
+  if (filters.sort !== DEFAULT_SORT) sp.set("sort", filters.sort);
   const s = sp.toString();
   return s ? `?${s}` : "";
 }

@@ -21,13 +21,38 @@ export function kommitsFor(
   return usdAmount * hours;
 }
 
+// Single Intl.NumberFormat instance per shape — construction is hot-path-
+// expensive enough that the per-render allocation showed up in the dashboard
+// stat cards under React profiler. Reuse handles the 99% case; the compact
+// branch below has its own format string requirements.
+const USD_FMT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+// Whole-dollar variant for amounts already known to be integer (e.g. demo
+// balances seeded as round thousands). Drops the trailing ".00" so the
+// "Available $10,000" line doesn't read as "$10,000.00" in the kommit modal
+// header. Selected at call time when `Number.isInteger(n)` is true.
+const USD_FMT_WHOLE = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 export function formatUSD(n: number, opts: { compact?: boolean } = {}): string {
   if (opts.compact) {
     if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
     if (n >= 10_000) return `$${Math.round(n / 1000)}K`;
     if (n >= 1_000) return `$${(n / 1000).toFixed(1)}K`;
   }
-  return `$${n.toLocaleString("en-US")}`;
+  // Round to cents on the boundary so `$1409.385` formats as `$1,409.39`
+  // instead of one renderer's "$1,409.38" vs another's "$1,409.39" depending
+  // on internal rounding mode. Avoid mutating very-small fractions.
+  return Number.isInteger(n) ? USD_FMT_WHOLE.format(n) : USD_FMT.format(n);
 }
 
 export function formatNumber(n: number): string {

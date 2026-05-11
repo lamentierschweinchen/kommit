@@ -45,24 +45,28 @@ export function sortProjects(projects: Project[], sort: SortKey): Project[] {
   const sorted = projects.slice();
   let innerCompare: (a: Project, b: Project) => number;
   switch (sort) {
-    case "kommitted":
-      innerCompare = (a, b) => b.totalKommittedUSD - a.totalKommittedUSD;
-      break;
     case "kommitters":
       innerCompare = (a, b) => b.kommittersCount - a.kommittersCount;
       break;
     case "recent":
-    default:
       innerCompare = (a, b) => b.activeSinceISO.localeCompare(a.activeSinceISO);
+      break;
+    case "alphabetical":
+      innerCompare = (a, b) =>
+        a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+      break;
+    case "kommitted":
+    default:
+      innerCompare = (a, b) => b.totalKommittedUSD - a.totalKommittedUSD;
       break;
   }
   sorted.sort((a, b) => {
     const tier = STATE_ORDER[a.state] - STATE_ORDER[b.state];
     if (tier !== 0) return tier;
     // Inside the just-listed tier, surface the nearest launch date first.
-    // The default sort key would order by activeSinceISO descending (most-
-    // recently-listed first); for projects that haven't launched yet, the
-    // useful order is the opposite — what's about to open next.
+    // For pre-launch projects the useful order is what's about to open next,
+    // regardless of the selected sort key — they have no kommits, kommitters,
+    // or listing-recency signal worth competing with launch order.
     if (a.state === "just-listed" && b.state === "just-listed") {
       return a.activeSinceISO.localeCompare(b.activeSinceISO);
     }
