@@ -2,17 +2,21 @@
  * Real-Privy withdrawn-state overlay.
  *
  * When a real-Privy kommitter withdraws their full position, the Anchor
- * program closes the Commitment account on-chain (refunds rent, frees the
- * PDA). `getCommitmentsForUser` reads on-chain accounts via `commitment.all`
- * → the withdrawn position disappears entirely from the dashboard, and the
- * lifetime kommits stat regresses.
+ * `withdraw` handler sets `principal = 0` and `active_score = 0` but leaves
+ * the Commitment PDA alive (no `close = user` constraint on the Withdraw
+ * struct). `getCommitmentsForUser` therefore still gets the row back from
+ * `commitment.all`, but with `principal = 0` and no metadata about when
+ * the user withdrew or how many kommits they had earned. Without the
+ * overlay the row renders as a fresh $0 position: no WITHDRAWN pill,
+ * lifetime ticker = 0, "soulbound" promise broken.
  *
  * The manifesto promise is "soulbound, yours forever" — kommits don't
  * disappear when capital does. To preserve that view in v0.5 without a
  * dedicated indexer-side projection, the client writes a localStorage
  * snapshot of (frozenKommits, withdrawnAtMs, sinceMs) at withdraw time.
- * `queries.ts` reads on-chain commitments AND merges any overlay rows
- * for projects with no on-chain position (i.e. they've been closed).
+ * `queries.ts` enriches any on-chain row with `principal = 0` from the
+ * snapshot, and also appends snapshot-only rows for slugs absent from the
+ * on-chain set (future-proofs against an eventual close-on-zero update).
  *
  * Storage shape: `kommit:withdrawn-overlay` → `{ [wallet]: { [slug]: Snapshot } }`.
  * Snapshot fields:
@@ -21,11 +25,12 @@
  *  - frozenKommits  — kommit count at the moment of withdrawal
  *  - withdrawnAtMs  — when the withdraw closed the account
  *
- * If the user re-kommits the same project later, the on-chain account
- * reopens — queries.ts notices an on-chain row exists and ignores the
- * overlay (the new position starts fresh per Anchor program semantics).
- * Overlay row is cleared from localStorage on the re-kommit to keep the
- * store from growing unbounded.
+ * If the user re-kommits the same project later, the on-chain account is
+ * already alive — `commit`'s top-up branch resets `deposit_ts` to a
+ * weighted average (with old principal=0, so the new deposit_ts is `now`).
+ * CommitModal calls `clearWithdrawn` after a successful kommit so the
+ * stale snapshot is dropped and the on-chain row (now with principal > 0)
+ * is the truth from that point forward.
  */
 
 const STORAGE_KEY = "kommit:withdrawn-overlay";
