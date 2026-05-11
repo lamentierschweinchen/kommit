@@ -17,6 +17,8 @@ import { simulateWithdraw } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
+import { computeFrozenKommits, recordWithdrawn } from "@/lib/withdrawn-overlay";
+import { getProject } from "@/lib/data/projects";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -43,6 +45,8 @@ export function WithdrawModal({
   projectSlug,
   committedUSD,
   recipientWallet,
+  sinceISO,
+  sinceMs,
   onSuccess,
 }: {
   open: boolean;
@@ -53,6 +57,12 @@ export function WithdrawModal({
   recipientWallet?: string;
   /** Slug used to address the position in the demo store. */
   projectSlug?: string;
+  /** Original commit date — used to snapshot frozen kommits in real-Privy
+   *  mode when a full withdraw closes the on-chain account. */
+  sinceISO?: string;
+  /** Millisecond-precision commit timestamp. Same purpose as sinceISO; more
+   *  accurate when present. */
+  sinceMs?: number;
   onSuccess?: () => void;
 }) {
   // The committed amount arrives as a JS number (queries.ts converts it for
@@ -163,6 +173,35 @@ export function WithdrawModal({
         ? new PublicKey(recipientWallet)
         : null;
     if (!recipient) return;
+
+    // Real-Privy full-withdraw snapshot. The on-chain account closes when
+    // principal hits zero — without this overlay write, the row disappears
+    // from /dashboard and the lifetime kommits stat regresses. Compute the
+    // frozen-kommit snapshot from the position metadata BEFORE the tx
+    // fires; persist it to localStorage so queries.ts can surface it after
+    // the close. Cap accrual at graduation if applicable.
+    const isFullWithdraw = parsedBaseUnits === committedBaseUnits;
+    if (
+      isFullWithdraw &&
+      user?.wallet &&
+      projectSlug &&
+      sinceMs != null &&
+      sinceISO
+    ) {
+      const proj = getProject(projectSlug);
+      const frozenKommits = computeFrozenKommits({
+        committedUSD,
+        sinceMs,
+        graduatedAtISO: proj?.graduatedAtISO,
+      });
+      recordWithdrawn(user.wallet, projectSlug, {
+        sinceISO,
+        sinceMs,
+        frozenKommits,
+        withdrawnAtMs: Date.now(),
+      });
+    }
+
     setSubmitting(true);
     try {
       await withdrawFromProject(client, recipient, raw, sandboxMint ?? undefined);

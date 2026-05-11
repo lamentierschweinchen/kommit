@@ -58,7 +58,15 @@ export function sortProjects(projects: Project[], sort: SortKey): Project[] {
   }
   sorted.sort((a, b) => {
     const tier = STATE_ORDER[a.state] - STATE_ORDER[b.state];
-    return tier !== 0 ? tier : innerCompare(a, b);
+    if (tier !== 0) return tier;
+    // Inside the just-listed tier, surface the nearest launch date first.
+    // The default sort key would order by activeSinceISO descending (most-
+    // recently-listed first); for projects that haven't launched yet, the
+    // useful order is the opposite — what's about to open next.
+    if (a.state === "just-listed" && b.state === "just-listed") {
+      return a.activeSinceISO.localeCompare(b.activeSinceISO);
+    }
+    return innerCompare(a, b);
   });
   return sorted;
 }

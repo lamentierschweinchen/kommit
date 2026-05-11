@@ -107,8 +107,44 @@ export function UpdatesPanel({
   }, [projectPda]);
 
   const remoteRows = useMemo(() => updates ?? [], [updates]);
-  const showRemote = remoteRows.length > 0;
-  const showFallback = !showRemote && fallback.length > 0;
+
+  // Merged render: ALL static updates render (so users can react/comment on
+  // any of them, lazy-upsert wires them to Supabase on first interaction).
+  // If a static date also exists in the remote feed, the remote row wins
+  // (it has the real Supabase id and any indexer-side enrichment). Sort
+  // newest-first by atISO. Handoff 70 fix #1: previously the panel would
+  // render ONLY remote rows once any single static update got lazy-
+  // upserted — silently hiding the rest of the static seed and making
+  // reactions/comments "unreliable across projects."
+  const merged = useMemo(() => {
+    type RemoteRowItem = { kind: "remote"; atISO: string; data: typeof remoteRows[number] };
+    type SeedRowItem = { kind: "seed"; atISO: string; data: typeof fallback[number] };
+    type Row = RemoteRowItem | SeedRowItem;
+    const remoteByDate = new Map<string, typeof remoteRows[number]>();
+    for (const r of remoteRows) {
+      const key = r.posted_at?.slice(0, 10) ?? "";
+      if (key) remoteByDate.set(key, r);
+    }
+    const out: Row[] = [];
+    // Start with static fallback (the source of truth for catalog projects).
+    // Replace with remote row where dates match.
+    for (const s of fallback) {
+      const remote = remoteByDate.get(s.atISO);
+      if (remote) {
+        out.push({ kind: "remote", atISO: s.atISO, data: remote });
+        remoteByDate.delete(s.atISO);
+      } else {
+        out.push({ kind: "seed", atISO: s.atISO, data: s });
+      }
+    }
+    // Append remaining remote rows that don't correspond to any static
+    // entry (founder-posted updates new since the catalog was last seeded).
+    for (const [, r] of remoteByDate) {
+      out.push({ kind: "remote", atISO: r.posted_at?.slice(0, 10) ?? "", data: r });
+    }
+    out.sort((a, b) => b.atISO.localeCompare(a.atISO));
+    return out;
+  }, [remoteRows, fallback]);
 
   const disabledReason = !isSignedIn
     ? "Sign in and kommit to react."
@@ -124,33 +160,29 @@ export function UpdatesPanel({
         </div>
       ) : null}
 
-      {showRemote
-        ? remoteRows.map((u) => (
-            <RemoteUpdateRow
-              key={u.id}
-              update={u}
-              isKommitter={isKommitter}
-              isFounder={isFounder}
-              disabledReason={disabledReason}
-            />
-          ))
-        : null}
+      {merged.map((row, i) =>
+        row.kind === "remote" ? (
+          <RemoteUpdateRow
+            key={row.data.id}
+            update={row.data}
+            projectSlug={projectSlug}
+            isKommitter={isKommitter}
+            isFounder={isFounder}
+            disabledReason={disabledReason}
+          />
+        ) : (
+          <SeedUpdateRow
+            key={`seed-${row.atISO}-${i}`}
+            update={row.data}
+            projectSlug={projectSlug}
+            isKommitter={isKommitter}
+            isFounder={isFounder}
+            disabledReason={disabledReason}
+          />
+        ),
+      )}
 
-      {showFallback
-        ? fallback.map((u, i) => (
-            <SeedUpdateRow
-              key={`seed-${i}`}
-              update={u}
-              projectSlug={projectSlug}
-              index={i}
-              isKommitter={isKommitter}
-              isFounder={isFounder}
-              disabledReason={disabledReason}
-            />
-          ))
-        : null}
-
-      {!loading && !showRemote && !showFallback ? (
+      {!loading && merged.length === 0 ? (
         <div className="bg-white border-[3px] border-black shadow-brutal p-6">
           <p className="font-epilogue font-bold uppercase text-sm tracking-tight">
             No updates yet.
@@ -166,16 +198,23 @@ export function UpdatesPanel({
 
 function RemoteUpdateRow({
   update,
+  projectSlug,
   isKommitter,
   isFounder,
   disabledReason,
 }: {
   update: RemoteUpdate;
+  /** Project slug — used to pass staticHint to children for defensive
+   *  lazy-upsert if a remote row's id was orphaned by an older id
+   *  derivation (handoff 70 fix #1). */
+  projectSlug: string;
   isKommitter: boolean;
   isFounder?: boolean;
   disabledReason?: string;
 }) {
   const initialMine = typeof window !== "undefined" ? loadMine(update.id) : new Set<never>();
+  const atISO = update.posted_at?.slice(0, 10) ?? "";
+  const staticHint = atISO ? { slug: projectSlug, atISO } : undefined;
   return (
     <article
       className={cn(
@@ -212,6 +251,7 @@ function RemoteUpdateRow({
           initialMine={initialMine}
           canReact={isKommitter}
           disabledReason={disabledReason}
+          staticHint={staticHint}
         />
       </div>
 
@@ -220,6 +260,7 @@ function RemoteUpdateRow({
         isFounder={isFounder}
         canComment={isKommitter}
         disabledReason={disabledReason}
+        staticHint={staticHint}
       />
     </article>
   );
@@ -228,28 +269,26 @@ function RemoteUpdateRow({
 function SeedUpdateRow({
   update,
   projectSlug,
-  index,
   isKommitter,
   isFounder,
   disabledReason,
 }: {
   update: { atISO: string; title: string; body: string; isPivot?: boolean; isGraduation?: boolean };
   projectSlug: string;
-  index: number;
   isKommitter: boolean;
   isFounder?: boolean;
   disabledReason?: string;
 }) {
-  // Derive a stable id from (slug, atISO, index) so reactions+comments
-  // persist across reloads even on the fallback render path. Demo-mode
-  // reactions/comments hit `demoFetch` which accepts any string id; real-
-  // auth fallback rows would write to Supabase via /api/updates/[id]/* —
-  // those routes don't enforce a UUID format so the hash-encoded id works
-  // there too. (No real-auth project hits this branch in v0.5: every
-  // catalog project with a recipientWallet flows through `RemoteUpdateRow`.)
+  // Derive a stable id from (slug, atISO) so reactions + comments persist
+  // across reloads on the fallback render path. Handoff 70 fix #1: the
+  // previous (slug, atISO, idx) derivation gave the same dated update a
+  // different id whenever the order of `project.updates` shifted — past
+  // interactions got orphaned and lazy-upsert kept re-inserting rows for
+  // "the same" update. (slug, atISO) is unique per static update by
+  // construction.
   const fallbackId = useMemo(
-    () => seedFallbackUpdateId(projectSlug, update.atISO, index),
-    [projectSlug, update.atISO, index],
+    () => seedFallbackUpdateId(projectSlug, update.atISO),
+    [projectSlug, update.atISO],
   );
   // Pivot/graduation seeds carry pre-populated reaction counts. Resolve via
   // the same (slug, atISO) key the demo-cohort seed loop uses so the SSR

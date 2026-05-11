@@ -200,6 +200,14 @@ export function CommitModal({
           note: trimmedNote.slice(0, NOTE_MAX),
         });
       }
+      // Clear any stale withdrawn-overlay for this (wallet, slug) — the
+      // user just re-kommitted, so the on-chain position is the truth from
+      // here on. Otherwise queries.ts would surface the old frozen
+      // snapshot alongside the new position.
+      if (user?.wallet) {
+        const { clearWithdrawn } = await import("@/lib/withdrawn-overlay");
+        clearWithdrawn(user.wallet, project.slug);
+      }
       onOpenChange(false);
       setSubmitting(false);
       setTimeout(

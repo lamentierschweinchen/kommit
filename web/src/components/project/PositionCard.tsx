@@ -197,6 +197,8 @@ export function PositionCard({
           projectSlug={project.slug}
           committedUSD={committedUSD}
           recipientWallet={project.recipientWallet}
+          sinceISO={sinceISO}
+          sinceMs={sinceMs}
           onSuccess={onTxSuccess}
         />
       ) : null}
