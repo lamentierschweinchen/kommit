@@ -142,23 +142,29 @@ export async function getCommitmentsForUser(
   // WITHDRAWN pill, lifetime ticker = 0, "kommits soulbound" promise broken.
   //
   // Two-pass merge:
-  //   1. Enrich on-chain rows whose principal hit zero with the snapshot's
-  //      withdrawnAtMs + frozenKommits (the actual production failure mode).
-  //   2. Append snapshot-only rows for slugs absent from the on-chain set —
+  //   1. `frozenKommits` enriches every row with a matching snapshot — it's
+  //      the lifetime accumulator carried across withdraw cycles, additive
+  //      with the live ticker (see useLiveKommits). Always carry forward.
+  //   2. `withdrawnAtMs` is set only when the position is *currently* withdrawn
+  //      (kommittedUSD === 0). After a re-kommit the snapshot is still stored,
+  //      but exposing its `withdrawnAtMs` would: a) mis-trigger the WITHDRAWN
+  //      pill (`isWithdrawn` would still flip true on a re-kommitted row if we
+  //      stopped gating on principal), and more importantly b) cap the
+  //      live-ticker freeze at the prior withdraw moment via CommitmentRow's
+  //      `freezeAtMs`, making accrual look frozen forever post-rekommit.
+  //   3. Append snapshot-only rows for slugs absent from the on-chain set —
   //      future-proofs against an eventual v0.5.x program update that adds
   //      `close = user` on full withdraw.
-  // Skip on-chain rows whose principal is non-zero: they've been re-kommitted
-  // and CommitModal's `clearWithdrawn` will (or already has) wiped the
-  // overlay; the on-chain row is the truth.
   const overlay = getWithdrawnOverlay(walletStr);
   if (overlay.length > 0) {
     const overlayBySlug = new Map(overlay.map((w) => [w.projectSlug, w]));
     for (const row of out) {
-      if (row.kommittedUSD > 0) continue;
       const snap = overlayBySlug.get(row.projectSlug);
       if (!snap) continue;
-      row.withdrawnAtMs = snap.withdrawnAtMs;
       row.frozenKommits = snap.frozenKommits;
+      if (row.kommittedUSD <= 0) {
+        row.withdrawnAtMs = snap.withdrawnAtMs;
+      }
     }
     const onChainSlugs = new Set(out.map((c) => c.projectSlug));
     for (const w of overlay) {
@@ -239,14 +245,17 @@ export async function getCommitmentForUserAndProject(
   }
 
   // Withdrawn-state overlay merge — mirrors the list-read in
-  // `getCommitmentsForUser`. The on-chain account stays alive at
-  // principal=0 after a full withdraw, so enrich rather than only
-  // falling back when on-chain is absent.
+  // `getCommitmentsForUser`. `frozenKommits` is the lifetime accumulator and
+  // carries forward in every cycle; `withdrawnAtMs` reflects current state and
+  // only attaches when the position is presently withdrawn — see the comment
+  // there for why exposing it on a re-kommitted row would freeze accrual.
   const withdrawn = getWithdrawnForProject(walletStr, projectSlug);
   if (onChain) {
-    if (withdrawn && onChain.kommittedUSD <= 0) {
-      onChain.withdrawnAtMs = withdrawn.withdrawnAtMs;
+    if (withdrawn) {
       onChain.frozenKommits = withdrawn.frozenKommits;
+      if (onChain.kommittedUSD <= 0) {
+        onChain.withdrawnAtMs = withdrawn.withdrawnAtMs;
+      }
     }
     return onChain;
   }

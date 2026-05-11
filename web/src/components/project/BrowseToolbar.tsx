@@ -5,11 +5,19 @@ import { cn } from "@/lib/cn";
 import type { Sector } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
 
-export type SortKey = "recent" | "kommitted" | "kommitters";
+export type SortKey =
+  | "kommitted"
+  | "kommitters"
+  | "recent"
+  | "alphabetical";
+// Dropdown order matches the user's mental priority: "what's hot now" → "who's
+// behind it" → "what's new" → "find a specific one." `kommitted` is the
+// default; see BrowseClient's parseFilters fallback.
 const SORT_LABELS: Record<SortKey, string> = {
-  recent: "Most recent",
   kommitted: "Most kommitted",
   kommitters: "Most kommitters",
+  recent: "Newest",
+  alphabetical: "A → Z",
 };
 
 const SECTOR_OPTIONS: Sector[] = [

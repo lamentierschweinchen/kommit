@@ -21,6 +21,7 @@ export function UserPositionCard({ project }: { project: Project }) {
   const [committedUSD, setCommittedUSD] = useState<number | undefined>(undefined);
   const [sinceISO, setSinceISO] = useState<string | undefined>(undefined);
   const [sinceMs, setSinceMs] = useState<number | undefined>(undefined);
+  const [frozenKommits, setFrozenKommits] = useState<number | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
@@ -30,6 +31,7 @@ export function UserPositionCard({ project }: { project: Project }) {
       setCommittedUSD(undefined);
       setSinceISO(undefined);
       setSinceMs(undefined);
+      setFrozenKommits(undefined);
       return;
     }
     let cancelled = false;
@@ -40,10 +42,12 @@ export function UserPositionCard({ project }: { project: Project }) {
           setCommittedUSD(c.kommittedUSD);
           setSinceISO(c.sinceISO);
           setSinceMs(c.sinceMs);
+          setFrozenKommits(c.frozenKommits);
         } else {
           setCommittedUSD(undefined);
           setSinceISO(undefined);
           setSinceMs(undefined);
+          setFrozenKommits(undefined);
         }
       })
       .catch((e) => {
@@ -83,6 +87,7 @@ export function UserPositionCard({ project }: { project: Project }) {
       committedUSD={committedUSD}
       sinceISO={sinceISO}
       sinceMs={sinceMs}
+      frozenKommits={frozenKommits}
       graduatedRecord={graduatedRecord}
       onTxSuccess={refresh}
     />

@@ -28,9 +28,13 @@
  * If the user re-kommits the same project later, the on-chain account is
  * already alive — `commit`'s top-up branch resets `deposit_ts` to a
  * weighted average (with old principal=0, so the new deposit_ts is `now`).
- * CommitModal calls `clearWithdrawn` after a successful kommit so the
- * stale snapshot is dropped and the on-chain row (now with principal > 0)
- * is the truth from that point forward.
+ * The overlay snapshot SURVIVES re-kommit on purpose: `frozenKommits` is an
+ * accumulator carried across withdraw cycles, added to the live ticker by
+ * `useLiveKommits`. Without it, "soulbound, yours forever" would break on the
+ * first re-kommit. `withdrawnAtMs` ages out of the UI because CommitmentRow's
+ * `isWithdrawn` also gates on `kommittedUSD <= 0`, so the WITHDRAWN pill
+ * doesn't mis-show on a re-kommitted row. `clearWithdrawn` stays exported
+ * for an explicit manual-reset path; nothing in the v0.5 flow calls it.
  */
 
 const STORAGE_KEY = "kommit:withdrawn-overlay";

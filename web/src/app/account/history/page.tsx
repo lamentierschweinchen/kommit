@@ -359,6 +359,8 @@ function ProjectBreakdownRow({ commitment }: { commitment: Commitment }) {
     commitment.kommittedUSD,
     commitment.sinceISO,
     commitment.sinceMs,
+    undefined,
+    commitment.frozenKommits,
   );
   if (!project) return null;
   return (

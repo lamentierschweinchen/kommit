@@ -32,8 +32,10 @@ export function useLiveKommits(
    *  full withdraw). Callers pass `min(graduatedAtMs, withdrawnAtMs)` —
    *  `now` is capped to this value so the live ticker stops ticking. */
   freezeAtMs?: number,
-  /** Pre-frozen kommits snapshot. When set (e.g. withdrawn position at $0
-   *  principal where the live formula would yield 0), used directly. */
+  /** Lifetime accumulator preserved across withdraw cycles. The on-chain
+   *  account's `principal` and `deposit_ts` describe the *current* position
+   *  only; this snapshot carries the kommits earned in previous cycles so the
+   *  unit stays soulbound. Added to `live`, never compared against it. */
   frozenKommits?: number,
 ): number {
   const sinceMs = sinceMsOverride ?? parseISODate(sinceISO).getTime();
@@ -71,10 +73,12 @@ export function useLiveKommits(
   const cappedNow = freezeAtMs != null ? Math.min(now, freezeAtMs) : now;
   const fractionalHours = Math.max(0, (cappedNow - sinceMs) / MS_PER_HOUR);
   const live = usdAmount * fractionalHours;
-  // Withdrawn positions: usdAmount is 0 so `live` is 0 — the snapshot stored
-  // at withdrawal moment is the lifetime-kommit truth.
-  if (frozenKommits != null) return Math.max(live, frozenKommits);
-  return live;
+  // Additive: frozen is an accumulator from past cycles, not a replacement.
+  //   fully withdrawn  → usdAmount=0, live=0 → returns frozen ✓
+  //   fresh kommit     → frozen undefined   → returns live   ✓
+  //   re-kommit        → live grows from new principal, frozen preserves
+  //                      the prior cycle's lifetime ✓
+  return live + (frozenKommits ?? 0);
 }
 
 /**
@@ -149,7 +153,8 @@ export function useLiveKommitsTotal(
     const capNow = p.freezeAtMs != null ? Math.min(now, p.freezeAtMs) : now;
     const hours = Math.max(0, (capNow - sinceMs) / MS_PER_HOUR);
     const live = p.kommittedUSD * hours;
-    sum += p.frozenKommits != null ? Math.max(live, p.frozenKommits) : live;
+    // Additive — mirrors useLiveKommits. See comment there.
+    sum += live + (p.frozenKommits ?? 0);
   }
   return sum;
 }

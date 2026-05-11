@@ -365,13 +365,22 @@ export function getDemoPositions(wallet: string): Commitment[] {
 }
 
 function toCommitment(projectSlug: string, p: StoredPosition): Commitment {
+  // Contract: `withdrawnAtMs` describes the position's *current* state — only
+  // expose it when actually withdrawn (principal at zero). On a re-kommit
+  // the stored snapshot keeps it for the audit trail, but surfacing it on
+  // the live row would re-trigger the WITHDRAWN pill and clamp accrual to
+  // the prior withdraw moment via CommitmentRow's freezeAtMs.
+  // `frozenKommits` is the lifetime accumulator and carries forward always.
+  const isCurrentlyWithdrawn = p.kommittedUSD <= 0;
   return {
     projectSlug,
     kommittedUSD: p.kommittedUSD,
     sinceISO: p.sinceISO,
     ...(p.sinceMs ? { sinceMs: p.sinceMs } : {}),
     ...(p.pivotedAtISO ? { pivotedAtISO: p.pivotedAtISO } : {}),
-    ...(p.withdrawnAtMs ? { withdrawnAtMs: p.withdrawnAtMs } : {}),
+    ...(isCurrentlyWithdrawn && p.withdrawnAtMs
+      ? { withdrawnAtMs: p.withdrawnAtMs }
+      : {}),
     ...(p.frozenKommits != null ? { frozenKommits: p.frozenKommits } : {}),
   };
 }
