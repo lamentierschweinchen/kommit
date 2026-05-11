@@ -17,6 +17,7 @@ import { longDate, shortDate } from "@/lib/date-utils";
 import { cn } from "@/lib/cn";
 import { Tape } from "@/components/common/Tape";
 import { Icon } from "@/components/common/Icon";
+import { CollapsableSection } from "@/components/common/CollapsableSection";
 import { SECTOR_CHIP_CLASS } from "@/lib/data/sectors";
 
 export default async function ProjectDetailPage({
@@ -108,38 +109,43 @@ export default async function ProjectDetailPage({
               </div>
             </section>
 
-            <section id="updates">
-              <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                Updates
-              </h2>
+            {/* Handoff 69 B12: long-form sections collapse to keep the page
+                scannable. Updates + Roadmap stay open by default (recording-
+                relevant); Kommit notes + Recent kommitters collapse so the
+                kommit CTA stays close to the top. */}
+            <CollapsableSection id="updates" title="Updates" defaultOpen>
               <UpdatesPanel
                 projectPda={projectPda}
                 projectSlug={project.slug}
                 fallback={project.updates}
               />
-            </section>
+            </CollapsableSection>
 
             {project.roadmap?.length ? (
-              <ProjectRoadmapSection milestones={project.roadmap} />
+              <CollapsableSection id="roadmap" title="Roadmap" defaultOpen>
+                <RoadmapPanel milestones={project.roadmap} />
+              </CollapsableSection>
             ) : null}
 
             {project.state === "graduated" && project.kommitterBenefits?.length ? (
               <KommitterBenefitsSection project={project} />
             ) : null}
 
-            <BackerNotes projectSlug={project.slug} />
+            <CollapsableSection title="Kommit notes">
+              <BackerNotes projectSlug={project.slug} omitHeader />
+            </CollapsableSection>
 
-            <section>
-              <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                Recent kommitters
-              </h2>
+            <CollapsableSection
+              title="Recent kommitters"
+              hint={`${project.kommittersCount} total`}
+            >
               <KommittersList kommitters={project.kommitters} projectSlug={project.slug} limit={7} />
               {project.kommitters.length > 7 ? (
                 <p className="mt-6 font-epilogue font-bold uppercase text-xs tracking-widest text-gray-500">
                   Showing 7 of {project.kommittersCount}
                 </p>
               ) : null}
-            </section>
+            </CollapsableSection>
 
             <section>
               <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
@@ -156,21 +162,6 @@ export default async function ProjectDetailPage({
       </main>
       <Footer />
     </>
-  );
-}
-
-function ProjectRoadmapSection({
-  milestones,
-}: {
-  milestones: NonNullable<Project["roadmap"]>;
-}) {
-  return (
-    <section id="roadmap">
-      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-        Roadmap
-      </h2>
-      <RoadmapPanel milestones={milestones} />
-    </section>
   );
 }
 

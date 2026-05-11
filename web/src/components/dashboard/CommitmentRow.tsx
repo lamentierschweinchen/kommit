@@ -177,9 +177,15 @@ export function CommitmentRow({
               {kommitsDisplay}
             </div>
             <div className="mt-1 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+              {/* Handoff 69 B8: kommits is the score; dollars only matter for
+                  positions where principal is still at-stake. Graduated /
+                  withdrawn → drop the dollar subline so the kommits number
+                  reads as the headline metric. */}
               {isWithdrawn
                 ? "kommits · frozen · soulbound"
-                : `kommits · ${moneyLabel} committed`}
+                : isGraduated
+                  ? "kommits · graduated"
+                  : `kommits · ${moneyLabel} currently kommitted`}
             </div>
           </div>
 

@@ -67,10 +67,23 @@ export function Sidebar({
     <aside className="hidden lg:flex flex-col fixed left-0 top-20 h-[calc(100vh-5rem)] p-4 bg-white w-64 border-r-[3px] border-black z-40 overflow-y-auto">
       {user ? (
         <div className="mb-3 p-4 border-[3px] border-black shadow-brutal bg-gray-100 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full border-[3px] border-black overflow-hidden bg-primary shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={avatarUrl(user.avatarSeed, 120)} alt="" className="w-full h-full object-cover" />
-          </div>
+          {/* Handoff 69 B13: avatar click goes to the user's profile too —
+              matches the dropdown affordance in the header. */}
+          {profileSlug ? (
+            <Link
+              href={`/profile/${profileSlug}`}
+              aria-label="View your profile"
+              className="w-12 h-12 rounded-full border-[3px] border-black overflow-hidden bg-primary shrink-0 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={avatarUrl(user.avatarSeed, 120)} alt="" className="w-full h-full object-cover" />
+            </Link>
+          ) : (
+            <div className="w-12 h-12 rounded-full border-[3px] border-black overflow-hidden bg-primary shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={avatarUrl(user.avatarSeed, 120)} alt="" className="w-full h-full object-cover" />
+            </div>
+          )}
           <div className="min-w-0">
             <div className="font-epilogue font-black text-black text-base leading-tight truncate">
               {user.displayName}

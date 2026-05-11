@@ -69,6 +69,9 @@ export function PositionCard({
   };
 
   if (variant === "graduated" && graduatedRecord) {
+    // Handoff 69 B8: kommits is the score, not dollars. For graduated rounds
+    // the principal has done its work — the kommit count is the only number
+    // worth being the headline. Dollar amount drops out entirely.
     return (
       <div className="bg-white border-[3px] border-black shadow-brutal-purple p-6 md:p-8 relative">
         <div className="absolute -top-3 left-6">
@@ -79,16 +82,13 @@ export function PositionCard({
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
           Your record
         </div>
-        <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter">
-          {formatUSD(committedUSD ?? 0)}
-          <span className="text-gray-400 text-base ml-2">kommitted</span>
+        <div className="font-epilogue font-black text-3xl md:text-4xl tracking-tighter text-primary tabular-nums">
+          {formatNumber(graduatedRecord.finalKommitsKept)}
+          <span className="text-gray-400 text-base ml-2">kommits</span>
         </div>
         <div className="mt-4 space-y-2 font-epilogue font-bold uppercase text-xs tracking-tight">
           <div className="text-gray-500">
             Active {shortDate(graduatedRecord.activeFromISO)} → {shortDate(graduatedRecord.activeToISO)}
-          </div>
-          <div className="text-primary">
-            {formatNumber(graduatedRecord.finalKommitsKept)} kommits at graduation
           </div>
         </div>
         <p className="mt-5 text-sm font-medium text-gray-700 leading-relaxed">

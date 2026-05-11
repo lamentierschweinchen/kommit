@@ -17,6 +17,7 @@ import { requireCallerWallet } from "@/lib/auth-server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
+import { hasOnChainCommitment } from "@/lib/server/lazy-sybil";
 
 export const runtime = "nodejs";
 
@@ -96,10 +97,17 @@ export async function POST(
     );
   }
   if (!kommit) {
-    return NextResponse.json(
-      { error: "not-a-kommitter-of-this-project" },
-      { status: 403 },
+    const onChain = await hasOnChainCommitment(
+      callerWallet,
+      update.project_pda,
+      req.nextUrl.searchParams.get("slug"),
     );
+    if (!onChain) {
+      return NextResponse.json(
+        { error: "not-a-kommitter-of-this-project" },
+        { status: 403 },
+      );
+    }
   }
 
   // 3. Insert comment.

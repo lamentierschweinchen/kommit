@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useDemoMode } from "@/lib/demo-mode";
+import { isDemoMode, useDemoMode } from "@/lib/demo-mode";
 import { useToast } from "@/components/common/ToastProvider";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { MobileDrawer } from "./MobileDrawer";
@@ -41,7 +41,9 @@ export function AuthHeader({
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user, isSignedIn, signOut } = useAuth();
-  const isDemo = useDemoMode();
+  // Hook subscription keeps the header reactive to demo-mode toggles; the
+  // actual sign-out branch reads isDemoMode() at click-time (handoff 69 B7).
+  void useDemoMode();
   const { confirm } = useToast();
   const [signInOpen, setSignInOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -64,9 +66,16 @@ export function AuthHeader({
     // is the natural anon landing. The demo-mode flag itself survives signOut
     // — only the active persona clears — so /demo correctly renders the
     // persona-pick view for an unsigned demo session.
-    const next = isDemo ? "/demo" : "/";
-    signOut();
+    //
+    // Handoff 69 B7: read the flag at click-time, not from the hook value,
+    // and navigate BEFORE signOut so the auth-state teardown can't race the
+    // route push. The hook-bound `isDemo` was occasionally false at click
+    // time on production (real-Privy header re-render swap interleaving
+    // with the demo mount, depending on which provider booted first), so
+    // sign-outs from a demo persona landed on `/` instead of `/demo`.
+    const next = isDemoMode() ? "/demo" : "/";
     router.push(next);
+    signOut();
     confirm("Signed out.");
   };
 
