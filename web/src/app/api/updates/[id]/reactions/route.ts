@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { requireCallerWallet } from "@/lib/auth-server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
 
 export const runtime = "nodejs";
 
@@ -49,8 +50,11 @@ async function authorizeReact(
 
   const sb = getSupabaseAdminClient();
 
-  // 1. Fetch parent update → project_pda.
-  const { data: update, error: updateErr } = await sb
+  // 1. Fetch parent update → project_pda. Same lazy-upsert as the comments
+  // route (handoff 65 B1): static catalog updates aren't in Supabase until
+  // someone interacts with them. The client passes slug+atISO hints so the
+  // server can promote the row on demand.
+  const { data: existing, error: updateErr } = await sb
     .from("project_updates")
     .select("id, project_pda")
     .eq("id", updateId)
@@ -64,6 +68,13 @@ async function authorizeReact(
         { status: 500 },
       ),
     };
+  }
+  let update = existing;
+  if (!update) {
+    update = await lazyUpsertStaticUpdate(sb, updateId, {
+      slug: req.nextUrl.searchParams.get("slug"),
+      atISO: req.nextUrl.searchParams.get("atISO"),
+    });
   }
   if (!update) {
     return {

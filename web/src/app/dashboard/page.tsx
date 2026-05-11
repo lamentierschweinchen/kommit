@@ -66,7 +66,28 @@ export default function DashboardPage() {
   }, [isSignedIn, user?.wallet, refreshKey]);
 
   const activeUSD = commitments.reduce((acc, c) => acc + c.kommittedUSD, 0);
-  const liveTotalKommits = useLiveKommitsTotal(commitments);
+  // Hydrate per-position freeze caps from project metadata (graduation date)
+  // before passing into the lifetime-kommits sum. Handoff 65 B2: withdrawn
+  // positions carry their own `withdrawnAtMs` + `frozenKommits` snapshot;
+  // graduated projects freeze at `graduatedAtISO` for every kommitter.
+  const positionsForTotal = commitments.map((c) => {
+    const project = getProject(c.projectSlug);
+    const graduatedAtMs = project?.graduatedAtISO
+      ? new Date(`${project.graduatedAtISO}T00:00:00Z`).getTime()
+      : undefined;
+    const freezeAtMs =
+      graduatedAtMs != null && c.withdrawnAtMs != null
+        ? Math.min(graduatedAtMs, c.withdrawnAtMs)
+        : graduatedAtMs ?? c.withdrawnAtMs;
+    return {
+      kommittedUSD: c.kommittedUSD,
+      sinceISO: c.sinceISO,
+      sinceMs: c.sinceMs,
+      freezeAtMs,
+      frozenKommits: c.frozenKommits,
+    };
+  });
+  const liveTotalKommits = useLiveKommitsTotal(positionsForTotal);
   const isDemo = useDemoMode();
   const isVisa = useVisaMode();
   // In real-Privy mode the available balance is the user's sandbox SPL

@@ -37,6 +37,11 @@ export function CommitmentRow({
   const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
   const isGraduated = project.state === "graduated";
+  // Handoff 65 B2: a full withdraw zeroes principal but keeps the row with
+  // `withdrawnAtMs` set + a frozen kommit snapshot. The row reads as
+  // "WITHDRAWN" with the kommit count locked.
+  const isWithdrawn =
+    !!commitment.withdrawnAtMs && commitment.kommittedUSD <= 0;
 
   useEffect(() => {
     if (!project.recipientWallet || typeof window === "undefined") return;
@@ -69,10 +74,22 @@ export function CommitmentRow({
       cancelled = true;
     };
   }, [project.recipientWallet]);
+  // Accrual freezes at the earliest of (now, graduation, withdrawal).
+  // Handoff 65 B2: "kommits should stop accumulating when graduation date is
+  // reached, AND the kommits should still be visible — they're soulbound."
+  const graduatedAtMs = project.graduatedAtISO
+    ? new Date(`${project.graduatedAtISO}T00:00:00Z`).getTime()
+    : undefined;
+  const freezeAtMs =
+    graduatedAtMs != null && commitment.withdrawnAtMs != null
+      ? Math.min(graduatedAtMs, commitment.withdrawnAtMs)
+      : graduatedAtMs ?? commitment.withdrawnAtMs;
   const liveKommits = useLiveKommits(
     commitment.kommittedUSD,
     commitment.sinceISO,
     commitment.sinceMs,
+    freezeAtMs,
+    commitment.frozenKommits,
   );
   const kommitsDisplay =
     liveKommits > 0
@@ -93,6 +110,7 @@ export function CommitmentRow({
           "bg-white border-[3px] border-black p-5 relative",
           "flex flex-col md:flex-row md:items-center gap-4 md:gap-6",
           isGraduated || isPivot ? "shadow-brutal-purple mt-3" : "shadow-brutal",
+          isWithdrawn && "bg-gray-50 opacity-95",
         )}
       >
         {isGraduated ? (
@@ -159,7 +177,9 @@ export function CommitmentRow({
               {kommitsDisplay}
             </div>
             <div className="mt-1 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
-              kommits · {moneyLabel} committed
+              {isWithdrawn
+                ? "kommits · frozen · soulbound"
+                : `kommits · ${moneyLabel} committed`}
             </div>
           </div>
 
@@ -169,7 +189,29 @@ export function CommitmentRow({
                 {newCount} new
               </span>
             ) : null}
-            {isGraduated ? (
+            {isWithdrawn ? (
+              <>
+                <span className="inline-block bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+                  Withdrawn
+                </span>
+                {!isGraduated ? (
+                  <BrutalButton
+                    size="xs"
+                    variant="primary"
+                    iconLeft={<Icon name="add" size="xs" />}
+                    onClick={() => {
+                      if (isVisa) {
+                        setChooserOpen(true);
+                        return;
+                      }
+                      setCommitOpen(true);
+                    }}
+                  >
+                    Kommit again
+                  </BrutalButton>
+                ) : null}
+              </>
+            ) : isGraduated ? (
               <>
                 <BrutalButton
                   size="xs"

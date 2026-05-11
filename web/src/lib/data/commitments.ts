@@ -13,6 +13,20 @@ export type Commitment = {
   sinceMs?: number;
   /** True when the project pivoted while user was kommitted. The dashboard row keeps showing the inline tag. */
   pivotedAtISO?: string;
+  /**
+   * Set when the kommitter withdrew their full principal (kommittedUSD = 0).
+   * Handoff 65 B2: "soulbound, yours forever" — the row stays on the
+   * dashboard with its kommit count frozen at the withdrawal moment. The
+   * accrual cap in `useLiveKommits` and the snapshot in `frozenKommits`
+   * both key off this field.
+   */
+  withdrawnAtMs?: number;
+  /**
+   * Lifetime kommits earned by this position at the moment it froze (full
+   * withdraw, or — looked up from the project — graduation). Carried on the
+   * row so the dashboard sum doesn't regress when capital is pulled out.
+   */
+  frozenKommits?: number;
 };
 
 /**

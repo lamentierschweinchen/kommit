@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authedFetch } from "@/lib/api-client";
+import { DEMO_ENGAGEMENT_SEEDED_KEY } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { Icon } from "@/components/common/Icon";
@@ -18,12 +19,18 @@ export function UpdateComments({
   isFounder,
   canComment,
   disabledReason,
+  staticHint,
 }: {
   updateId: string;
   /** Founder soft-mod button is placeholder-only — wire visible, alert "v1". */
   isFounder?: boolean;
   canComment: boolean;
   disabledReason?: string;
+  /** Static catalog hint (handoff 65 B1). When the update is a `SeedUpdateRow`
+   *  whose row isn't yet in Supabase, this lets the real-Privy comment route
+   *  lazy-upsert the parent update before inserting the comment. Demo mode
+   *  ignores it (demoFetch matches on path, not query). */
+  staticHint?: { slug: string; atISO: string };
 }) {
   const { user, isSignedIn } = useAuth();
   const { error, confirm } = useToast();
@@ -41,6 +48,10 @@ export function UpdateComments({
   // engagement signals that judges scrolling past would miss).
   // `loaded` still prevents re-fetch after the first run, so subsequent
   // open/close toggles don't re-hit the API.
+  const hintQS = staticHint
+    ? `?slug=${encodeURIComponent(staticHint.slug)}&atISO=${encodeURIComponent(staticHint.atISO)}`
+    : "";
+
   useEffect(() => {
     if (loaded || loading) return;
     let cancelled = false;
@@ -61,6 +72,32 @@ export function UpdateComments({
     };
   }, [open, loaded, loading, updateId, error]);
 
+  // Handoff 65 B3: in demo mode, UpdateComments commonly mounts before the
+  // demo cohort seed has written its pivot/graduation comments to
+  // localStorage. The eager fetch above races the seed and locks `loaded`
+  // to an empty result. Re-fetch when the seed marker flips so the 6
+  // seeded comments on the Quire pivot become visible on first paint.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== DEMO_ENGAGEMENT_SEEDED_KEY) return;
+      let cancelled = false;
+      authedFetch(`/api/updates/${updateId}/comments`)
+        .then((r) => r.json())
+        .then((j: { comments?: RemoteComment[] }) => {
+          if (!cancelled) setComments(j.comments ?? []);
+        })
+        .catch(() => {
+          /* non-fatal — eager fetch already populated state */
+        });
+      return () => {
+        cancelled = true;
+      };
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [updateId]);
+
   async function submit() {
     if (submitting || !body.trim()) return;
     if (!isSignedIn) {
@@ -70,7 +107,7 @@ export function UpdateComments({
     if (!canComment) return;
     setSubmitting(true);
     try {
-      const res = await authedFetch(`/api/updates/${updateId}/comments`, {
+      const res = await authedFetch(`/api/updates/${updateId}/comments${hintQS}`, {
         method: "POST",
         body: JSON.stringify({ body: body.trim() }),
         mockWallet: user?.wallet ?? null,

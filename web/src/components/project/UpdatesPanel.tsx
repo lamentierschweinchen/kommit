@@ -302,6 +302,7 @@ function SeedUpdateRow({
           initialMine={initialMine}
           canReact={isKommitter}
           disabledReason={disabledReason}
+          staticHint={{ slug: projectSlug, atISO: update.atISO }}
         />
       </div>
 
@@ -310,6 +311,7 @@ function SeedUpdateRow({
         isFounder={isFounder}
         canComment={isKommitter}
         disabledReason={disabledReason}
+        staticHint={{ slug: projectSlug, atISO: update.atISO }}
       />
     </article>
   );
