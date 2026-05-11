@@ -52,6 +52,15 @@ const PERSONA_BLURBS: Record<string, string> = {
   sara: "New visitor — clean dashboard, no commitments yet. The first-time user POV.",
 };
 
+/**
+ * Demo-entry personas — only these three render as persona cards on /demo.
+ * `users.ts` now contains a wider USERS dictionary (founders + seed kommitters
+ * for /profile/[slug] resolution per PR #53), but those are NOT demo entry
+ * points — they exist so clickable names on project pages resolve. The /demo
+ * persona-pick stays at the three intended demo POVs.
+ */
+const DEMO_PERSONA_IDS = ["lukas", "julian", "sara"] as const;
+
 type AirdropResponse =
   | {
       ok: true;
@@ -287,7 +296,7 @@ function DemoEntry() {
           </p>
 
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            {Object.values(USERS).map((u) => (
+            {DEMO_PERSONA_IDS.map((id) => USERS[id]).filter(Boolean).map((u) => (
               <button
                 key={u.id}
                 type="button"
