@@ -187,7 +187,7 @@ export default function DashboardPage() {
             <div className="space-y-20">
               <section className="pt-10 border-t-[8px] border-black">
                 <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
-                  Your commitments
+                  Your kommits
                 </h2>
                 {!isSignedIn ? (
                   <SignInPrompt />
