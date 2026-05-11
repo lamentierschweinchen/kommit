@@ -633,7 +633,9 @@ const MARGIN_HOUSE: Project = {
   kommitters: [],
 };
 
-export const PROJECTS: Project[] = [
+import dynamicProjects from "./dynamic-projects.json";
+
+const STATIC_PROJECTS: Project[] = [
   CALDERA,
   LIGHTHOUSE,
   AURORA,
@@ -645,6 +647,36 @@ export const PROJECTS: Project[] = [
   VERITY_BOOKS,
   MARGIN_HOUSE,
 ];
+
+/**
+ * Dynamic-projects loader — handoff 73 item 9 (Path A).
+ *
+ * `dynamic-projects.json` is written by `scripts/onboard_founder.ts` and
+ * committed alongside the founders-table row. Each entry is a `Project`
+ * shape minus a few empty arrays the script doesn't populate (kommitters,
+ * updates, roadmap come from the live indexer once the project is on-chain).
+ *
+ * Slug collisions: dynamic entries win over static ones (founders re-run
+ * the script to refresh). The dedup runs in `PROJECTS` below.
+ *
+ * Why JSON + commit (not a Supabase table fetch): the existing /projects +
+ * /projects/[slug] pages are static-friendly client components that
+ * consume the PROJECTS export directly. A live-DB fetch would require
+ * turning them into server components and adding cache layers. Path A
+ * costs Lukas a `git push` per founder; Path B (Supabase live) is the
+ * follow-up handoff once the surface is stable.
+ */
+type DynamicProjectsFile = {
+  projects: Project[];
+};
+
+const DYNAMIC: Project[] = (dynamicProjects as DynamicProjectsFile).projects ?? [];
+
+export const PROJECTS: Project[] = (() => {
+  const dynamicSlugs = new Set(DYNAMIC.map((p) => p.slug));
+  const staticKept = STATIC_PROJECTS.filter((p) => !dynamicSlugs.has(p.slug));
+  return [...staticKept, ...DYNAMIC];
+})();
 
 export function getProject(slug: string): Project | undefined {
   return PROJECTS.find((p) => p.slug === slug);

@@ -35,7 +35,10 @@ import {
 } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
-import { USERS, type Role, type User } from "@/lib/data/users";
+import { USERS, type Role, type SocialLinks, type User } from "@/lib/data/users";
+import { flagAndCountryLabel } from "@/lib/country-flag";
+import { fetchMe } from "@/lib/me-client";
+import type { FounderLink, FounderRecord } from "@/lib/founder-types";
 import {
   getStoredPersonaId,
   PERSONA_STORAGE_KEY,
@@ -51,6 +54,12 @@ type AuthState = {
   signOut: () => void;
   switchRole: (role: Role) => void;
   switchUser: (userId: string) => void;
+  /**
+   * Re-fetch the server-side founder enrichment (real-Privy mode). Called
+   * after the EditProfileModal saves so the next render reflects the
+   * updated bio/country/links. No-op in mock-auth mode (data is static).
+   */
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -90,20 +99,94 @@ function avatarSeedFromAddress(addr: string): number {
   return (acc % 70) + 1;
 }
 
+/** Map a founder's `links` jsonb into the legacy `SocialLinks` shape the
+ *  rest of the app consumes. Known labels (twitter, linkedin, github,
+ *  website) are placed by name; anything else falls through to the first
+ *  empty slot or is dropped — ProfileHeader doesn't render unknown keys
+ *  today, so unrecognised labels would be invisible anyway. */
+function linksToSocials(links: FounderLink[]): SocialLinks | undefined {
+  if (!links || links.length === 0) return undefined;
+  const out: SocialLinks = {};
+  for (const { label, url } of links) {
+    if (!url) continue;
+    const key = label.trim().toLowerCase();
+    if (key === "twitter" || key === "x") out.twitter = url;
+    else if (key === "linkedin") out.linkedin = url;
+    else if (key === "github") out.github = url;
+    else if (key === "website" || key === "site") out.website = url;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Translate a founder record from /api/me into the in-memory User shape
+ *  the rest of the app already consumes. Keeps the User type stable so we
+ *  don't ripple changes through every consumer.
+ *
+ *  - `role` stays the caller-selected `activeRole` (defaults to founder
+ *    when the record carries a projectSlug; users can still switch back
+ *    via the sidebar).
+ *  - `isAdmin` is set from the DB role; orthogonal to the UI activeRole.
+ */
+function mergeFounderIntoUser(base: User, founder: FounderRecord): User {
+  return {
+    ...base,
+    id: founder.userId ?? base.wallet,
+    displayName: founder.displayName || base.displayName,
+    role: base.role,
+    isAdmin: founder.role === "admin",
+    avatarSeed:
+      typeof founder.avatarSeed === "number" ? founder.avatarSeed : base.avatarSeed,
+    email: founder.email || base.email,
+    ownsProject: founder.projectSlug ?? undefined,
+    bio: founder.bio ?? undefined,
+    socials: linksToSocials(founder.links),
+    location: flagAndCountryLabel(founder.country) ?? undefined,
+    interests: founder.interests.length > 0 ? founder.interests : undefined,
+  };
+}
+
 function RealAuthProvider({ children }: { children: ReactNode }) {
   const { user: privyUser, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const [activeRole, setActiveRole] = useState<Role>("kommitter");
+  const [founder, setFounder] = useState<FounderRecord | null>(null);
 
   const wallet = wallets[0];
   const isSignedIn = authenticated && !!wallet;
+  const walletAddress = wallet?.address ?? null;
+
+  // Fetch the server-side founder enrichment whenever the wallet identity
+  // changes. Cached in component state; cleared on sign-out (or wallet
+  // change). We keep this separate from the User memo so re-renders on
+  // activeRole flips don't refetch.
+  useEffect(() => {
+    if (!isSignedIn || !walletAddress) {
+      setFounder(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const record = await fetchMe();
+      if (cancelled) return;
+      setFounder(record);
+      // Default the active role to "founder" the first time we discover
+      // one — the founder will almost always want to manage their project.
+      // The user can still flip back to kommitter via the sidebar switcher.
+      if (record && record.projectSlug) {
+        setActiveRole((prev) => (prev === "founder" ? prev : "founder"));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, walletAddress]);
 
   const user: User | null = useMemo(() => {
     if (!isSignedIn || !privyUser || !wallet) return null;
     const address = wallet.address;
     const email = privyUser.email?.address;
     const displayName = email ? email.split("@")[0] : truncateWallet(address);
-    return {
+    const base: User = {
       id: address,
       displayName,
       role: activeRole,
@@ -111,7 +194,8 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
       email: email ?? "",
       wallet: address,
     };
-  }, [isSignedIn, privyUser, wallet, activeRole]);
+    return founder ? mergeFounderIntoUser(base, founder) : base;
+  }, [isSignedIn, privyUser, wallet, activeRole, founder]);
 
   const signIn = useCallback(
     (_asUserId?: string) => {
@@ -131,6 +215,12 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
     void _userId;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (!isSignedIn || !walletAddress) return;
+    const record = await fetchMe();
+    setFounder(record);
+  }, [isSignedIn, walletAddress]);
+
   const value: AuthState = useMemo(
     () => ({
       user,
@@ -140,8 +230,18 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
       signOut,
       switchRole,
       switchUser,
+      refreshUser,
     }),
-    [user, activeRole, isSignedIn, signIn, signOut, switchRole, switchUser],
+    [
+      user,
+      activeRole,
+      isSignedIn,
+      signIn,
+      signOut,
+      switchRole,
+      switchUser,
+      refreshUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -261,6 +361,9 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // No-op in mock mode — persona data is static, nothing to re-fetch.
+  const refreshUser = useCallback(async () => {}, []);
+
   const value: AuthState = useMemo(
     () => ({
       user,
@@ -270,8 +373,9 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
       signOut,
       switchRole,
       switchUser,
+      refreshUser,
     }),
-    [user, activeRole, signIn, signOut, switchRole, switchUser],
+    [user, activeRole, signIn, signOut, switchRole, switchUser, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

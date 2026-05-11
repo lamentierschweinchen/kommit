@@ -7,7 +7,8 @@
   "scripts": {
     "lint": "eslint --ext .ts tests/",
     "lint:fix": "eslint --fix --ext .ts tests/",
-    "test": "anchor test"
+    "test": "anchor test",
+    "onboard-founder": "NODE_PATH=web/node_modules ts-node --transpile-only scripts/onboard_founder.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,8 +32,29 @@ type FormValues = z.infer<typeof schema>;
 const SECTORS = ["Climate", "Fintech", "Bio", "Health", "Edu", "Consumer", "Creator tools", "Media", "Other"];
 const STAGES = ["Idea", "Building", "Shipping", "Revenue"];
 
+type SubmitErrorCode =
+  | "invalid-input"
+  | "rate-limit"
+  | "config"
+  | "server-error"
+  | "network";
+
+const ERROR_COPY: Record<SubmitErrorCode, string> = {
+  "invalid-input":
+    "We couldn't read the form. Check each field — every required one has a green border when valid.",
+  "rate-limit":
+    "Slow down — one application per minute. Wait a moment and try again.",
+  config:
+    "The application queue isn't wired up on this deployment. Email Lukas directly: lukas@kommit.now.",
+  "server-error":
+    "Save failed on our side. Try again — if it keeps happening, ping Lukas.",
+  network:
+    "Couldn't reach the server. Check your connection and try again.",
+};
+
 export default function BuildApplicationPage() {
   const router = useRouter();
+  const [submitError, setSubmitError] = useState<SubmitErrorCode | null>(null);
   const {
     register,
     handleSubmit,
@@ -46,10 +68,30 @@ export default function BuildApplicationPage() {
   const pitchLength = watch("pitch")?.length ?? 0;
 
   const onSubmit = handleSubmit(
-    async () => {
-      // Simulate the submission
-      await new Promise((r) => setTimeout(r, 250));
-      router.push("/build/submitted");
+    async (values) => {
+      setSubmitError(null);
+      try {
+        const res = await fetch("/api/founder-application", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(values),
+        });
+        if (res.ok) {
+          router.push("/build/submitted");
+          return;
+        }
+        // Non-2xx — surface the route's structured error code.
+        try {
+          const body = (await res.json()) as { error?: SubmitErrorCode };
+          setSubmitError(body.error ?? "server-error");
+        } catch {
+          setSubmitError("server-error");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        setSubmitError("network");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     },
     // Pass-2 P2: instead of bouncing the user to the page top on first
     // invalid submit, focus the first errored field. RHF's `setFocus` uses
@@ -78,6 +120,20 @@ export default function BuildApplicationPage() {
         <FounderPitchBox />
 
         <form onSubmit={onSubmit} className="max-w-2xl mx-auto space-y-7">
+          {submitError ? (
+            <div
+              role="alert"
+              className="bg-primary/10 border-[3px] border-primary p-4 shadow-brutal-sm"
+            >
+              <div className="font-epilogue font-black uppercase text-[11px] tracking-widest text-primary">
+                Couldn&rsquo;t submit
+              </div>
+              <p className="mt-2 text-sm font-medium text-gray-800 leading-relaxed">
+                {ERROR_COPY[submitError]}
+              </p>
+            </div>
+          ) : null}
+
           <Field
             label="Project name"
             error={errors.name?.message}

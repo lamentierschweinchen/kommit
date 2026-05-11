@@ -43,7 +43,15 @@ export function AuthGate({
     return <AnonGate headline={anonHeadline} body={anonBody} />;
   }
 
-  if (requireOwnsProject && user?.ownsProject !== requireOwnsProject) {
+  // Admin bypass: Lukas (or any founders.role='admin' wallet) can pinch-hit
+  // on any project dashboard, so the ownership gate is short-circuited when
+  // the signed-in user carries isAdmin. Everyone else needs the exact
+  // project-slug match.
+  if (
+    requireOwnsProject &&
+    user?.ownsProject !== requireOwnsProject &&
+    !user?.isAdmin
+  ) {
     return <NonOwnerGate />;
   }
 

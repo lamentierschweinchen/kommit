@@ -32,6 +32,13 @@ export type User = {
   location?: string;
   /** Short tag list — DePIN, climate, etc. Rendered as chips. */
   interests?: string[];
+  /**
+   * True when the founder record carries role='admin' — Lukas / coordinator.
+   * Used to bypass the /founder/<slug> ownership gate so admin can pinch-hit
+   * on any project. Orthogonal to `role` (which is founder / kommitter /
+   * anon for UI mode-switching).
+   */
+  isAdmin?: boolean;
 };
 
 // Mock wallets are real-format base58 32-byte Solana pubkeys (44 chars) so
