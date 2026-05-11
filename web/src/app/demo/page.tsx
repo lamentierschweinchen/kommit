@@ -69,7 +69,7 @@ type AirdropResponse =
  * Two peer paths:
  *   1. **On-chain demo** (canonical) — Privy sign-in → auto-airdrop $10K
  *      sandbox SPL + 0.05 SOL gas → /dashboard with funded wallet.
- *   2. **Walk Kommit in 60s** — pick one of three populated personas
+ *   2. **Try our demo** — pick one of three populated personas
  *      (mock-auth, no signup) → CSR-navigate into a populated dashboard.
  *
  * Plus a tertiary "Browse as a stranger" link for signed-out exploration.
@@ -274,7 +274,7 @@ function DemoEntry() {
         <div className="mt-6 bg-white border-[3px] border-black shadow-brutal p-5 md:p-6">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <span className="font-epilogue font-black uppercase text-lg md:text-xl tracking-tight">
-              Walk Kommit in 60s
+              Try our demo
             </span>
             <span className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
               Three personas · no signup
@@ -371,7 +371,7 @@ function DemoEntry() {
         </p>
         <p>
           <span className="font-epilogue font-bold uppercase tracking-widest text-[11px] text-black">
-            Walk Kommit in 60s.
+            Try our demo.
           </span>{" "}
           Posts you write, reactions you click, comments you leave during the
           persona demo persist in your browser only. Funds, withdrawals, and
