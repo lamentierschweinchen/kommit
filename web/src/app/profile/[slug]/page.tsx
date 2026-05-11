@@ -4,6 +4,7 @@ import { ProfileClient } from "./ProfileClient";
 import { getUser, getUserByWallet, type User } from "@/lib/data/users";
 import { getFounderBySlugOrWallet } from "@/lib/founders-store";
 import { flagAndCountryLabel } from "@/lib/country-flag";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import type { FounderRecord } from "@/lib/founder-types";
 
 /**
@@ -16,25 +17,38 @@ import type { FounderRecord } from "@/lib/founder-types";
 function founderToUser(record: FounderRecord): User {
   const socials: User["socials"] = {};
   for (const { label, url } of record.links) {
-    if (!url) continue;
+    const safeUrl = sanitizeExternalUrl(url);
+    if (!safeUrl) continue;
     const k = label.trim().toLowerCase();
-    if (k === "twitter" || k === "x") socials.twitter = url;
-    else if (k === "linkedin") socials.linkedin = url;
-    else if (k === "github") socials.github = url;
-    else if (k === "website" || k === "site") socials.website = url;
+    if (k === "twitter" || k === "x") socials.twitter = safeUrl;
+    else if (k === "linkedin") socials.linkedin = safeUrl;
+    else if (k === "github") socials.github = safeUrl;
+    else if (k === "website" || k === "site") socials.website = safeUrl;
   }
   return {
     id: record.userId ?? record.wallet,
     displayName: record.displayName,
     role: record.role === "admin" ? "kommitter" : "founder",
     avatarSeed: record.avatarSeed ?? 1,
-    email: record.email ?? "",
+    email: "",
     wallet: record.wallet,
     ownsProject: record.projectSlug ?? undefined,
     bio: record.bio ?? undefined,
     location: flagAndCountryLabel(record.country) ?? undefined,
     interests: record.interests.length > 0 ? record.interests : undefined,
     socials: Object.keys(socials).length > 0 ? socials : undefined,
+  };
+}
+
+function founderToClientRecord(record: FounderRecord): FounderRecord {
+  return {
+    ...record,
+    email: null,
+    role: "founder",
+    links: record.links.flatMap((link) => {
+      const safeUrl = sanitizeExternalUrl(link.url);
+      return safeUrl ? [{ ...link, url: safeUrl }] : [];
+    }),
   };
 }
 
@@ -57,11 +71,13 @@ export default async function ProfilePage({
     if (founder) user = founderToUser(founder);
   }
 
+  const clientFounder = founder ? founderToClientRecord(founder) : null;
+
   return (
     <>
       <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-5xl mx-auto w-full">
-        <ProfileClient slug={slug} user={user} founder={founder} />
+        <ProfileClient slug={slug} user={user} founder={clientFounder} />
       </main>
       <Footer />
     </>

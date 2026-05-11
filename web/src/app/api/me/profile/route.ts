@@ -22,6 +22,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { requireCallerWallet } from "@/lib/auth-server";
+import { isSafeExternalUrl } from "@/lib/url-safety";
 import {
   getFounderByWallet,
   updateFounderProfile,
@@ -57,7 +58,12 @@ const REQ = z.object({
     .array(
       z.object({
         label: z.string().trim().min(1).max(40),
-        url: z.string().trim().url().max(300),
+        url: z
+          .string()
+          .trim()
+          .url()
+          .max(300)
+          .refine(isSafeExternalUrl, "profile links must use https"),
       }),
     )
     .max(20)

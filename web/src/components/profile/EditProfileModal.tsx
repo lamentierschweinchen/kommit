@@ -22,6 +22,7 @@ import { Icon } from "@/components/common/Icon";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/common/ToastProvider";
 import { patchMeProfile } from "@/lib/me-client";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import type { FounderLink, FounderRecord } from "@/lib/founder-types";
 
 const BIO_MAX = 2000;
@@ -99,12 +100,12 @@ export function EditProfileModal({ open, onOpenChange, founder }: Props) {
 
     // Quick client-side URL sanity — server zod re-validates.
     for (const l of cleanLinks) {
-      try {
-        new URL(l.url);
-      } catch {
-        setError(`Bad URL for "${l.label}".`);
+      const safeUrl = sanitizeExternalUrl(l.url);
+      if (!safeUrl) {
+        setError(`Links must use https. Check "${l.label}".`);
         return;
       }
+      l.url = safeUrl;
     }
 
     setSubmitting(true);

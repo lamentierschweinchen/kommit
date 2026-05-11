@@ -44,6 +44,7 @@ import {
 } from "@solana/spl-token";
 
 import { requireCallerWallet } from "@/lib/auth-server";
+import { callerIP } from "@/lib/server/request-ip";
 import { takeRateLimit } from "@/lib/sandbox-rate-limit";
 import { isSandboxApiEnabled } from "@/lib/sandbox-mode";
 import {
@@ -130,9 +131,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<ResponseBody>
     return jsonError("auth", 401);
   }
 
-  // 2. Rate limit (still useful as a defense-in-depth burst guard, but the
-  // load-bearing idempotency primitive now lives in Supabase below).
-  if (!takeRateLimit(walletStr, RATE_LIMIT_MS)) {
+  // 2. Rate limit (wallet + IP; still defense-in-depth, while the load-bearing
+  // idempotency primitive lives in Supabase below).
+  if (!takeRateLimit(`airdrop:wallet:${walletStr}`, RATE_LIMIT_MS)) {
+    return jsonError("rate-limit", 429);
+  }
+  if (!takeRateLimit(`airdrop:ip:${callerIP(req)}`, RATE_LIMIT_MS)) {
     return jsonError("rate-limit", 429);
   }
 
