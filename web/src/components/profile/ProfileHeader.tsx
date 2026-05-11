@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useToast } from "@/components/common/ToastProvider";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { avatarUrl, type SocialLinks, type User } from "@/lib/data/users";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
+import type { FounderRecord } from "@/lib/founder-types";
 
 type ProfileHeaderProps = {
   /** Persona — when present, every field on the page renders rich. */
@@ -13,6 +16,9 @@ type ProfileHeaderProps = {
   wallet?: string;
   /** True when the viewer is looking at their own profile. */
   isOwnProfile: boolean;
+  /** Server-resolved founder record — drives the edit-profile modal when
+   *  the viewer is the founder. Null for personas and stub profiles. */
+  founder?: FounderRecord | null;
 };
 
 const SOCIAL_LABELS: Array<{ key: keyof SocialLinks; label: string; icon: IconName }> = [
@@ -22,8 +28,15 @@ const SOCIAL_LABELS: Array<{ key: keyof SocialLinks; label: string; icon: IconNa
   { key: "website", label: "Website", icon: "open_in_new" },
 ];
 
-export function ProfileHeader({ user, slug, wallet, isOwnProfile }: ProfileHeaderProps) {
+export function ProfileHeader({
+  user,
+  slug,
+  wallet,
+  isOwnProfile,
+  founder,
+}: ProfileHeaderProps) {
   const toast = useToast();
+  const [editOpen, setEditOpen] = useState(false);
   const displayName = user?.displayName ?? truncateWallet(wallet ?? slug);
   const roleLabel = user
     ? `${user.role === "founder" ? "Founder" : "Kommitter"}${user.location ? ` · ${user.location}` : ""}`
@@ -83,12 +96,19 @@ export function ProfileHeader({ user, slug, wallet, isOwnProfile }: ProfileHeade
         {isOwnProfile ? (
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
+              if (founder) {
+                setEditOpen(true);
+                return;
+              }
+              // Personas + slim wallet profiles: no editable backend yet.
+              // The /account About-me section handles bio + socials for
+              // those; founders get the rich modal below.
               toast.confirm(
-                "Profile editing ships in v1",
-                "For now the persona fields are read-only — edit comes with the v1 settings surface.",
-              )
-            }
+                "Profile editing is for founders right now",
+                "Persona profiles + slim wallet profiles are read-only on /profile. Founder fields land here when Lukas onboards the wallet.",
+              );
+            }}
             className="font-epilogue font-bold uppercase tracking-widest text-[10px] px-3 py-2 border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform shrink-0 inline-flex items-center gap-1.5"
           >
             <Icon name="edit_note" size="xs" />
@@ -96,6 +116,13 @@ export function ProfileHeader({ user, slug, wallet, isOwnProfile }: ProfileHeade
           </button>
         ) : null}
       </div>
+      {founder ? (
+        <EditProfileModal
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          founder={founder}
+        />
+      ) : null}
     </section>
   );
 }
