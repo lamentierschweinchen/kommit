@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PublicKey } from "@solana/web3.js";
 import { CommitModal } from "@/components/commit/CommitModal";
-import { CommitChooserModal } from "@/components/commit/CommitChooserModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { ClaimBenefitsModal } from "@/components/dashboard/ClaimBenefitsModal";
 import { BrutalButton } from "@/components/common/BrutalButton";
@@ -12,7 +11,6 @@ import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { projectImageUrl, type Project } from "@/lib/data/projects";
 import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
-import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import type { Commitment } from "@/lib/data/commitments";
 import type { RemoteUpdate } from "@/lib/api-types";
 import { findProjectPda } from "@/lib/kommit";
@@ -32,7 +30,6 @@ export function CommitmentRow({
 }) {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [commitOpen, setCommitOpen] = useState(false);
-  const [chooserOpen, setChooserOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const isPivot = !!commitment.pivotedAtISO;
@@ -95,8 +92,7 @@ export function CommitmentRow({
     liveKommits > 0
       ? formatLiveKommits(liveKommits)
       : formatNumber(kommitsFor(commitment.kommittedUSD, commitment.sinceISO));
-  const isVisa = useVisaMode();
-  const moneyLabel = isVisa ? formatEUR(commitment.kommittedUSD) : formatUSD(commitment.kommittedUSD);
+  const moneyLabel = formatUSD(commitment.kommittedUSD);
   const founder = project.founders[0];
 
   return (
@@ -205,13 +201,7 @@ export function CommitmentRow({
                     size="xs"
                     variant="primary"
                     iconLeft={<Icon name="add" size="xs" />}
-                    onClick={() => {
-                      if (isVisa) {
-                        setChooserOpen(true);
-                        return;
-                      }
-                      setCommitOpen(true);
-                    }}
+                    onClick={() => setCommitOpen(true)}
                   >
                     Rekommit
                   </BrutalButton>
@@ -242,13 +232,7 @@ export function CommitmentRow({
                   size="xs"
                   variant="primary"
                   iconLeft={<Icon name="add" size="xs" />}
-                  onClick={() => {
-                    if (isVisa) {
-                      setChooserOpen(true);
-                      return;
-                    }
-                    setCommitOpen(true);
-                  }}
+                  onClick={() => setCommitOpen(true)}
                 >
                   Kommit
                 </BrutalButton>
@@ -270,12 +254,6 @@ export function CommitmentRow({
         onOpenChange={setCommitOpen}
         project={project}
         onSuccess={onWithdrawSuccess}
-      />
-      <CommitChooserModal
-        open={chooserOpen}
-        onOpenChange={setChooserOpen}
-        project={project}
-        onChooseBalance={() => setCommitOpen(true)}
       />
       <WithdrawModal
         open={withdrawOpen}

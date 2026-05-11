@@ -1,7 +1,7 @@
 /**
  * Server-side feature gate for the Lane B sandbox API routes.
  *
- * SERVER-ONLY. Mirrors `visa-demo-mode.ts`: an independent gate so the
+ * SERVER-ONLY. Independent gate so the
  * routes can be flipped on/off per environment without touching code.
  *
  * `SANDBOX_API_ENABLED=1` (server-only env, no NEXT_PUBLIC_ prefix) is

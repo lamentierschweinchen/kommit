@@ -1,24 +1,25 @@
 # Kommit
 
-> *Showing up early to back a team should buy you something. Right now, it doesn't.*
+> *A conviction primitive — and a discovery primitive — on Solana.*
+> *Real backers, real teams, real long-term alignment. None of it extractive.*
 
-**Kommit is a conviction primitive for early-stage backing on Solana.** Back early-stage teams without locking your money up. When teams raise, your standing earns first dibs to invest at round price.
+Kommit lets backers commit real money to early-stage teams without losing custody of that money. The mechanism: park USDC, allocate it across teams, withdraw your principal anytime. Yield on parked capital funds the platform — no fees on backers, no fees on teams. What accrues is **kommits**: capital × time committed, soulbound, public, on-chain. When teams raise, kommitters earn first-dibs rights to invest at round price.
 
-The mechanism: park USDC, allocate it across teams. Yield earned on parked capital funds the platform — no fees on backers, no fees on teams. What accrues is **kommits** — capital × time committed, soulbound, public, on-chain. Withdraw your principal anytime; the kommit record stays.
+It's also a discovery primitive. Teams put themselves out early, gain trust, and prove they can deliver — without burning early believers when the idea changes. Pivots happen *pre-capital-allocation*. No capital burn. Long-term alignment over quick burns.
 
-Built for the [Solana Frontier hackathon](https://solana.com/frontier) (May 2026). MIT-licensed, open-source from commit 1. Full thesis at [kommit.now/manifesto](https://kommit.now/manifesto) (CC0).
+Built for the [Solana Frontier hackathon](https://solana.com/frontier) (May 2026). MIT-licensed, open-source from commit 1.
 
 > ⚠️ **Devnet-grade — not production-ready.** This codebase ships v0.5 to Solana Frontier and runs on **Solana devnet only**. It has **not been independently audited**. Mainnet deploy artifacts exist (`scripts/deploy_mainnet.sh`) but mainnet is gated on third-party audit and Squads multisig migration of admin + program upgrade authority — see [Deploy](#deploy). Do not commit funds you cannot afford to lose.
 >
 > See [`SECURITY.md`](SECURITY.md) for disclosure path and known limitations, [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the internal Anchor program review, and [`RECOVERY.md`](RECOVERY.md) for program-upgrade-keypair recovery.
 
-**Live demo:** [kommit.now](https://kommit.now) (devnet)
+**Live demo:** [kommit.now](https://kommit.now) (devnet) · **Manifesto:** [kommit.now/manifesto](https://kommit.now/manifesto) · **Pitch deck:** [kommit.now/pitch](https://kommit.now/pitch)
 
 ---
 
 ## What it does
 
-The category Kommit invents: **a stake-backed signal layer for early-stage teams.** Real money, real opportunity cost, real signal — without principal extraction.
+The category Kommit invents: **a stake-backed signal layer for early-stage teams that converts to allocation rights at graduation.** Real money, real opportunity cost, real signal — without principal extraction.
 
 Existing "early supporter" mechanisms fail at one of two things:
 
@@ -27,11 +28,11 @@ Existing "early supporter" mechanisms fail at one of two things:
 
 Kommit's signal is **stake-backed and survival-compatible**. Real money committed for real time, with real opportunity cost (the yield you'd have earned by parking that money anywhere else). Hard to game: wash-trading volume doesn't work when the input is patient capital tied up over time. Easy to verify: public, soulbound, on-chain.
 
-**For backers ("kommitters"):** Park money. Allocate across teams you want to back. Withdraw anytime, no fees. Earn a verifiable record that compounds.
+Three groups, all aligned because the project succeeding is good for all of them for their own reasons:
 
-**For teams:** Demand validation that's cleaner than upvotes and faster than waiting for revenue. Pre-validated cohort of named, capital-committed early backers. Onboard without paying fees or diluting equity.
-
-**For the ecosystem:** A composable, sybil-resistant cohort signal that any other product can read on-chain.
+- **Founders** — get real PMF signal: patient capital, not upvotes. Demand validation cleaner than upvotes, faster than waiting for revenue. Onboard without paying fees or diluting equity.
+- **Backers ("kommitters")** — park money, allocate across teams, keep custody. Earn a verifiable record of conviction that converts to first-dibs rights when the team raises.
+- **Investors** — read a sybil-resistant demand signal for their next-round decisions. Patient capital pre-validates demand at retail scale.
 
 ---
 
@@ -46,9 +47,7 @@ Park $100 on Kommit, allocate it to project X.
     public conviction signal.
 ```
 
-Architecture detail (CPI to klend, escrow PDAs, two-path withdraw, score
-fields) lives in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) and the program
-source under [`programs/kommit/src`](programs/kommit/src).
+Architecture detail (CPI to klend, escrow PDAs, two-path withdraw, score fields) lives in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) and the program source under [`programs/kommit/src`](programs/kommit/src).
 
 ---
 
@@ -99,7 +98,7 @@ flowchart LR
 
 **v0.5 — primitive feature-complete on devnet.** End-to-end klend round-trip verified; security review cleared (see [Security](#security)); 30/30 anchor TS tests + 8/8 Rust unit tests + 3/3 webhook fixture tests passing. Fiat rails (card / SEPA / bank) are the v1 architectural milestone — see scope section below.
 
-**Frontend is wired live on devnet.** Real Privy auth (passkey + Google + email), real Anchor program reads, real on-chain commit/withdraw against the deployed program. Indexer reads through Supabase. Mock data fallback for surfaces where indexer hasn't materialized.
+**Frontend is wired live on devnet.** Real Privy auth (passkey + Google + email), real Anchor program reads, real on-chain commit/withdraw against the deployed program. Indexer reads through Supabase. A card-deposit flow (mock-card UX → sandbox-SPL airdrop) ships in v0.5 as the in-product demonstration of the v1 fiat-rails shape.
 
 **Verified end-to-end on devnet** (full klend round-trip from merge commit [`7fd0965`](https://github.com/lamentierschweinchen/kommit/commit/7fd0965)):
 
@@ -130,23 +129,31 @@ app/
 ├── tests/                       # 30 Anchor TS integration tests + 8 Rust unit tests
 ├── scripts/                     # Deploy + smoke + IPFS pin + create_project utilities
 ├── migrations/
-│   └── supabase/                # Indexer schema (0001 + 0002)
+│   └── supabase/                # Indexer schema + sandbox-airdrops + card-deposit
 ├── web/                         # Next.js 15 + React 19 frontend (App Router)
 │   └── src/
-│       ├── app/                 # Routes: /, /projects, /dashboard, /founder, /account, /build, /about
+│       ├── app/                 # Routes: /, /app, /projects, /projects/[slug],
+│       │                        #   /dashboard, /account, /account/history,
+│       │                        #   /founder/[slug], /founder/[slug]/cohort,
+│       │                        #   /profile/[slug], /build, /about, /demo,
+│       │                        #   /manifesto, /status
+│       ├── public/pitch.html    # Pitch deck (standalone HTML, served at /pitch)
 │       ├── components/          # Brutalist primitives + auth + commit/withdraw + dashboard
 │       ├── lib/
 │       │   ├── kommit.ts        # PDA derivation + program ID constants
 │       │   ├── anchor-client.ts # Privy → Anchor wallet adapter, useKommitProgram hook
 │       │   ├── tx.ts            # commit / withdraw transaction builders
-│       │   ├── queries.ts       # Read-side facade (mock / Anchor / indexer 3-source swap)
+│       │   ├── queries.ts       # Read-side facade (on-chain + indexer + demo)
 │       │   ├── anchor-errors.ts # User-safe RPC/Anchor error mapping
-│       │   ├── money.ts         # Decimal-safe bigint helpers (parseTokenAmount, validateAmount)
-│       │   ├── kommit-math.ts   # Demo math (USD × days held = kommits)
+│       │   ├── money.ts         # Decimal-safe bigint helpers (parseTokenAmount)
+│       │   ├── kommit-math.ts   # Capital × time = kommits
+│       │   ├── sandbox-*.ts     # Sandbox SPL mint, fee-payer, rate-limit, RPC helpers
 │       │   └── idl/             # Bundled IDL JSON + TS types
 │       └── app/api/webhook/helius/route.ts  # Indexer
+├── sdk/reader/                  # @kommitapp/reader — public, free, permissionless SDK
+│                                #   for any product to read kommit balances
 ├── idls/kamino_lending.json     # Reference: converted klend mainnet IDL
-├── Anchor.toml                  # [programs.localnet|devnet|mainnet] all set to keypair-derived ID
+├── Anchor.toml
 ├── Cargo.toml
 ├── SECURITY.md                  # Disclosure policy + scope + severity rubric
 ├── SECURITY_REVIEW.md           # 14-item internal Anchor self-audit
@@ -174,6 +181,8 @@ npm run dev                      # http://localhost:3000
 
 Required env vars are documented in [`web/.env.example`](web/.env.example) and [`.env.example`](.env.example). The web app falls back to mock data when keys aren't set, so design review and click-through walks work without provisioning external services.
 
+`NEXT_PUBLIC_KOMMIT_DEMO=1` in `.env.local` activates a populated three-persona demo mode (Lukas / Dr. Julian Vance / Sara Chen) with seeded portfolios, projects, comments, and reactions. This is the surface used for the persona-walkthrough at `/demo`. Production has the flag off — `/demo` shows the onchain-Privy entry as the primary path with the persona walkthrough as a secondary option.
+
 ---
 
 ## Deploy
@@ -198,9 +207,11 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 - One yield-source adapter (Kamino klend USDC reserve)
 - Single-sig admin + single-sig program upgrade authority (project lead's keypair)
 - USDC entry, Solana wallet entry — Solana-fluent users only at this layer
-- Demo faucet UX (Circle devnet USDC + Solana devnet SOL airdrop) so evaluators can walk the flow without prep
-- Off-chain stack: Helius → Supabase indexer; Pinata for IPFS; Privy for embedded-wallet auth (passkey + email + Google)
-- Frontend: 10 routes — landing, browse, project detail, kommitter dashboard, founder dashboard, account, build (founder application), about
+- Walletless onboarding via Privy (passkey + email + Google)
+- Sandbox-SPL airdrop + card-deposit flow on `/demo` so judges and evaluators can walk the flow without external funding
+- Off-chain stack: Helius → Supabase indexer; Pinata for IPFS; Privy for embedded-wallet auth
+- Frontend surfaces: landing (`/`), functional landing (`/app`), browse (`/projects`), project detail (`/projects/[slug]`), kommitter dashboard (`/dashboard`), history (`/account/history`), profile (`/profile/[slug]`), founder dashboard (`/founder/[slug]` + `/cohort`), account (`/account`), founder application (`/build`), about (`/about`), demo entry (`/demo`), manifesto (`/manifesto`), pitch deck (`/pitch`)
+- `@kommitapp/reader` SDK on npm (MIT, v0.1.0) — public, free, permissionless reads of kommit balances
 
 **v1 (post-submission, ~1-2 weeks — fiat rails, retail-frictionless):**
 - **Card → USDC on Solana** via Privy's built-in [MoonPay](https://www.moonpay.com/business/onramp) and [Coinbase Pay](https://www.coinbase.com/onramp) — both first-class config flips in `@privy-io/react-auth`. ~5-min onboarding. The user enters their card, kommits; USDC under the hood.
@@ -223,9 +234,14 @@ Mainnet is gated on independent third-party audit + Squads multisig migration of
 **v2+ (post-traction):**
 - `create_graduation_attestation` PDAs + graduation flow
 - Composable points-reading API consumer integrations (other Solana protocols gating access on `lifetime_score`)
-- Cohort SaaS — anonymized, opt-in cohort intelligence sold to launchpads / VCs / adjacent protocols
+- Cohort intelligence — aggregated, anonymized, opt-in cohort signal sold to launchpads / VCs / capital allocators, on top of the free public reads anyone can build with via `@kommitapp/reader`
 - Less-centralized curation (DAO / multisig / staked-reputation)
 - Mainnet — gated on third-party audit + Squads multisig in place + the v1 fiat-rails layer being live
+
+**How the platform sustains itself (none on backers or founders):**
+1. Yield on parked capital funds operations today.
+2. Success fees on rounds Kommit helps close (v1+).
+3. Cohort intelligence for launchpads + capital allocators (v2+) — premium analytics on top of the public open-source reads.
 
 **Hard locks (never reopened):**
 - No platform token. Ever.
@@ -246,7 +262,7 @@ Review history:
 
 - **Initial security review** — multiple findings raised and resolved before submission. Full audit trail in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md).
 - **Verification pass** — clean. C1 fee-field math now matches `klend-sdk`'s `getTotalSupply()` semantics; harvest principal-preservation, signer-mismatch, and event-identity tests added.
-- **Full-stack hardening pass** — multi-pass adversarial review across full-stack surfaces (auth, payments, on-chain, indexer); ongoing through submission.
+- **Full-stack hardening pass** — multi-pass adversarial review across full-stack surfaces (auth, payments, on-chain, indexer); completed prior to submission.
 
 Mainnet prerequisites called out explicitly: multisig admin + multisig upgrade authority + independent third-party audit. None of these are in place at v0.5; mainnet does not happen without all three.
 
@@ -254,4 +270,4 @@ Mainnet prerequisites called out explicitly: multisig admin + multisig upgrade a
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT — see [`LICENSE`](LICENSE). The `@kommitapp/reader` SDK ships under MIT on npm; any product can integrate without permission. The cohort is the moat, not lock-in.

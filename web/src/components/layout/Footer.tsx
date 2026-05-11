@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { useVisaMode } from "@/lib/visa-mode";
 
 export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: boolean }) {
-  const isVisa = useVisaMode();
   return (
     <footer
       className={cn(
@@ -20,25 +18,19 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
           !withSidebarOffset && "max-w-7xl mx-auto",
         )}
       >
-        <div className="text-black">
-          {isVisa ? "© 2026 Kommit · sandbox preview" : "© 2026 KOMMIT · Open source · Built on Solana"}
-        </div>
+        <div className="text-black">© 2026 KOMMIT · Open source · Built on Solana</div>
         <div className="flex gap-6 font-bold">
-          {!isVisa ? (
-            <>
-              <Link
-                href="https://github.com/lamentierschweinchen/kommit"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-black hover:underline"
-              >
-                GitHub
-              </Link>
-              <Link href="/status" className="text-black hover:underline">
-                Status
-              </Link>
-            </>
-          ) : null}
+          <Link
+            href="https://github.com/lamentierschweinchen/kommit"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-black hover:underline"
+          >
+            GitHub
+          </Link>
+          <Link href="/status" className="text-black hover:underline">
+            Status
+          </Link>
         </div>
       </div>
     </footer>

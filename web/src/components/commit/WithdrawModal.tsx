@@ -15,7 +15,6 @@ import { Icon } from "@/components/common/Icon";
 import { useDemoMode } from "@/lib/demo-mode";
 import { simulateWithdraw } from "@/lib/demo-engagement";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
 
@@ -74,7 +73,6 @@ export function WithdrawModal({
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
   const isDemo = useDemoMode();
-  const isVisa = useVisaMode();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -129,15 +127,8 @@ export function WithdrawModal({
         ? validationError
         : null;
 
-  // Confirmation copy — visa-mode says "kommit position" since MoonPay
-  // Commerce has no offramp endpoint. Honest framing per handoff 44:
-  // withdraw stays on-chain, fiat off-ramp arrives in v1.
-  const successTitle = isVisa
-    ? `${formatEUR(displayUSD)} back in your kommit balance`
-    : "Withdraw confirmed.";
-  const successDetail = isVisa
-    ? `Returned from ${projectName}. Your card is unaffected — withdrawals stay onchain to your kommit wallet.`
-    : `Returned ${formatUSD(displayUSD)} from ${projectName}.`;
+  const successTitle = "Withdraw confirmed.";
+  const successDetail = `Returned ${formatUSD(displayUSD)} from ${projectName}.`;
 
   const handleSubmit = async () => {
     // Demo path mirrors CommitModal's: localStorage simulation + same toast +
@@ -207,31 +198,25 @@ export function WithdrawModal({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={isVisa ? `Withdraw from ${projectName}` : `Withdraw from ${projectName}`}
+      title={`Withdraw from ${projectName}`}
       shadow="default"
     >
-      {isVisa ? (
-        <p className="mt-3 font-epilogue font-medium text-sm text-gray-700 leading-relaxed border-l-[4px] border-primary pl-4">
-          Funds return to your kommit balance. Your card is unaffected — fiat
-          off-ramp arrives in v1.
-        </p>
-      ) : null}
       <div className="mt-6 bg-gray-100 border-[3px] border-black p-4">
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
           Currently committed
         </div>
         <div className="mt-1 font-epilogue font-black text-4xl md:text-5xl tracking-tighter">
-          {isVisa ? formatEUR(committedUSD) : formatUSD(committedUSD)}
+          {formatUSD(committedUSD)}
         </div>
       </div>
 
       <div className="mt-6">
         <label className="block font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-          {isVisa ? "Amount to return" : "Withdraw amount"}
+          Withdraw amount
         </label>
         <div className="flex items-stretch border-[3px] border-black bg-white shadow-brutal focus-within:translate-x-[-2px] focus-within:translate-y-[-2px] focus-within:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] transition-all">
           <span className="px-4 flex items-center font-epilogue font-black text-3xl text-gray-400">
-            {isVisa ? "€" : "$"}
+            $
           </span>
           <input
             type="text"
@@ -290,14 +275,12 @@ export function WithdrawModal({
           {submitting ? (
             <>
               <Icon name="progress_activity" className="font-bold animate-spin" />
-              {isVisa ? "Returning to your balance…" : "Signing…"}
+              Signing…
             </>
           ) : (
             <>
               <Icon name="arrow_forward" className="font-bold rotate-180" />
-              {isVisa
-                ? `Withdraw ${formatEUR(displayUSD)} from kommit`
-                : `Withdraw ${formatUSD(displayUSD)}`}
+              Withdraw {formatUSD(displayUSD)}
             </>
           )}
         </button>

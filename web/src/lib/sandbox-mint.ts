@@ -1,5 +1,5 @@
 /**
- * Lane B sandbox SPL mint — devnet-only, controlled by the visa-demo
+ * Sandbox SPL mint — devnet-only, controlled by the sandbox
  * fee-payer keypair. Distinct from Circle's USDC devnet faucet (which
  * rate-limits at $20 per few hours) so the judge surface can airdrop
  * unlimited test funds to first-time visitors.
@@ -24,7 +24,7 @@ export type SandboxMintInfo = {
   decimals: number;
   /** Base58 mint pubkey, or "" before the operator has run setup. */
   mint: string;
-  /** Base58 of the mint authority (= visa-demo fee-payer). */
+  /** Base58 of the mint authority (= sandbox fee-payer). */
   mintAuthority: string;
   createdAt: string | null;
 };

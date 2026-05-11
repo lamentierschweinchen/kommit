@@ -1,7 +1,7 @@
 /**
  * Server-side devnet RPC + memo-tx helper for the Visa-sandbox demo.
  *
- * The visa-demo flow is honest about being a sandbox — the on-chain action
+ * The sandbox flow is honest about being a sandbox — the on-chain action
  * we record is a structured Memo transaction that the fee-payer signs. This
  * gives every onramp / offramp a Solscan-traceable signature without
  * requiring the user's Privy embedded wallet to sign anything (which would
@@ -38,7 +38,7 @@ import {
   getAssociatedTokenAddressSync,
   getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
-import { getFeePayer } from "./visa-demo-fee-payer";
+import { getFeePayer } from "./sandbox-fee-payer";
 
 const RPC_URL =
   process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? "https://api.devnet.solana.com";
@@ -176,7 +176,7 @@ export const DEVNET_USDC_MINT = new PublicKey(
 
 /**
  * Transfer USDC base units from the fee-payer's associated token account
- * to a recipient. Used by the visa-demo webhook handler to relay USDC
+ * to a recipient. Used by the sandbox webhook handler to relay USDC
  * from the merchant wallet (= fee-payer, configured as the Helio
  * recipient) to the kommitter's Privy wallet, after MoonPay confirms the
  * card-side settlement.

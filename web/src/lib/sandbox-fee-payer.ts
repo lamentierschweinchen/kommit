@@ -2,10 +2,10 @@
  * Server-only devnet fee payer for the Visa-sandbox demo.
  *
  * One Solana keypair held in env (`KOMMIT_DEVNET_FEE_PAYER_SECRET`, base58)
- * that the visa-demo API routes use for two purposes:
+ * that the sandbox API routes use for two purposes:
  *
  *   1. Airdrop SOL to a caller's Privy embedded wallet so commit txs can pay
- *      gas without surfacing it (`/api/visa-demo/pre-fund`).
+ *      gas without surfacing it (the sandbox pre-fund route (removed)).
  *   2. Sign + submit on-chain memo transactions that record sandbox onramp /
  *      offramp events (Solscan-traceable proof for the submission video).
  *
@@ -39,7 +39,7 @@ export function getFeePayer(): Keypair {
   const secret = readSecret(SECRET_NAME);
   if (!secret) {
     throw new Error(
-      `${SECRET_NAME} not set (or empty after trim) — visa-demo routes are non-functional. See web/src/lib/visa-demo-fee-payer.ts for setup steps.`,
+      `${SECRET_NAME} not set (or empty after trim) — sandbox routes are non-functional. See web/src/lib/sandbox-fee-payer.ts for setup steps.`,
     );
   }
   // Accept either base58 (compact) or JSON-array (Solana CLI keygen output).
