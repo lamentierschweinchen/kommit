@@ -35,8 +35,14 @@ export function UpdateComments({
   const [submitting, setSubmitting] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
 
+  // Eager-load the comment count on mount so the toggle label reads
+  // "View 6 comments" on first paint instead of the default "Add a
+  // comment" (which hid seeded comments — pivot updates had 6 visible
+  // engagement signals that judges scrolling past would miss).
+  // `loaded` still prevents re-fetch after the first run, so subsequent
+  // open/close toggles don't re-hit the API.
   useEffect(() => {
-    if (!open || loaded || loading) return;
+    if (loaded || loading) return;
     let cancelled = false;
     setLoading(true);
     authedFetch(`/api/updates/${updateId}/comments`)
