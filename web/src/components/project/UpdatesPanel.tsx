@@ -9,6 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getCommitmentForUserAndProject } from "@/lib/queries";
 import { authedFetch } from "@/lib/api-client";
 import { DEMO_POSITIONS_STORAGE_KEY } from "@/lib/demo-engagement";
+import { findSeedEngagement } from "@/lib/data/seed-engagement";
 import type { RemoteUpdate } from "@/lib/api-types";
 
 /**
@@ -136,7 +137,17 @@ export function UpdatesPanel({
         : null}
 
       {showFallback
-        ? fallback.map((u, i) => <SeedUpdateRow key={`seed-${i}`} update={u} />)
+        ? fallback.map((u, i) => (
+            <SeedUpdateRow
+              key={`seed-${i}`}
+              update={u}
+              projectSlug={projectSlug}
+              index={i}
+              isKommitter={isKommitter}
+              isFounder={isFounder}
+              disabledReason={disabledReason}
+            />
+          ))
         : null}
 
       {!loading && !showRemote && !showFallback ? (
@@ -216,9 +227,45 @@ function RemoteUpdateRow({
 
 function SeedUpdateRow({
   update,
+  projectSlug,
+  index,
+  isKommitter,
+  isFounder,
+  disabledReason,
 }: {
   update: { atISO: string; title: string; body: string; isPivot?: boolean; isGraduation?: boolean };
+  projectSlug: string;
+  index: number;
+  isKommitter: boolean;
+  isFounder?: boolean;
+  disabledReason?: string;
 }) {
+  // Derive a stable id from (slug, atISO, index) so reactions+comments
+  // persist across reloads even on the fallback render path. Demo-mode
+  // reactions/comments hit `demoFetch` which accepts any string id; real-
+  // auth fallback rows would write to Supabase via /api/updates/[id]/* —
+  // those routes don't enforce a UUID format so the hash-encoded id works
+  // there too. (No real-auth project hits this branch in v0.5: every
+  // catalog project with a recipientWallet flows through `RemoteUpdateRow`.)
+  const fallbackId = useMemo(
+    () => seedFallbackId(projectSlug, update.atISO, index),
+    [projectSlug, update.atISO, index],
+  );
+  // Pivot/graduation seeds carry pre-populated reaction counts. Resolve via
+  // the same (slug, atISO) key the demo-cohort seed loop uses so the SSR
+  // render of the fallback path already shows the seed counts; demo-mode
+  // additions stack on top once the API store hydrates.
+  const seed = findSeedEngagement(projectSlug, update.atISO);
+  const initialCounts: Record<string, number> = useMemo(() => {
+    const out: Record<string, number> = {};
+    if (seed?.reactions) {
+      for (const [k, v] of Object.entries(seed.reactions)) {
+        if (typeof v === "number") out[k] = v;
+      }
+    }
+    return out;
+  }, [seed]);
+  const initialMine = typeof window !== "undefined" ? loadMine(fallbackId) : new Set<never>();
   return (
     <article
       className={cn(
@@ -247,6 +294,38 @@ function SeedUpdateRow({
       <p className="text-base font-medium text-gray-800 leading-relaxed whitespace-pre-line">
         {update.body}
       </p>
+
+      <div className="mt-5 pt-4 border-t-[2px] border-black">
+        <UpdateReactions
+          updateId={fallbackId}
+          initialCounts={initialCounts}
+          initialMine={initialMine}
+          canReact={isKommitter}
+          disabledReason={disabledReason}
+        />
+      </div>
+
+      <UpdateComments
+        updateId={fallbackId}
+        isFounder={isFounder}
+        canComment={isKommitter}
+        disabledReason={disabledReason}
+      />
     </article>
   );
+}
+
+/** FNV-1a 32-bit hash, formatted as a v4-ish UUID. Same shape the demo
+ *  cohort seed uses for remote updates, so the fallback path can speak the
+ *  same id namespace if a future migration ever promotes seed rows to
+ *  remote rows. */
+function seedFallbackId(slug: string, atISO: string, idx: number): string {
+  const seed = `seed:${slug}|${atISO}|${idx}`;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  const hex = h.toString(16).padStart(8, "0");
+  return `${hex}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${(hex + hex).slice(0, 12)}`;
 }

@@ -40,6 +40,8 @@ export default async function ProjectDetailPage({
     <>
       <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
+        {project.state === "graduated" ? <GraduatedBanner project={project} /> : null}
+
         <ProjectHero project={project} />
 
         <div className="mt-24 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 lg:gap-14">
@@ -54,6 +56,10 @@ export default async function ProjectDetailPage({
                 ))}
               </div>
             </section>
+
+            {project.state === "graduated" && project.kommitterBenefits?.length ? (
+              <KommitterBenefitsSection project={project} />
+            ) : null}
 
             <ProjectInfoSection project={project} />
 
@@ -131,6 +137,84 @@ export default async function ProjectDetailPage({
   );
 }
 
+function GraduatedBanner({ project }: { project: Project }) {
+  const raised = project.raisedAmountUSD;
+  const valuation = project.raisedAtValuationUSD;
+  const dateISO = project.graduatedAtISO;
+  return (
+    <section className="mt-8 md:mt-10 relative">
+      {/* Offset shadow plate gives the banner the same brutalist depth as the
+          hero CTA on the landing page. */}
+      <div className="absolute inset-0 bg-black translate-x-3 translate-y-3 -z-10" aria-hidden />
+      <div className="bg-primary text-white border-[3px] border-black p-6 md:p-8 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 md:gap-8 items-end">
+        <div>
+          <div className="inline-block bg-white text-primary font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm mb-4">
+            Graduated
+          </div>
+          <h2 className="font-epilogue font-black uppercase text-3xl md:text-5xl tracking-tighter leading-[0.95]">
+            Round closed.
+          </h2>
+          <p className="mt-3 max-w-xl text-base md:text-lg font-medium text-white/90 leading-snug">
+            {project.name} closed its seed extension on{" "}
+            <span className="font-bold">{dateISO ? longDate(dateISO) : "graduation"}</span>.
+            Kommitters earned the rights listed below.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:gap-4 md:min-w-[20rem]">
+          <BannerStat
+            label="Raised"
+            value={raised ? formatUSD(raised, { compact: true }) : "—"}
+          />
+          <BannerStat
+            label="At valuation"
+            value={valuation ? formatUSD(valuation, { compact: true }) : "—"}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BannerStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white text-black border-[3px] border-black p-3 shadow-brutal-sm">
+      <div className="font-epilogue font-bold uppercase text-[10px] text-gray-600 tracking-widest">
+        {label}
+      </div>
+      <div className="mt-1 font-epilogue font-black text-2xl md:text-3xl tracking-tighter">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function KommitterBenefitsSection({ project }: { project: Project }) {
+  const benefits = project.kommitterBenefits ?? [];
+  return (
+    <section>
+      <h2 className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit mb-8">
+        What kommitters get
+      </h2>
+      <ol className="space-y-3 max-w-2xl">
+        {benefits.map((b, i) => (
+          <li
+            key={i}
+            className="bg-white border-[3px] border-black shadow-brutal p-4 md:p-5 flex items-start gap-4"
+          >
+            <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 bg-primary text-white font-epilogue font-black text-base border-[2px] border-black shadow-brutal-sm">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <p className="text-base md:text-lg font-medium leading-snug pt-1">{b}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest max-w-2xl">
+        Reserved for every kommitter active at graduation. Visit your dashboard to claim.
+      </p>
+    </section>
+  );
+}
+
 function ProjectHero({ project }: { project: Project }) {
   return (
     <section className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-center">
@@ -167,6 +251,11 @@ function ProjectHero({ project }: { project: Project }) {
           {project.state === "just-listed" && !project.recipientWallet ? (
             <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
               Launching soon
+            </span>
+          ) : null}
+          {project.state === "graduated" ? (
+            <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+              Graduated
             </span>
           ) : null}
         </div>

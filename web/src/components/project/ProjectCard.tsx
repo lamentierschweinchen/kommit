@@ -45,7 +45,7 @@ export function ProjectCard({ project }: { project: Project }) {
         ) : null}
         {isGraduated ? (
           <div className="absolute -top-3 left-6 z-20">
-            <span className="inline-block bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
+            <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
               Graduated
             </span>
           </div>

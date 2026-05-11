@@ -14,12 +14,20 @@ import { SECTOR_CHIP_CLASS } from "@/lib/data/sectors";
 export function ProjectCardSmall({ project }: { project: Project }) {
   const isLaunchingSoon =
     project.state === "just-listed" && !project.recipientWallet;
+  const isGraduated = project.state === "graduated";
   return (
     <Link href={`/projects/${project.slug}`} className="block group relative">
       {isLaunchingSoon ? (
         <div className="absolute -top-2 left-3 z-20">
           <span className="inline-block bg-white text-black font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-0.5 border-[2px] border-black shadow-brutal-sm">
             Launching soon
+          </span>
+        </div>
+      ) : null}
+      {isGraduated ? (
+        <div className="absolute -top-2 left-3 z-20">
+          <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[9px] tracking-widest px-2 py-0.5 border-[2px] border-black shadow-brutal-sm">
+            Graduated
           </span>
         </div>
       ) : null}

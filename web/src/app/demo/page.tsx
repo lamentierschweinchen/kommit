@@ -17,6 +17,7 @@ import { findProjectPda } from "@/lib/kommit";
 import { USERS, avatarUrl } from "@/lib/data/users";
 import { LUKAS_COMMITMENTS } from "@/lib/data/commitments";
 import { PROJECTS } from "@/lib/data/projects";
+import { SEED_ENGAGEMENT, SEED_BACKER_NOTES } from "@/lib/data/seed-engagement";
 import { Icon } from "@/components/common/Icon";
 import { useToast } from "@/components/common/ToastProvider";
 import { cn } from "@/lib/cn";
@@ -34,11 +35,14 @@ function buildCohortSeed() {
     projectUpdates: PROJECTS.filter((p) => !!p.recipientWallet).map((p) => {
       const author = Object.values(USERS).find((u) => u.ownsProject === p.slug);
       return {
+        slug: p.slug,
         pda: findProjectPda(new PublicKey(p.recipientWallet!)).toBase58(),
         authorWallet: author?.wallet ?? "",
         seed: p.updates,
       };
     }),
+    engagement: SEED_ENGAGEMENT,
+    backerNotes: SEED_BACKER_NOTES,
   };
 }
 
