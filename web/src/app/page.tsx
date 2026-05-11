@@ -8,11 +8,11 @@ import { Footer } from "@/components/layout/Footer";
  *
  * The functional product moved to `/app`; this page replaces the prior
  * landing as a public marketing surface. Hero + waitlist form + mission
- * excerpt + small "already a kommitter? sign in" handoff to /app.
+ * excerpt.
  *
  * No `<AuthHeader>` — marketing pages have their own minimal chrome to
  * avoid Sign In CTA fighting with the waitlist CTA. Existing kommitters
- * use the small footer link to reach `/app`.
+ * navigate directly via /app or /demo.
  */
 export default function ComingSoonPage() {
   return (
@@ -66,7 +66,7 @@ export default function ComingSoonPage() {
                   href="/demo"
                   className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform px-3 py-2"
                 >
-                  Walk Kommit in 60 seconds
+                  Try our demo
                   <span aria-hidden>→</span>
                 </Link>
                 <Link
@@ -123,21 +123,6 @@ export default function ComingSoonPage() {
 
         {/* MISSION / MANIFESTO EXCERPT */}
         <MissionSection />
-
-        {/* SUBTLE SIGN-IN HANDOFF — small, footer-area, doesn't compete with the CTA */}
-        <section className="mt-32 pt-12 border-t-[8px] border-black">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <p className="font-epilogue font-bold uppercase text-xs tracking-widest text-gray-500">
-              Already a kommitter?
-            </p>
-            <Link
-              href="/app"
-              className="font-epilogue font-bold uppercase tracking-widest text-xs border-b-[2px] border-black hover:bg-secondary px-2 transition-colors"
-            >
-              Sign in →
-            </Link>
-          </div>
-        </section>
       </main>
       <Footer />
     </>

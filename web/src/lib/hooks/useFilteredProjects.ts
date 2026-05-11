@@ -28,22 +28,37 @@ export function filterProjects(projects: Project[], filters: BrowseFilters): Pro
   return sortProjects(result, filters.sort);
 }
 
+/**
+ * State-tier ordering applied BEFORE the inner sort key. Active projects
+ * surface first because they're the live cohort. Just-listed sits in the
+ * middle — fresh but not yet kommittable in some flows. Graduated lands
+ * last because the round is closed and the row is a historical record,
+ * not an action surface. Within each tier, the chosen sort key applies.
+ */
+const STATE_ORDER: Record<Project["state"], number> = {
+  active: 0,
+  "just-listed": 1,
+  graduated: 2,
+};
+
 export function sortProjects(projects: Project[], sort: SortKey): Project[] {
   const sorted = projects.slice();
+  let innerCompare: (a: Project, b: Project) => number;
   switch (sort) {
     case "kommitted":
-      sorted.sort((a, b) => b.totalKommittedUSD - a.totalKommittedUSD);
+      innerCompare = (a, b) => b.totalKommittedUSD - a.totalKommittedUSD;
       break;
     case "kommitters":
-      sorted.sort((a, b) => b.kommittersCount - a.kommittersCount);
+      innerCompare = (a, b) => b.kommittersCount - a.kommittersCount;
       break;
     case "recent":
     default:
-      // Newest activeSince first
-      sorted.sort((a, b) =>
-        b.activeSinceISO.localeCompare(a.activeSinceISO),
-      );
+      innerCompare = (a, b) => b.activeSinceISO.localeCompare(a.activeSinceISO);
       break;
   }
+  sorted.sort((a, b) => {
+    const tier = STATE_ORDER[a.state] - STATE_ORDER[b.state];
+    return tier !== 0 ? tier : innerCompare(a, b);
+  });
   return sorted;
 }
