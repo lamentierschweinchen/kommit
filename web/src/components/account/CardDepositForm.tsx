@@ -9,10 +9,9 @@
  * sandbox-SPL mint via /api/sandbox/card-deposit — there is no real card
  * processor, no KYC, nothing leaves devnet.
  *
- * Lifted aesthetic from web/src/app/visa-demo/page.tsx (the `AmountField`
- * pattern + brutalist border + presets) and adapted for the modal-narrow
- * column. Per handoff: the card visual is what sells the narrative; the
- * actual settlement is via the existing mint authority.
+ * Card visual + amount input + presets, adapted for the modal-narrow
+ * column. The card visual is what sells the narrative; the actual
+ * settlement is via the existing sandbox-SPL mint authority.
  *
  * Cap: $1,000/deposit, enforced on input AND on submit AND on the server.
  * No lifetime cap — user can deposit repeatedly. Server-side has a

@@ -10,7 +10,6 @@ import {
   deactivateDemoMode,
   useDemoMode,
 } from "@/lib/demo-mode";
-import { deactivateVisaMode } from "@/lib/visa-mode";
 import { clearDemoEngagement, seedDemoCohort } from "@/lib/demo-engagement";
 import { authedFetch } from "@/lib/api-client";
 import { findProjectPda } from "@/lib/kommit";
@@ -141,10 +140,9 @@ function DemoEntry() {
   // and drop the user on /dashboard with a $0 balance.
   const { login } = useLogin({
     onComplete: () => {
-      // Defensive: clear any leftover persona/EUR state from a prior session
+      // Defensive: clear any leftover persona state from a prior session
       // before we route into the on-chain dashboard.
       deactivateDemoMode();
-      deactivateVisaMode();
       void fundAndGo();
     },
     onError: (err) => {
@@ -162,7 +160,6 @@ function DemoEntry() {
 
   const startOnChain = useCallback(() => {
     deactivateDemoMode();
-    deactivateVisaMode();
     if (authenticated) {
       void fundAndGo();
       return;
@@ -185,12 +182,6 @@ function DemoEntry() {
   const enterAs = (personaId: string | null) => {
     if (typeof window === "undefined") return;
     setPickedPersona(personaId);
-    // Persona-demo always runs in USD chrome; visa-mode is scoped strictly
-    // to the /visa-demo card-mock flow. Without this clear, a prior
-    // /visa-demo/success visit (which sets `kommit:visa = "1"`) leaves the
-    // EUR chrome bleeding into the persona-demo dashboard the next time
-    // someone enters via /demo. Handoff 58 #5.
-    deactivateVisaMode();
     activateDemoMode(personaId ?? undefined);
     seedDemoCohort(buildCohortSeed());
     if (personaId) {

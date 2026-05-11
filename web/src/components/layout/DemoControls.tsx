@@ -12,7 +12,6 @@ import {
   freezeDemoState,
   unfreezeDemoState,
 } from "@/lib/demo-mode";
-import { useVisaMode } from "@/lib/visa-mode";
 import { cn } from "@/lib/cn";
 
 /**
@@ -23,15 +22,12 @@ import { cn } from "@/lib/cn";
  */
 export function DemoControls() {
   const isDemo = useDemoMode();
-  const isVisa = useVisaMode();
   const isFrozen = useDemoFrozen();
   const { user, role, switchUser, signOut, signIn } = useAuth();
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Hide entirely in visa mode — the persona-switcher chrome would leak
-  // crypto vocabulary ("DEMO · Lukas · Kommitter") into the recorded flow.
-  if (!isDemo || isVisa) return null;
+  if (!isDemo) return null;
 
   // Mirror /demo's `enterAs` routing — switch to a founder and you land on
   // their founder dashboard; switch to a kommitter and you land on /dashboard.

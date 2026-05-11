@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { SignInModal } from "@/components/auth/SignInModal";
@@ -9,7 +8,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { kommitsFor, formatKommits, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
 import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
-import { useVisaMode, formatEUR } from "@/lib/visa-mode";
 import type { Project } from "@/lib/data/projects";
 import { Icon } from "@/components/common/Icon";
 
@@ -44,8 +42,6 @@ export function PositionCard({
   onTxSuccess?: () => void;
 }) {
   const { isSignedIn } = useAuth();
-  const isVisa = useVisaMode();
-  const router = useRouter();
   const [commitOpen, setCommitOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
@@ -54,13 +50,7 @@ export function PositionCard({
   // modal directly (per platform-test Critical #3 + High #7). Signed-in + open
   // project → real commit modal. Signed-in + project not yet open on-chain →
   // disabled commit modal with "not open yet" copy.
-  // Visa mode → re-route through the card flow so the user re-confirms the
-  // amount + sees the "card was charged" success state again.
   const handleKommitClick = () => {
-    if (isVisa) {
-      router.push(`/visa-demo?project=${project.slug}`);
-      return;
-    }
     if (!isSignedIn) {
       setSignInOpen(true);
     } else {
@@ -240,7 +230,6 @@ function ActivePositionDisplay({
   sinceMs?: number;
 }) {
   const liveKommits = useLiveKommits(committedUSD, sinceISO, sinceMs);
-  const isVisa = useVisaMode();
   // Until the visibility-effect mounts and triggers the first tick, show the
   // SSR-pinned demo number so the headline never reads "0.00". formatKommits
   // matches formatLiveKommits's compact rule (≥1M → "3.88M") so the value
@@ -249,7 +238,7 @@ function ActivePositionDisplay({
     liveKommits > 0
       ? formatLiveKommits(liveKommits)
       : formatKommits(kommitsFor(committedUSD, sinceISO));
-  const moneyDisplay = isVisa ? formatEUR(committedUSD) : formatUSD(committedUSD);
+  const moneyDisplay = formatUSD(committedUSD);
 
   return (
     <>
@@ -281,19 +270,9 @@ function ActivePositionDisplay({
         <span className="font-epilogue font-bold uppercase text-[11px] tracking-widest text-black">
           How this number grows.
         </span>{" "}
-        {isVisa ? (
-          <>
-            Every euro on your card stays earning kommits while it&rsquo;s
-            committed. Add to it or pull it back any time — your score never
-            resets. It&rsquo;s your verifiable record of conviction.
-          </>
-        ) : (
-          <>
-            Every dollar committed accrues kommits over time (capital × time).
-            Add or withdraw and the rate adjusts. Your score never resets —
-            it&rsquo;s your verifiable record of conviction.
-          </>
-        )}
+        Every dollar committed accrues kommits over time (capital × time).
+        Add or withdraw and the rate adjusts. Your score never resets —
+        it&rsquo;s your verifiable record of conviction.
       </p>
     </>
   );

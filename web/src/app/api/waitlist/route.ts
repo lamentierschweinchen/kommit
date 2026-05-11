@@ -26,7 +26,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createHmac } from "node:crypto";
 import { z } from "zod";
 
-import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
+import { takeRateLimit } from "@/lib/sandbox-rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { readSecret } from "@/lib/server-env";
 

@@ -2,7 +2,7 @@
  * Persistent wallet-keyed idempotency lock for /api/sandbox/airdrop.
  *
  * Codex Pass 1 H2 closure. The previous in-memory rate limiter
- * (`visa-demo-rate-limit.ts`) doesn't survive Vercel cold starts, so
+ * (`sandbox-rate-limit.ts`) doesn't survive Vercel cold starts, so
  * parallel cold instances could each observe a wallet's pre-airdrop SOL
  * balance below threshold and all transfer 0.05 SOL — draining the
  * fee-payer at ~0.05 SOL per cold instance per wallet.

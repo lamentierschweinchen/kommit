@@ -5,7 +5,7 @@
  * Drops two things on first call (idempotent above thresholds):
  *
  *   1. SOL gas — if the caller's wallet is below GAS_THRESHOLD_LAMPORTS,
- *      transfer GAS_GRANT_LAMPORTS from the visa-demo fee-payer.
+ *      transfer GAS_GRANT_LAMPORTS from the sandbox fee-payer.
  *   2. Sandbox SPL token — if the caller's ATA is below TOKEN_THRESHOLD_BASE,
  *      mint TOKEN_GRANT_BASE base units to the caller's ATA. The fee-payer
  *      is the mint authority (set up by scripts/setup-sandbox-mint.mjs).
@@ -44,15 +44,15 @@ import {
 } from "@solana/spl-token";
 
 import { requireCallerWallet } from "@/lib/auth-server";
-import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
+import { takeRateLimit } from "@/lib/sandbox-rate-limit";
 import { isSandboxApiEnabled } from "@/lib/sandbox-mode";
 import {
   getDevnetConnection,
   getLamports,
   isDevnetCluster,
   transferLamports,
-} from "@/lib/visa-demo-rpc";
-import { getFeePayer, isFeePayerConfigured } from "@/lib/visa-demo-fee-payer";
+} from "@/lib/sandbox-rpc";
+import { getFeePayer, isFeePayerConfigured } from "@/lib/sandbox-fee-payer";
 import { getSandboxMintOrNull, SANDBOX_MINT_DECIMALS } from "@/lib/sandbox-mint";
 import {
   markAirdropFunded,
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ResponseBody>
   // 4. Fee-payer must be configured (mint authority + SOL sponsor).
   if (!isFeePayerConfigured()) {
     console.warn(
-      "[sandbox/airdrop] KOMMIT_DEVNET_FEE_PAYER_SECRET unset; cannot airdrop. See web/src/lib/visa-demo-fee-payer.ts.",
+      "[sandbox/airdrop] KOMMIT_DEVNET_FEE_PAYER_SECRET unset; cannot airdrop. See web/src/lib/sandbox-fee-payer.ts.",
     );
     return jsonError("fee-payer-not-configured", 503);
   }

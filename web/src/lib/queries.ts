@@ -18,7 +18,6 @@ import { PROJECTS, type Project } from "@/lib/data/projects";
 import { type Commitment } from "@/lib/data/commitments";
 import { isDemoMode } from "@/lib/demo-mode";
 import { getDemoPosition, getDemoPositions } from "@/lib/demo-engagement";
-import { isSandboxOverlayActive } from "@/lib/sandbox-overlay";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
 
 /**
@@ -33,51 +32,6 @@ import { getSandboxProjects } from "@/lib/sandbox-projects";
 function demoCommitmentsFor(wallet: string): Commitment[] | null {
   if (!isDemoMode()) return null;
   return getDemoPositions(wallet);
-}
-
-/**
- * Lane B sandbox overlay (handoff 49 item 8): when a real-Privy user has
- * been through the visa-demo card-mock flow, their simulated commit lives
- * in localStorage under their Privy wallet. This helper surfaces those
- * positions so the dashboard read merges them with on-chain commits.
- *
- * Returns [] when the overlay flag is off (or in demo mode — that path
- * already returns the localStorage view via demoCommitmentsFor).
- */
-function sandboxOverlayCommitmentsFor(wallet: string): Commitment[] {
-  if (isDemoMode()) return [];
-  if (!isSandboxOverlayActive()) return [];
-  return getDemoPositions(wallet);
-}
-
-/** Merge an on-chain commitment list with localStorage simulated overlays.
- *  Same project = sum kommittedUSD, retain earlier sinceISO. */
-function mergeCommitments(
-  onChain: Commitment[],
-  overlay: Commitment[],
-): Commitment[] {
-  if (overlay.length === 0) return onChain;
-  const bySlug = new Map<string, Commitment>();
-  for (const c of onChain) bySlug.set(c.projectSlug, c);
-  for (const o of overlay) {
-    const existing = bySlug.get(o.projectSlug);
-    if (!existing) {
-      bySlug.set(o.projectSlug, o);
-      continue;
-    }
-    const earlier = existing.sinceISO < o.sinceISO ? existing.sinceISO : o.sinceISO;
-    const existingMs = existing.sinceMs ?? Date.parse(`${existing.sinceISO}T00:00:00Z`);
-    const overlayMs = o.sinceMs ?? Date.parse(`${o.sinceISO}T00:00:00Z`);
-    const earlierMs = Math.min(existingMs, overlayMs);
-    bySlug.set(o.projectSlug, {
-      ...existing,
-      kommittedUSD: existing.kommittedUSD + o.kommittedUSD,
-      sinceISO: earlier,
-      sinceMs: earlierMs,
-      pivotedAtISO: existing.pivotedAtISO ?? o.pivotedAtISO,
-    });
-  }
-  return Array.from(bySlug.values());
 }
 
 const RPC_URL =
@@ -176,7 +130,7 @@ export async function getCommitmentsForUser(
       sinceMs: depositTs * 1000,
     });
   }
-  return mergeCommitments(out, sandboxOverlayCommitmentsFor(walletStr));
+  return out;
 }
 
 /**
@@ -198,15 +152,13 @@ export async function getCommitmentForUserAndProject(
 
   const project = PROJECTS.find((p) => p.slug === projectSlug);
   // Sandbox PDA candidate — distinct from the static catalog wallet. A user
-  // who kommitted via /sandbox/onchain or the on-chain demo entry has their
-  // position keyed under this PDA, not under the production-USDC-locked
-  // escrow that `project.recipientWallet` would derive.
+  // who kommitted via the on-chain demo entry has their position keyed
+  // under this PDA, not under the production-USDC-locked escrow that
+  // `project.recipientWallet` would derive.
   const sandboxRecord = getSandboxProjects().find((p) => p.slug === projectSlug);
 
   if (!project?.recipientWallet && !sandboxRecord) {
-    // Even without on-chain wiring, a sandbox-overlay user may have a
-    // simulated position from the visa-demo card-mock flow.
-    return isSandboxOverlayActive() ? getDemoPosition(walletStr, projectSlug) : null;
+    return null;
   }
 
   const userKey = typeof userWallet === "string" ? new PublicKey(userWallet) : userWallet;
@@ -243,19 +195,5 @@ export async function getCommitmentForUserAndProject(
     }
   }
 
-  if (!isSandboxOverlayActive()) return onChain;
-
-  const overlay = getDemoPosition(walletStr, projectSlug);
-  if (!overlay) return onChain;
-  if (!onChain) return overlay;
-  const onChainMs = onChain.sinceMs ?? Date.parse(`${onChain.sinceISO}T00:00:00Z`);
-  const overlayMs = overlay.sinceMs ?? Date.parse(`${overlay.sinceISO}T00:00:00Z`);
-  const earlierMs = Math.min(onChainMs, overlayMs);
-  return {
-    projectSlug,
-    kommittedUSD: onChain.kommittedUSD + overlay.kommittedUSD,
-    sinceISO: onChain.sinceISO < overlay.sinceISO ? onChain.sinceISO : overlay.sinceISO,
-    sinceMs: earlierMs,
-    pivotedAtISO: onChain.pivotedAtISO ?? overlay.pivotedAtISO,
-  };
+  return onChain;
 }

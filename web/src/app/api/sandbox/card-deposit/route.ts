@@ -50,13 +50,13 @@ import {
 } from "@solana/spl-token";
 
 import { requireCallerWallet } from "@/lib/auth-server";
-import { takeRateLimit } from "@/lib/visa-demo-rate-limit";
+import { takeRateLimit } from "@/lib/sandbox-rate-limit";
 import { isSandboxApiEnabled } from "@/lib/sandbox-mode";
 import {
   getDevnetConnection,
   isDevnetCluster,
-} from "@/lib/visa-demo-rpc";
-import { getFeePayer, isFeePayerConfigured } from "@/lib/visa-demo-fee-payer";
+} from "@/lib/sandbox-rpc";
+import { getFeePayer, isFeePayerConfigured } from "@/lib/sandbox-fee-payer";
 import { getSandboxMintOrNull, SANDBOX_MINT_DECIMALS } from "@/lib/sandbox-mint";
 import { recordCardDeposit } from "@/lib/sandbox-airdrop-store";
 
