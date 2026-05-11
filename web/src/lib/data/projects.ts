@@ -27,6 +27,13 @@ export type Founder = {
   };
 };
 
+export type RoadmapMilestone = {
+  /** YYYY-MM-DD */
+  atISO: string;
+  title: string;
+  status: "done" | "in-progress" | "upcoming";
+};
+
 export type ProjectUpdate = {
   atISO: string;
   title: string;
@@ -83,6 +90,11 @@ export type Project = {
    * the demo. New projects need `scripts/create_project.ts` run first.
    */
   recipientWallet?: string;
+  /**
+   * Optional public roadmap surfaced on the project detail page. Boxes,
+   * dates, titles only — no body copy. Section hides entirely when omitted.
+   */
+  roadmap?: RoadmapMilestone[];
 };
 
 const CALDERA: Project = {
@@ -123,6 +135,14 @@ const CALDERA: Project = {
   totalKommittedUSD: 87_400,
   totalKommitsGenerated: 1_240_500,
   activeSinceISO: "2026-03-12",
+  roadmap: [
+    { atISO: "2026-03-12", title: "Live on Kommit", status: "done" },
+    { atISO: "2026-03-18", title: "First field-ops hire", status: "done" },
+    { atISO: "2026-03-30", title: "Third pilot signed", status: "done" },
+    { atISO: "2026-04-28", title: "Borefield modeller v1.0", status: "in-progress" },
+    { atISO: "2026-05-30", title: "Public install playbook + API", status: "upcoming" },
+    { atISO: "2026-07-15", title: "Series A close", status: "upcoming" },
+  ],
   imageSeed: "caldera",
   recipientWallet: "Fpn7Fp41SeZ1fSDcZDSZMYwjnTUyx23Ui2ie1NhLRDad",
   titleSize: "normal",
@@ -205,6 +225,13 @@ const LIGHTHOUSE: Project = {
   totalKommitsGenerated: 412_240,
   activeSinceISO: "2026-04-02",
   recipientWallet: "6JEf5rbNH73sKuNZfnELaMcuAbYUNLTjrgTTzpBAJ1sh",
+  roadmap: [
+    { atISO: "2026-04-02", title: "Live on Kommit", status: "done" },
+    { atISO: "2026-04-22", title: "Sonoma vineyard pilot signed", status: "done" },
+    { atISO: "2026-05-20", title: "Sensor v2 field trials", status: "in-progress" },
+    { atISO: "2026-06-30", title: "Sensor v2 production run", status: "upcoming" },
+    { atISO: "2026-09-01", title: "Vineyard wholesale expansion", status: "upcoming" },
+  ],
   imageSeed: "lighthouse",
   titleSize: "tight",
   updates: [
@@ -267,6 +294,13 @@ const AURORA: Project = {
     "Listed in the public cohort credits page",
   ],
   recipientWallet: "AoB7NCrsHTuD7cDPrGebdVvi3oYgGW1RVJNJahrVXJYF",
+  roadmap: [
+    { atISO: "2025-11-04", title: "Founding team assembled", status: "done" },
+    { atISO: "2025-12-15", title: "First five SME pilots signed", status: "done" },
+    { atISO: "2026-01-20", title: "Cross-border settlement engine live", status: "done" },
+    { atISO: "2026-02-28", title: "Live on Kommit", status: "done" },
+    { atISO: "2026-04-22", title: "$2.4M seed extension closed", status: "done" },
+  ],
   imageSeed: "aurora",
   titleSize: "normal",
   updates: [
@@ -319,6 +353,13 @@ const QUIRE_CHESS: Project = {
   totalKommitsGenerated: 318_200,
   activeSinceISO: "2026-04-08",
   recipientWallet: "DVpAMZCyCeE53whFxvxdPcvAyUif52T4Xp6jPWapDugJ",
+  roadmap: [
+    { atISO: "2026-02-18", title: "Live on Kommit", status: "done" },
+    { atISO: "2026-03-22", title: "Engine-graded study lines beta", status: "done" },
+    { atISO: "2026-04-04", title: "Pivot — drop live-tournament module", status: "done" },
+    { atISO: "2026-05-20", title: "Trainer v1 public launch", status: "in-progress" },
+    { atISO: "2026-06-30", title: "Mobile app", status: "upcoming" },
+  ],
   imageSeed: "quire",
   titleSize: "tight",
   updates: [
