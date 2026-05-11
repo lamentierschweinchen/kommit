@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { relativeTime } from "@/lib/date-utils";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import type { ProjectKommitter } from "@/lib/data/projects";
@@ -158,9 +159,18 @@ function KommitterRow({
   const kommits = kommitsFor(kommitter.kommittedUSD, kommitter.sinceISO);
   return (
     <div className="bg-white border-[3px] border-black shadow-brutal p-4 flex items-center gap-4 flex-wrap font-epilogue font-bold tracking-tight">
-      <span className="font-epilogue font-black text-sm tracking-tight bg-gray-100 px-2 py-1 border-[2px] border-black">
-        {kommitter.name}
-      </span>
+      {kommitter.userId ? (
+        <Link
+          href={`/profile/${kommitter.userId}`}
+          className="font-epilogue font-black text-sm tracking-tight bg-gray-100 px-2 py-1 border-[2px] border-black hover:bg-secondary transition-colors"
+        >
+          {kommitter.name}
+        </Link>
+      ) : (
+        <span className="font-epilogue font-black text-sm tracking-tight bg-gray-100 px-2 py-1 border-[2px] border-black">
+          {kommitter.name}
+        </span>
+      )}
       {isCurrentUser ? (
         <span className="bg-primary text-white px-2 py-1 border-[2px] border-black font-epilogue font-black uppercase text-[10px] tracking-widest shadow-brutal-sm">
           You

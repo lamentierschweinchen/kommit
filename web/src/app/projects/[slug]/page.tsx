@@ -85,9 +85,19 @@ export default async function ProjectDetailPage({
                       className="w-24 h-24 border-[3px] border-black object-cover grayscale shrink-0"
                     />
                     <div className="space-y-2 min-w-0">
-                      <div className="font-epilogue font-black uppercase text-xl tracking-tight">
-                        {f.name}
-                      </div>
+                      {f.userId ? (
+                        <Link
+                          href={`/profile/${f.userId}`}
+                          className="font-epilogue font-black uppercase text-xl tracking-tight inline-flex items-center gap-1 hover:text-primary"
+                        >
+                          {f.name}
+                          <Icon name="arrow_outward" size="xs" />
+                        </Link>
+                      ) : (
+                        <div className="font-epilogue font-black uppercase text-xl tracking-tight">
+                          {f.name}
+                        </div>
+                      )}
                       <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
                         {f.role}
                       </div>
