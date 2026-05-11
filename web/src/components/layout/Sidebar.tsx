@@ -42,11 +42,11 @@ export function Sidebar({
           { href: "/account", label: "Account", icon: "settings" },
         ]
       : [
-          { href: "/dashboard", label: "Your kommits", icon: "workspace_premium" },
-          { href: "/account", label: "Account", icon: "settings" },
+          { href: "/dashboard", label: "Dashboard", icon: "workspace_premium" },
           ...(showHistory
             ? [{ href: "/account/history", label: "My history", icon: "history" as IconName }]
             : []),
+          { href: "/account", label: "Account", icon: "settings" },
         ];
 
   return (

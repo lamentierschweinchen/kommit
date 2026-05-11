@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useDemoMode } from "@/lib/demo-mode";
 import { useToast } from "@/components/common/ToastProvider";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { MobileDrawer } from "./MobileDrawer";
@@ -40,6 +41,7 @@ export function AuthHeader({
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user, isSignedIn, signOut } = useAuth();
+  const isDemo = useDemoMode();
   const { confirm } = useToast();
   const [signInOpen, setSignInOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -57,8 +59,14 @@ export function AuthHeader({
   // affordance, one place — on /projects.
 
   const handleSignOut = () => {
+    // Demo personas land back on /demo so the user can re-pick or jump to the
+    // onchain entry; real-Privy users go to / (the marketing waitlist) which
+    // is the natural anon landing. The demo-mode flag itself survives signOut
+    // — only the active persona clears — so /demo correctly renders the
+    // persona-pick view for an unsigned demo session.
+    const next = isDemo ? "/demo" : "/";
     signOut();
-    router.push("/");
+    router.push(next);
     confirm("Signed out.");
   };
 
