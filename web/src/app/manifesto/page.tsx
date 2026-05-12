@@ -238,11 +238,14 @@ export default function ManifestoPage() {
             <p>
               <strong>Legal precedent on principal-protected yield.</strong> The
               architectural pattern — backers park capital, yield routes
-              elsewhere, principal stays redeemable — was tested in U.S. court{" "}
-              (<em>Kent v. PoolTogether</em>, dismissed on principal-protection
-              grounds) and reads under EU MiCA framing as a non-financial-
-              instrument membership record. The legal frontier was uncertain in
-              2021. It is no longer uncertain in 2026.
+              elsewhere, principal stays redeemable — has been tested in U.S.
+              court (<em>Kent v. PoolTogether</em>, dismissed in 2023 for lack
+              of standing; the court didn&apos;t reach the merits, but Judge
+              Block named withdraw-anytime + no defendant-imposed fees as why
+              the plaintiff had no concrete harm — both baked into Kommit) and
+              reads under EU MiCA framing as a non-financial-instrument
+              membership record. The legal frontier was uncertain in 2021. It
+              is narrower in 2026 — not resolved.
             </p>
             <p>
               The primitive sat on the table waiting for these three to show up

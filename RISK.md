@@ -72,7 +72,7 @@ Kommit relies on third parties for non-program infrastructure:
 
 ### 5. Regulatory risk
 
-Principal-protected yield architectures are not novel and have been tested in court — *Kent v. PoolTogether* dismissed on principal-protection grounds. That precedent is encouraging for the architecture but **does not extend automatically to every jurisdiction**.
+Principal-protected yield architectures are not novel and have been tested in court — *Kent v. PoolTogether* was dismissed in 2023 for lack of Article III standing. **The court did not reach the lottery/security merits**, but Judge Block specifically named withdraw-anytime + no defendant-imposed fees as why the plaintiff had no concrete harm — both design properties Kommit ships with. The precedent narrows the regulatory risk but **does not extend automatically to every jurisdiction**, and the underlying merits question remains unresolved.
 
 - **EU / Germany.** MiCA classification of the kommit token (soulbound, non-transferable, no secondary market) is the cleanest jurisdictional read; it sits closer to a non-financial loyalty/membership record than to a security or stablecoin.
 - **US.** Howey-test exposure depends on the rights layer at graduation. Allocation rights converted into equity are securities transactions — handled at the launchpad / partner platform layer (CoinList, Buidlpad, Echo, Republic), not by Kommit's program.
