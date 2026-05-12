@@ -3,36 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kommit — Pitch deck · The conviction primitive</title>
-<meta name="description" content="Kommit is the conviction primitive. Capital × time, soulbound, public, composable. Back early-stage teams without locking your money — and earn standing that converts to allocation rights at graduation. Solana Frontier 2026.">
-<meta name="robots" content="index,follow">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Kommit — The conviction primitive">
-<meta property="og:description" content="A conviction primitive and a discovery primitive on Solana. Real backers, real teams, real long-term alignment — none of it extractive. Solana Frontier 2026.">
-<meta property="og:url" content="https://kommit.now/pitch">
-<meta property="og:site_name" content="Kommit">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Kommit — The conviction primitive">
-<meta name="twitter:description" content="A conviction primitive and a discovery primitive on Solana. Real backers, real teams, real long-term alignment — none of it extractive. Solana Frontier 2026.">
+<title>Kommit — The bridge across the pit · Solana Frontier 2026</title>
+<meta name="description" content="The bridge across the early-stage pit. Conviction × time, principal-protected, on-chain. Kommit at Solana Frontier 2026.">
+<meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800;12..96,900&family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #9945FF;
-    --secondary: #14F195;
-    --black: #000;
-    --white: #fff;
-    --gray-100: #f4f4f5;
+    --ink: #0A0A0A;
+    --paper: #FFFFFF;
+    --paper-soft: #F4F4F5;
+    --primary: #9945FF;     /* Solana purple — brand primary */
+    --secondary: #14F195;   /* Solana green — accent / go */
+    --bone: #FFFFFF;
     --gray-500: #71717a;
     --gray-700: #3f3f46;
+    /* tonal aliases */
+    --caution: #9945FF;     /* now brand primary, used for bridge + accents */
+    --blood: #FFFFFF;       /* now paper white, used for pit-pitfall text on ink */
   }
   *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; }
   body {
     font-family: "Public Sans", system-ui, sans-serif;
-    color: var(--black);
-    background: var(--gray-100);
+    color: var(--ink);
+    background: var(--ink);
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
@@ -58,153 +54,33 @@
   .slide {
     position: absolute;
     inset: 0;
-    padding: 56px 72px;
+    padding: 48px 64px;
     display: none;
     flex-direction: column;
-    background: var(--white);
-    border: 0;
+    background: var(--paper);
+    color: var(--ink);
   }
   .slide.active { display: flex; }
+  .slide.bg-ink { background: var(--ink); color: var(--paper); }
+  .slide.bg-caution { background: var(--caution); color: var(--ink); }
 
-  /* Standard inner wrapper for max width discipline */
   .inner {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-  }
-
-  /* Backgrounds for variant slides */
-  .slide.bg-black { background: var(--black); color: var(--white); }
-  .slide.bg-primary { background: var(--primary); color: var(--white); }
-
-  /* Hero brutal frame */
-  .brutal-box {
     position: relative;
-    background: var(--white);
-    border: 3px solid var(--black);
-    padding: 40px 48px;
-  }
-  .brutal-box::before {
-    content: "";
-    position: absolute;
-    inset: 16px -16px -16px 16px;
-    background: var(--primary);
-    border: 3px solid var(--black);
-    z-index: -1;
-  }
-  .slide.bg-black .brutal-box { background: var(--black); color: var(--white); }
-  .slide.bg-primary .brutal-box { background: var(--primary); color: var(--white); border-color: var(--black); }
-
-  /* Pills */
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    border: 2px solid var(--black);
-    background: var(--secondary);
-    color: var(--black);
-    box-shadow: 2px 2px 0 0 var(--black);
-  }
-  .pill.purple { background: var(--primary); color: var(--white); }
-  .pill.white { background: var(--white); color: var(--black); }
-  .pill.black { background: var(--black); color: var(--white); }
-
-  /* Headlines */
-  h1.headline {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    line-height: 0.95;
-    letter-spacing: -0.04em;
-    margin: 0;
-    font-size: clamp(48px, 7vw, 104px);
-  }
-  h2.subhead {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    margin: 0;
-    font-size: clamp(28px, 3.5vw, 44px);
-    line-height: 1.05;
-  }
-  .lede {
-    font-family: "Public Sans", sans-serif;
-    font-weight: 500;
-    font-size: clamp(18px, 1.8vw, 24px);
-    line-height: 1.5;
-    max-width: 780px;
-  }
-  .pullquote {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.03em;
-    line-height: 1.02;
-    font-size: clamp(36px, 5vw, 64px);
-    padding: 24px 0 24px 32px;
-    border-left: 6px solid var(--primary);
   }
 
-  /* Grid utilities */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
-  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
-
-  .card {
-    background: var(--white);
-    color: var(--black);
-    border: 3px solid var(--black);
-    padding: 24px;
-    box-shadow: 4px 4px 0 0 var(--black);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .card.purple-shadow { box-shadow: 8px 8px 0 0 var(--primary); }
-  .card-num {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    font-size: 64px;
-    line-height: 0.9;
-    color: var(--gray-100);
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    user-select: none;
-  }
-  .card { position: relative; }
-  .card-title {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    font-size: 22px;
-    line-height: 1.05;
-    z-index: 1;
-    margin: 8px 0 0 0;
-  }
-  .card-body {
-    font-family: "Public Sans", sans-serif;
-    font-weight: 500;
-    font-size: 15px;
-    line-height: 1.5;
-    color: var(--gray-700);
-  }
-
-  /* TOP STRIP */
+  /* STRIP */
   .strip {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
+    margin-bottom: 24px;
   }
   .strip-left, .strip-right {
     display: flex;
@@ -226,186 +102,759 @@
     letter-spacing: 0.16em;
     color: var(--gray-500);
   }
-  .slide.bg-black .slide-num,
-  .slide.bg-primary .slide-num { color: rgba(255,255,255,0.6); }
+  .slide.bg-ink .slide-num { color: rgba(251, 245, 233, 0.5); }
+  .slide.bg-caution .slide-num { color: rgba(10, 10, 10, 0.6); }
+
+  /* Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 2px solid var(--ink);
+    background: var(--caution);
+    color: var(--ink);
+    box-shadow: 2px 2px 0 0 var(--ink);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 10px;
+  }
+  .pill.blood { background: var(--blood); color: var(--bone); }
+  .pill.ink { background: var(--ink); color: var(--paper); box-shadow: 2px 2px 0 0 var(--caution); }
+  .pill.bone { background: var(--bone); }
+
+  /* Headlines */
+  h1.headline {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    margin: 0;
+    font-size: clamp(56px, 8.5vw, 132px);
+  }
+  h2.subhead {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    margin: 0;
+    font-size: clamp(34px, 4.6vw, 64px);
+    line-height: 1.0;
+  }
+  .lede {
+    font-family: "Public Sans", sans-serif;
+    font-weight: 500;
+    font-size: clamp(17px, 1.6vw, 22px);
+    line-height: 1.5;
+    max-width: 820px;
+  }
+
+  /* ====== SLIDE 1 — COVER ====== */
+  .cover-stage {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 0;
+  }
+  .cover-mark {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: lowercase;
+    letter-spacing: -0.07em;
+    font-size: clamp(140px, 18vw, 280px);
+    line-height: 0.78;
+    color: var(--ink);
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .cover-mark::after {
+    content: ".";
+    color: var(--primary);
+  }
+  .slide.active .cover-mark { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 100ms forwards; }
+  .cover-rule {
+    width: 0;
+    height: 8px;
+    background: var(--primary);
+    border: 0;
+    margin: 4px 0 4px 0;
+  }
+  .slide.active .cover-rule { animation: ruleGrow 500ms cubic-bezier(0.22, 1, 0.36, 1) 500ms forwards; }
+  .cover-thesis {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    font-size: clamp(30px, 3.6vw, 52px);
+    line-height: 1.02;
+    max-width: 920px;
+    opacity: 0;
+  }
+  .slide.active .cover-thesis { animation: fade 600ms ease-out 800ms forwards; }
+  .cover-meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gray-700);
+    margin-top: 12px;
+    opacity: 0;
+  }
+  .slide.active .cover-meta { animation: fade 500ms ease-out 1100ms forwards; }
+
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  @keyframes fade { to { opacity: 1; } }
+  @keyframes ruleGrow { to { width: 220px; } }
+
+  /* ====== SLIDE 2 — YOU ARE HERE ====== */
+  .scene {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 400px;
+  }
+  .scene svg { width: 100%; height: 100%; display: block; }
+  .scene .draw-line {
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+  }
+  .slide.active .draw-line {
+    animation: dashDraw 900ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+  }
+  @keyframes dashDraw { to { stroke-dashoffset: 0; } }
+
+  .xmark {
+    opacity: 0;
+    transform-origin: center;
+  }
+  .slide.active .xmark { animation: xPunch 350ms cubic-bezier(0.22, 1, 0.36, 1) 1000ms forwards; }
+  @keyframes xPunch {
+    0% { opacity: 0; transform: scale(0.6); }
+    60% { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .you-are-here-label {
+    opacity: 0;
+  }
+  .slide.active .you-are-here-label { animation: fade 400ms ease-out 1350ms forwards; }
+
+  .persona-stack {
+    position: absolute;
+    right: 6%;
+    top: 8%;
+    width: 50%;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .persona {
+    border: 3px solid var(--ink);
+    background: var(--bone);
+    padding: 14px 18px;
+    box-shadow: 5px 5px 0 0 var(--ink);
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  .persona-tag {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 11px;
+    color: var(--blood);
+    margin-bottom: 4px;
+  }
+  .persona-line {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    font-size: clamp(18px, 1.8vw, 24px);
+    line-height: 1.08;
+  }
+  .slide.active .persona:nth-child(1) { animation: slideIn 500ms cubic-bezier(0.22, 1, 0.36, 1) 1500ms forwards; }
+  .slide.active .persona:nth-child(2) { animation: slideIn 500ms cubic-bezier(0.22, 1, 0.36, 1) 1750ms forwards; }
+  .slide.active .persona:nth-child(3) { animation: slideIn 500ms cubic-bezier(0.22, 1, 0.36, 1) 2000ms forwards; }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  .scene-title {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  .scene-eyebrow {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--blood);
+    margin-bottom: 8px;
+  }
+  .scene-h {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.03em;
+    font-size: clamp(56px, 7.5vw, 110px);
+    line-height: 0.88;
+    margin: 0;
+  }
+
+  /* ====== SLIDE 3 — THE PIT ====== */
+  .pit-scene {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 480px;
+  }
+  .pit-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .pit-floor, .pit-wall-left, .pit-wall-right {
+    stroke-dasharray: 1800;
+    stroke-dashoffset: 1800;
+  }
+  .slide.active .pit-floor { animation: dashDraw 700ms cubic-bezier(0.4, 0, 0.2, 1) 200ms forwards; }
+  .slide.active .pit-wall-left { animation: dashDraw 400ms cubic-bezier(0.4, 0, 0.2, 1) 600ms forwards; }
+  .slide.active .pit-wall-right { animation: dashDraw 400ms cubic-bezier(0.4, 0, 0.2, 1) 800ms forwards; }
+
+  .pit-pitfall {
+    position: absolute;
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.005em;
+    color: var(--blood);
+    background: rgba(10, 10, 10, 0.0);
+    opacity: 0;
+    transform: translateY(-160px) rotate(var(--rot, 0deg));
+    white-space: nowrap;
+    text-shadow:
+      2px 0 0 var(--ink), -2px 0 0 var(--ink),
+      0 2px 0 var(--ink), 0 -2px 0 var(--ink),
+      2px 2px 0 var(--ink), -2px -2px 0 var(--ink),
+      2px -2px 0 var(--ink), -2px 2px 0 var(--ink);
+    pointer-events: none;
+  }
+  .slide.active .pit-pitfall { animation: pitDrop 600ms cubic-bezier(0.55, 0.085, 0.68, 0.53) var(--delay, 0ms) forwards; }
+  @keyframes pitDrop {
+    0% { opacity: 0; transform: translateY(-220px) rotate(var(--rot, 0deg)); }
+    65% { opacity: 1; transform: translateY(8px) rotate(var(--rot, 0deg)); }
+    80% { transform: translateY(-4px) rotate(var(--rot, 0deg)); }
+    100% { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)); }
+  }
+
+  .pit-here-label, .pit-launch-label {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--paper);
+  }
+
+  /* ====== SLIDE 4 — title block (smaller than slide 3) ====== */
+  .bridge-title {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .bridge-h {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.03em;
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 0.9;
+    margin: 0;
+    color: var(--paper);
+  }
+  .bridge-scene {
+    flex: 1;
+    min-height: 460px;
+    margin-top: 0;
+  }
+
+  /* ====== SLIDE 4 — BRIDGE REVEAL ====== */
+  .bridge-plank {
+    opacity: 0;
+    transform: translateY(-200px);
+  }
+  .slide.active .bridge-plank { animation: plankLand 450ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--delay, 0ms) forwards; }
+  @keyframes plankLand {
+    0% { opacity: 0; transform: translateY(-200px); }
+    70% { opacity: 1; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .bridge-stamp { opacity: 0; }
+  .slide.active .bridge-stamp { animation: stamp 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 2200ms forwards; }
+  @keyframes stamp {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  /* Pop the rect+text in via SVG-native attributes via wrapper visibility — keep simple */
+  /* walker removed — bridge + stamp reveal is enough */
+
+  .pitfall-faded {
+    opacity: 0.16 !important;
+  }
+
+  /* ====== SLIDE 5 — QUADRANT ====== */
+  .quad-wrap {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: 1fr 60px;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+    max-height: 580px;
+  }
+  .y-axis-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 14px;
+    color: var(--ink);
+    align-self: stretch;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .x-axis-label {
+    grid-column: 2;
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 14px;
+    color: var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+  }
+  .quad-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    border: 4px solid var(--ink);
+    background: var(--bone);
+  }
+  .quad {
+    padding: 24px 28px;
+    border-right: 4px solid var(--ink);
+    border-bottom: 4px solid var(--ink);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+  }
+  .quad:nth-child(2), .quad:nth-child(4) { border-right: 0; }
+  .quad:nth-child(3), .quad:nth-child(4) { border-bottom: 0; }
+  .quad-label {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    color: var(--gray-500);
+  }
+  .quad-body {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.2vw, 30px);
+    line-height: 1.05;
+    color: var(--ink);
+    opacity: 0.4;
+  }
+  .quad.empty {
+    background: var(--primary);
+    color: var(--paper);
+  }
+  .quad.empty .quad-label { color: var(--paper); opacity: 0.8; }
+  .quad.empty .quad-body {
+    color: var(--paper);
+    opacity: 1;
+    font-size: clamp(40px, 5.5vw, 80px);
+    letter-spacing: -0.04em;
+  }
+  .quad-strike {
+    text-decoration: line-through;
+    text-decoration-thickness: 3px;
+    text-decoration-color: var(--primary);
+    opacity: 0.6;
+  }
+  .empty-arrow {
+    position: absolute;
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 11px;
+    color: var(--ink);
+    top: -28px;
+    right: 8px;
+  }
+  .quad.intro {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .slide.active .quad.intro:nth-child(1) { animation: cardIn 450ms ease-out 200ms forwards; }
+  .slide.active .quad.intro:nth-child(2) { animation: cardIn 450ms ease-out 1400ms forwards; }
+  .slide.active .quad.intro:nth-child(3) { animation: cardIn 450ms ease-out 700ms forwards; }
+  .slide.active .quad.intro:nth-child(4) { animation: cardIn 450ms ease-out 1000ms forwards; }
+  @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+
+  /* ====== SLIDE 6 — TAM ====== */
+  .tam-wrap {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .tam-big {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    font-size: clamp(110px, 15vw, 220px);
+    line-height: 0.85;
+    color: var(--ink);
+    margin: 0;
+  }
+  .tam-big-2 {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    font-size: clamp(28px, 3.2vw, 44px);
+    line-height: 1.05;
+    color: var(--blood);
+    text-transform: uppercase;
+    margin: 8px 0 0 0;
+  }
+  .tam-derivation {
+    border-left: 4px solid var(--ink);
+    padding: 8px 0 8px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tam-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed rgba(10,10,10,0.2);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 14px;
+    gap: 16px;
+  }
+  .tam-line-label {
+    color: var(--gray-700);
+    flex: 1;
+  }
+  .tam-line-val {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .tam-arrow {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    margin-top: 16px;
+    color: var(--gray-500);
+  }
+  .tam-y3 {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 20px;
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 0 var(--caution);
+  }
+  .tam-y3-label {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: var(--caution);
+    margin-bottom: 4px;
+  }
+  .tam-y3-val {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.05;
+  }
+  .tam-y3-foot {
+    font-family: "Public Sans", sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: rgba(251, 245, 233, 0.7);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  /* ====== SLIDE 7 — REV STREAMS ====== */
+  .rev-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  .rev-card {
+    border: 3px solid var(--ink);
+    background: var(--bone);
+    padding: 18px 18px 22px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 6px 6px 0 0 var(--ink);
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .slide.active .rev-card:nth-child(1) { animation: cardIn 450ms ease-out 200ms forwards; }
+  .slide.active .rev-card:nth-child(2) { animation: cardIn 450ms ease-out 350ms forwards; }
+  .slide.active .rev-card:nth-child(3) { animation: cardIn 450ms ease-out 500ms forwards; }
+  .slide.active .rev-card:nth-child(4) { animation: cardIn 450ms ease-out 650ms forwards; }
+  .rev-num {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--blood);
+  }
+  .rev-title {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 1.9vw, 26px);
+    line-height: 1.0;
+  }
+  .rev-body {
+    font-family: "Public Sans", sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--gray-700);
+  }
+  .rev-zero {
+    background: var(--caution);
+    border: 4px solid var(--ink);
+    padding: 14px 22px;
+    margin-top: 20px;
+    text-align: center;
+    box-shadow: 6px 6px 0 0 var(--ink);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.4vw, 32px);
+    line-height: 1.05;
+    opacity: 0;
+  }
+  .slide.active .rev-zero { animation: cardIn 500ms ease-out 900ms forwards; }
+
+  /* ====== SLIDE 8 — PUNCHLINE ====== */
+  .punch-wrap {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    height: 100%;
+  }
+  .punch-line {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.04em;
+    line-height: 0.92;
+    font-size: clamp(72px, 11vw, 180px);
+    margin: 0;
+    color: var(--paper);
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .punch-line.two {
+    color: var(--caution);
+  }
+  .slide.active .punch-line.one { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards; }
+  .slide.active .punch-line.two { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 1400ms forwards; }
+  .punch-rule {
+    height: 6px;
+    width: 0;
+    background: var(--blood);
+    margin: 18px 0 18px 0;
+  }
+  .slide.active .punch-rule { animation: punchRule 500ms cubic-bezier(0.22, 1, 0.36, 1) 900ms forwards; }
+  @keyframes punchRule { to { width: 280px; } }
+
+  /* ====== SLIDE 9 — QR / CTA ====== */
+  .cta-wrap {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 64px;
+    align-items: center;
+    width: 100%;
+  }
+  .cta-left {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .cta-eyebrow {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 13px;
+    color: var(--blood);
+  }
+  .cta-mark {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: lowercase;
+    letter-spacing: -0.07em;
+    font-size: clamp(110px, 14vw, 220px);
+    line-height: 0.82;
+    color: var(--ink);
+    margin: 0;
+  }
+  .cta-mark::after {
+    content: ".";
+    color: var(--primary);
+  }
+  .cta-url {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 500;
+    font-size: clamp(22px, 2.4vw, 32px);
+    color: var(--ink);
+    background: var(--caution);
+    border: 3px solid var(--ink);
+    padding: 8px 14px;
+    box-shadow: 4px 4px 0 0 var(--ink);
+    display: inline-block;
+    align-self: flex-start;
+  }
+  .cta-tagline {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.2vw, 28px);
+    line-height: 1.1;
+    color: var(--gray-700);
+    max-width: 540px;
+  }
+  .cta-tagline-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .cta-imperative {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    font-size: clamp(40px, 5vw, 76px);
+    line-height: 0.96;
+    color: var(--ink);
+  }
+  .cta-imperative:nth-child(2) { color: var(--primary); }
+  .qr-frame {
+    border: 4px solid var(--ink);
+    background: var(--bone);
+    padding: 24px;
+    box-shadow: 10px 10px 0 0 var(--caution);
+    position: relative;
+  }
+  .qr-frame svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    color: var(--ink);
+  }
+  .qr-caption {
+    margin-top: 12px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--gray-500);
+  }
 
   /* CONTROLS */
   .controls {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: 18px;
+    right: 18px;
     display: flex;
     gap: 8px;
     z-index: 100;
   }
   .ctrl {
-    width: 44px;
-    height: 44px;
-    border: 3px solid var(--black);
-    background: var(--white);
-    color: var(--black);
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--ink);
+    background: var(--bone);
+    color: var(--ink);
     font-family: "Bricolage Grotesque", sans-serif;
     font-weight: 900;
-    font-size: 20px;
+    font-size: 18px;
     cursor: pointer;
-    box-shadow: 4px 4px 0 0 var(--black);
+    box-shadow: 3px 3px 0 0 var(--ink);
     transition: transform 100ms;
   }
-  .ctrl:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 0 var(--black); }
+  .ctrl:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 0 var(--ink); }
   .ctrl:active { transform: translate(2px, 2px); box-shadow: none; }
   .counter {
     position: fixed;
-    bottom: 24px;
-    left: 24px;
+    bottom: 18px;
+    left: 18px;
     font-family: "JetBrains Mono", monospace;
     font-weight: 500;
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.2em;
-    background: var(--white);
-    border: 3px solid var(--black);
-    padding: 8px 12px;
+    background: var(--bone);
+    border: 3px solid var(--ink);
+    padding: 6px 10px;
     z-index: 100;
-    box-shadow: 4px 4px 0 0 var(--black);
+    box-shadow: 3px 3px 0 0 var(--ink);
   }
 
-  /* TABLES + listicles */
-  ul.spec {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  ul.spec li {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 2px solid var(--black);
-    font-family: "Public Sans", sans-serif;
-    font-weight: 500;
-    font-size: 18px;
-    line-height: 1.4;
-  }
-  ul.spec li::before {
-    content: "→";
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    color: var(--primary);
-    margin-right: 4px;
-  }
-  ul.spec li b {
-    font-weight: 900;
-    font-family: "Bricolage Grotesque", sans-serif;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
-    font-size: 17px;
-    margin-right: 6px;
-  }
-
-  /* Phase rows */
-  .phase-row {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 32px;
-    align-items: start;
-    padding: 24px 0;
-    border-bottom: 3px solid var(--black);
-  }
-  .phase-row:first-of-type { border-top: 3px solid var(--black); }
-  .phase-tag {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    font-size: 22px;
-  }
-  .phase-tag.now { color: var(--primary); }
-  .phase-body { font-size: 17px; line-height: 1.55; font-weight: 500; }
-  .phase-body b {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
-    margin-right: 6px;
-  }
-
-  /* Quote tag (slide 2 sub-blocks) */
-  .quote-box {
-    border: 3px solid var(--black);
-    background: var(--gray-100);
-    padding: 20px 24px;
-    position: relative;
-    box-shadow: 4px 4px 0 0 var(--black);
-  }
-  .quote-attr {
-    margin-top: 14px;
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-size: 10px;
-    color: var(--gray-500);
-  }
-  .quote-title {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    font-size: 22px;
-    line-height: 1.1;
-    margin: 0 0 8px 0;
-  }
-  .quote-body {
-    font-family: "Public Sans", sans-serif;
-    font-weight: 500;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--gray-700);
-  }
-
-  /* Slide 8 close */
-  .close-wrap {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-  }
-  .close-mark {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 900;
-    text-transform: lowercase;
-    letter-spacing: -0.06em;
-    font-size: clamp(96px, 14vw, 200px);
-    line-height: 0.9;
-    color: var(--white);
-  }
-  .close-url {
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 500;
-    font-size: 18px;
-    letter-spacing: 0.05em;
-    color: var(--white);
-    border-bottom: 3px solid var(--secondary);
-    padding-bottom: 4px;
-  }
-  .close-tagline {
-    font-family: "Bricolage Grotesque", sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
-    font-size: clamp(20px, 2vw, 28px);
-    color: rgba(255,255,255,0.85);
-    max-width: 700px;
-    line-height: 1.2;
-  }
-
-  /* Hide nav for print */
+  /* Print fallback */
   @media print {
     .controls, .counter { display: none; }
     .slide { display: flex !important; page-break-after: always; }
+    .slide *, .slide::before, .slide::after { animation: none !important; opacity: 1 !important; transform: none !important; }
   }
 </style>
 </head>
@@ -413,224 +862,409 @@
 
 <div class="deck" id="deck">
 
-<!-- SLIDE 1 — HOOK -->
+<!-- ════════════════════════════════════════
+     SLIDE 1 — COVER
+     ════════════════════════════════════════ -->
 <section class="slide active" data-slide="1">
   <div class="strip">
-    <div class="strip-left">
-      <span class="wordmark">kommit</span>
-      <span class="pill purple">Conviction × discovery</span>
-    </div>
-    <div class="strip-right"><span class="slide-num">01 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
-  <div class="inner" style="justify-content:center;">
-    <div class="brutal-box">
-      <div class="label" style="color: var(--gray-500); margin-bottom: 16px;">Solana Frontier · May 2026</div>
-      <h1 class="headline">A conviction<br>primitive.<br>And a discovery<br>primitive.</h1>
-      <div class="lede" style="margin-top: 32px; border-left: 6px solid var(--primary); padding-left: 24px; font-style: italic;">
-        Real backers, real teams, real long-term alignment — none of it extractive.
-      </div>
-    </div>
+  <div class="inner cover-stage">
+    <div class="cover-mark">kommit</div>
+    <div class="cover-rule"></div>
+    <div class="cover-thesis">Turn conviction into currency.</div>
   </div>
 </section>
 
-<!-- SLIDE 2 — THREE FAILURES -->
+<!-- ════════════════════════════════════════
+     SLIDE 2 — YOU ARE HERE (minimal — empty space is the point)
+     ════════════════════════════════════════ -->
 <section class="slide" data-slide="2">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark">kommit</span><span class="label" style="color: var(--gray-500);">The category we replace</span></div>
-    <div class="strip-right"><span class="slide-num">02 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
   <div class="inner">
-    <h2 class="subhead" style="margin-bottom: 32px;">Three things, all broken.</h2>
-    <div class="grid-3">
-      <div class="quote-box">
-        <span class="pill purple" style="margin-bottom: 12px;">01 · Cost you money</span>
-        <p class="quote-title" style="margin-top: 14px;">Equity crowdfunding loses backers.</p>
-        <p class="quote-body">21 of 21 startups failed for one Wefunder investor. Platforms collect cash, founders disappear, refunds don't happen.</p>
-        <p class="quote-attr">— Wefunder review</p>
-      </div>
-      <div class="quote-box">
-        <span class="pill black" style="margin-bottom: 12px;">02 · Bought you nothing</span>
-        <p class="quote-title">Being right pays zero.</p>
-        <p class="quote-body">You spotted Stripe, Discord, Solana before anyone. No record, no standing, no upside. Conviction without proof, without rights.</p>
-        <p class="quote-attr">— Every early backer ever</p>
-      </div>
-      <div class="quote-box" style="background: var(--black); color: var(--white); border-color: var(--black);">
-        <span class="pill" style="margin-bottom: 12px;">03 · Made you the product</span>
-        <p class="quote-title" style="color: var(--white);">Points programs farm attention.</p>
-        <p class="quote-body" style="color: rgba(255,255,255,0.85);">Grind, refer, post — extract value from your network. The platform monetizes you and ships a token to insiders.</p>
-        <p class="quote-attr" style="color: rgba(255,255,255,0.6);">— Every Web3 airdrop, 2021—now</p>
-      </div>
-    </div>
+    <h2 class="scene-h" style="font-size: clamp(80px, 11vw, 180px); line-height: 0.86;">You<br>are<br>here.</h2>
   </div>
 </section>
 
-<!-- SLIDE 3 — THE PRIMITIVE -->
-<section class="slide bg-primary" data-slide="3">
+<!-- ════════════════════════════════════════
+     SLIDE 3 — THE PIT
+     ════════════════════════════════════════ -->
+<section class="slide bg-ink" data-slide="3">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark" style="color: var(--white);">kommit</span><span class="pill white">The unit</span></div>
-    <div class="strip-right"><span class="slide-num" style="color: rgba(255,255,255,0.6);">03 / 08</span></div>
+    <div class="strip-left">
+      <span class="wordmark" style="color: var(--paper);">kommit</span>
+    </div>
   </div>
   <div class="inner">
-    <div class="label" style="color: rgba(255,255,255,0.7); margin-bottom: 16px;">The new primitive</div>
-    <h1 class="headline" style="color: var(--white);">Capital × Time.</h1>
-    <div style="background: var(--black); color: var(--white); border: 3px solid var(--black); padding: 32px 40px; margin-top: 32px; box-shadow: 8px 8px 0 0 var(--white);">
-      <div class="label" style="color: var(--secondary);">One kommit per dollar-hour. No exceptions.</div>
-      <p class="lede" style="margin-top: 16px; color: var(--white); font-style: normal;">
-        Backers commit real money into audited yield. They keep custody. Kommits accrue every second they stay. Soulbound, public, composable. Conviction made measurable — and convertible.
-      </p>
+    <div class="scene-title" style="top:-4px;">
+      <div class="scene-eyebrow" style="color: var(--secondary);">Between here and launch:</div>
+      <h2 class="scene-h" style="color: var(--paper);">The pit.</h2>
+    </div>
+    <div class="pit-scene">
+      <svg class="pit-svg" viewBox="0 0 1200 540" preserveAspectRatio="none">
+        <!-- left ground -->
+        <line class="pit-floor" x1="20" y1="160" x2="180" y2="160"
+              stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"/>
+        <!-- right ground / launch ramp -->
+        <line class="pit-floor" x1="1020" y1="160" x2="1180" y2="100"
+              stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"/>
+        <!-- pit walls -->
+        <line class="pit-wall-left" x1="180" y1="160" x2="180" y2="500"
+              stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"/>
+        <line class="pit-wall-right" x1="1020" y1="160" x2="1020" y2="500"
+              stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"/>
+        <!-- pit floor -->
+        <line class="pit-floor" x1="180" y1="500" x2="1020" y2="500"
+              stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"/>
+        <!-- launch label on right -->
+        <g>
+          <text x="1100" y="80" text-anchor="middle" fill="#14F195"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="22" letter-spacing="0.12em">LAUNCH →</text>
+        </g>
+        <!-- here X on left -->
+        <g transform="translate(100, 140)">
+          <line x1="-14" y1="-14" x2="14" y2="14" stroke="#9945FF" stroke-width="6"/>
+          <line x1="-14" y1="14" x2="14" y2="-14" stroke="#9945FF" stroke-width="6"/>
+          <text x="0" y="-26" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="12" letter-spacing="0.16em">HERE</text>
+        </g>
+      </svg>
+
+      <!-- pitfalls dropping into the pit -->
+      <div class="pit-pitfall" style="left: 16%; top: 56%; --rot: -3deg; --delay: 800ms; font-size: 22px;">
+        Your co-founder leaves on a Tuesday.
+      </div>
+      <div class="pit-pitfall" style="left: 38%; top: 50%; --rot: 4deg; --delay: 950ms; font-size: 18px;">
+        Wefunder takes 9% of the round.
+      </div>
+      <div class="pit-pitfall" style="left: 55%; top: 62%; --rot: -6deg; --delay: 1100ms; font-size: 20px;">
+        Your beta users ghost.
+      </div>
+      <div class="pit-pitfall" style="left: 22%; top: 68%; --rot: 7deg; --delay: 1250ms; font-size: 19px;">
+        The seed lead pulls the term sheet.
+      </div>
+      <div class="pit-pitfall" style="left: 45%; top: 80%; --rot: -2deg; --delay: 1400ms; font-size: 26px; font-weight: 900;">
+        Your conviction is worth a Product Hunt upvote.
+      </div>
+      <div class="pit-pitfall" style="left: 65%; top: 56%; --rot: 5deg; --delay: 1550ms; font-size: 17px;">
+        The Kickstarter ships broken.
+      </div>
+      <div class="pit-pitfall" style="left: 18%; top: 76%; --rot: -8deg; --delay: 1700ms; font-size: 20px;">
+        Your principal disappears with the founder.
+      </div>
+      <div class="pit-pitfall" style="left: 70%; top: 72%; --rot: -4deg; --delay: 1850ms; font-size: 16px;">
+        The audit comes back $80K.
+      </div>
+      <div class="pit-pitfall" style="left: 30%; top: 88%; --rot: 3deg; --delay: 2000ms; font-size: 18px;">
+        The round closes before you see the deal memo.
+      </div>
+      <div class="pit-pitfall" style="left: 60%; top: 86%; --rot: -5deg; --delay: 2150ms; font-size: 17px;">
+        The token launches. You weren't on the allowlist.
+      </div>
+      <div class="pit-pitfall" style="left: 76%; top: 60%; --rot: 6deg; --delay: 2300ms; font-size: 18px;">
+        You spend more time pitching than building.
+      </div>
+      <div class="pit-pitfall" style="left: 24%; top: 60%; --rot: -2deg; --delay: 2450ms; font-size: 16px;">
+        The "community" is a Discord with six mods and a bot.
+      </div>
+      <div class="pit-pitfall" style="left: 50%; top: 70%; --rot: 8deg; --delay: 2600ms; font-size: 20px;">
+        Insider rounds. Retail eats the dump.
+      </div>
+      <div class="pit-pitfall" style="left: 78%; top: 82%; --rot: -3deg; --delay: 2750ms; font-size: 16px;">
+        The lawyer says "it's complicated."
+      </div>
     </div>
   </div>
 </section>
 
-<!-- SLIDE 4 — WHAT KOMMITS BUY -->
-<section class="slide" data-slide="4">
+<!-- ════════════════════════════════════════
+     SLIDE 4 — THE BRIDGE REVEAL
+     ════════════════════════════════════════ -->
+<section class="slide bg-ink" data-slide="4">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark">kommit</span><span class="label" style="color: var(--gray-500);">The payback</span></div>
-    <div class="strip-right"><span class="slide-num">04 / 08</span></div>
+    <div class="strip-left">
+      <span class="wordmark" style="color: var(--paper);">kommit</span>
+    </div>
   </div>
   <div class="inner">
-    <h2 class="subhead" style="margin-bottom: 32px;">Kommits aren't a trophy.<br><span style="color: var(--primary);">They're a right.</span></h2>
-    <div class="grid-4">
-      <div class="card purple-shadow">
-        <span class="card-num">01</span>
-        <span class="label" style="color: var(--primary);">First allocation</span>
-        <h3 class="card-title">Round priority.</h3>
-        <p class="card-body">When the team graduates — a public round, launchpad, Kommit-channeled raise — kommitters get first dibs at round price.</p>
-      </div>
-      <div class="card">
-        <span class="card-num">02</span>
-        <span class="label" style="color: var(--gray-500);">Perks</span>
-        <h3 class="card-title">Access + product rights.</h3>
-        <p class="card-body">Early access, kommitter discounts, beta invites, founder updates, kommitter-only events. Teams use kommit balances as the allocation key.</p>
-      </div>
-      <div class="card">
-        <span class="card-num">03</span>
-        <span class="label" style="color: var(--gray-500);">Soulbound record</span>
-        <h3 class="card-title">A portable proof.</h3>
-        <p class="card-body">Public, on-chain, readable by anyone. Other products gate their own benefits on your kommit balance. The signal travels.</p>
-      </div>
-      <div class="card">
-        <span class="card-num">04</span>
-        <span class="label" style="color: var(--gray-500);">No surprises</span>
-        <h3 class="card-title">Honest disclosure.</h3>
-        <p class="card-body">Founders disclose their raise path upfront. Universal perks always apply. Equity rights conditional on a kommit-compatible round. No path-switching.</p>
-      </div>
+    <div class="bridge-title">
+      <div class="scene-eyebrow" style="color: var(--primary);">Across the pit:</div>
+      <h2 class="bridge-h">A bridge.</h2>
+    </div>
+    <div class="pit-scene bridge-scene">
+      <svg class="pit-svg" viewBox="0 0 1200 540" preserveAspectRatio="none">
+        <!-- ground (top) -->
+        <line x1="20" y1="200" x2="180" y2="200" stroke="#FFFFFF" stroke-width="5"/>
+        <line x1="1020" y1="200" x2="1180" y2="140" stroke="#FFFFFF" stroke-width="5"/>
+        <!-- pit walls + floor (dimmed) -->
+        <line x1="180" y1="200" x2="180" y2="510" stroke="rgba(255,255,255,0.25)" stroke-width="4"/>
+        <line x1="1020" y1="200" x2="1020" y2="510" stroke="rgba(255,255,255,0.25)" stroke-width="4"/>
+        <line x1="180" y1="510" x2="1020" y2="510" stroke="rgba(255,255,255,0.25)" stroke-width="4"/>
+
+        <!-- HERE on left ground -->
+        <g transform="translate(100, 180)">
+          <line x1="-14" y1="-14" x2="14" y2="14" stroke="#9945FF" stroke-width="6"/>
+          <line x1="-14" y1="14" x2="14" y2="-14" stroke="#9945FF" stroke-width="6"/>
+          <text x="0" y="-22" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="11" letter-spacing="0.16em">HERE</text>
+        </g>
+        <!-- LAUNCH on right ground -->
+        <text x="1100" y="120" text-anchor="middle" fill="#14F195"
+              font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+              font-size="22" letter-spacing="0.12em">LAUNCH →</text>
+
+        <!-- BRIDGE: 6 PURPLE planks (brand primary) across the pit -->
+        <!-- The bridge spans from x=180 to x=1020, sitting just above pit walls top -->
+
+        <g class="bridge-plank" style="--delay: 200ms;">
+          <rect x="180" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="250" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="20" letter-spacing="-0.01em">SIGNAL</text>
+        </g>
+        <g class="bridge-plank" style="--delay: 500ms;">
+          <rect x="320" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="390" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="20" letter-spacing="-0.01em">COHORT</text>
+        </g>
+        <g class="bridge-plank" style="--delay: 800ms;">
+          <rect x="460" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="530" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="20" letter-spacing="-0.01em">CAPITAL</text>
+        </g>
+        <g class="bridge-plank" style="--delay: 1100ms;">
+          <rect x="600" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="670" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="20" letter-spacing="-0.01em">RIGHTS</text>
+        </g>
+        <g class="bridge-plank" style="--delay: 1400ms;">
+          <rect x="740" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="810" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="17" letter-spacing="-0.01em">NO FEES</text>
+        </g>
+        <g class="bridge-plank" style="--delay: 1700ms;">
+          <rect x="880" y="290" width="140" height="48" fill="#9945FF" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="950" y="321" text-anchor="middle" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="14" letter-spacing="-0.01em">NO EXTRACTION</text>
+        </g>
+
+        <!-- Bridge supports (legs going down into pit) -->
+        <g class="bridge-plank" style="--delay: 2000ms;">
+          <line x1="320" y1="338" x2="320" y2="480" stroke="#9945FF" stroke-width="3"/>
+          <line x1="600" y1="338" x2="600" y2="500" stroke="#9945FF" stroke-width="3"/>
+          <line x1="880" y1="338" x2="880" y2="480" stroke="#9945FF" stroke-width="3"/>
+        </g>
+
+        <!-- KOMMIT stamp — paper-white box with ink wordmark + green period (brand identity) -->
+        <g class="bridge-stamp" transform="translate(600, 220)">
+          <rect x="-170" y="-32" width="340" height="64" fill="#FFFFFF" stroke="#0A0A0A" stroke-width="3"/>
+          <text x="0" y="14" text-anchor="middle" fill="#0A0A0A"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="44" letter-spacing="-0.05em">kommit<tspan fill="#9945FF">.</tspan></text>
+        </g>
+
+        <!-- Faint pitfalls still visible at bottom (visual continuity from slide 3) -->
+        <g opacity="0.32">
+          <text x="240" y="440" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="13" transform="rotate(-4 240 440)">Wefunder takes 9%.</text>
+          <text x="460" y="470" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="13" transform="rotate(3 460 470)">Insider rounds. Retail eats the dump.</text>
+          <text x="760" y="440" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="13" transform="rotate(-2 760 440)">Your beta users ghost.</text>
+          <text x="280" y="495" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="12" transform="rotate(5 280 495)">Vanity metrics. No skin.</text>
+          <text x="850" y="490" fill="#FFFFFF"
+                font-family="Bricolage Grotesque, sans-serif" font-weight="900"
+                font-size="12" transform="rotate(-6 850 490)">The audit comes back $80K.</text>
+        </g>
+      </svg>
     </div>
   </div>
 </section>
 
-<!-- SLIDE 5 — THE ARCHITECTURE -->
+<!-- ════════════════════════════════════════
+     SLIDE 5 — QUADRANT (SIGNAL × STAKE)
+     ════════════════════════════════════════ -->
 <section class="slide" data-slide="5">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark">kommit</span><span class="label" style="color: var(--gray-500);">Today / v1 / v2</span></div>
-    <div class="strip-right"><span class="slide-num">05 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
   <div class="inner">
-    <h2 class="subhead" style="margin-bottom: 16px;">Each phase ships<br>real product.</h2>
-    <p class="lede" style="margin-bottom: 24px; color: var(--gray-700);">Not roadmap-handwaving. Each phase is anchored in a named partner network.</p>
-    <div>
-      <div class="phase-row">
-        <div class="phase-tag now">Today</div>
-        <div class="phase-body"><b>The primitive.</b>Live on Solana devnet. USDC, Privy walletless onboarding, real Anchor commits. The mechanism works; the rails are still for the crypto-fluent.</div>
+    <h2 class="subhead" style="margin-bottom: 26px;">Signal without stake.<br>Stake without signal.<br><span style="color: var(--primary);">Both fail.</span></h2>
+    <div class="quad-wrap">
+      <div class="y-axis-label">
+        <span>LOW SIGNAL</span>
+        <span>HIGH SIGNAL</span>
       </div>
-      <div class="phase-row">
-        <div class="phase-tag">v1</div>
-        <div class="phase-body"><b>Retail-frictionless rails.</b>Card → USDC via MoonPay and Coinbase Pay (built into Privy). SEPA → USDC via Helio and Mercuryo. ~5 minute onboarding for a new backer. Engineering: 1–2 weeks post-submission.</div>
+      <div class="quad-grid">
+        <!-- top-left: signal without stake -->
+        <div class="quad intro">
+          <div class="quad-label">Signal without stake</div>
+          <div class="quad-body quad-strike">Product Hunt.<br>Twitter likes.<br>Discord upvotes.</div>
+        </div>
+        <!-- top-right: signal + stake = kommit (EMPTY corner filled by Kommit) -->
+        <div class="quad empty intro">
+          <span class="empty-arrow">↘ A new primitive.</span>
+          <div class="quad-label">Stake + signal</div>
+          <div class="quad-body">kommit.</div>
+        </div>
+        <!-- bottom-left: nothing -->
+        <div class="quad intro">
+          <div class="quad-label">Neither</div>
+          <div class="quad-body quad-strike">Token allowlists.<br>Points farms.</div>
+        </div>
+        <!-- bottom-right: stake without signal -->
+        <div class="quad intro">
+          <div class="quad-label">Stake without signal</div>
+          <div class="quad-body quad-strike">Wefunder. Republic. Crowdcube.<br>7–9% fees. 14% cease-trading.</div>
+        </div>
       </div>
-      <div class="phase-row">
-        <div class="phase-tag">v2</div>
-        <div class="phase-body"><b>Visa-direct invisible-tech.</b>Visa publishes a USDC settlement rail on Solana — $7B+ annualized run-rate. Backer enters a card + amount; never sees "USDC" or "wallet." Gated on partnership. Architecture targets an existing rail.</div>
+      <div></div>
+      <div class="x-axis-label">
+        <span>LOW STAKE</span>
+        <span>HIGH STAKE</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SLIDE 6 — ECONOMICS + LEGAL -->
-<section class="slide bg-black" data-slide="6">
+<!-- ════════════════════════════════════════
+     SLIDE 6 — TAM
+     ════════════════════════════════════════ -->
+<section class="slide" data-slide="6">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark" style="color: var(--white);">kommit</span><span class="pill" style="background: var(--secondary); color: var(--black);">Non-extractive</span></div>
-    <div class="strip-right"><span class="slide-num" style="color: rgba(255,255,255,0.6);">06 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
   <div class="inner">
-    <h2 class="subhead" style="margin-bottom: 32px; color: var(--white);">The economics<br>don't extract.</h2>
-    <div class="grid-2" style="gap: 24px;">
+    <div class="tam-wrap">
       <div>
-        <ul class="spec" style="color: var(--white);">
-          <li style="border-color: var(--white);"><b style="color: var(--secondary);">No fees on backers.</b>Withdraw anytime, principal-intact. No exit fees, no carry, no "performance" cuts.</li>
-          <li style="border-color: var(--white);"><b style="color: var(--secondary);">No fees on founders.</b>Zero platform cut when they raise. Round goes to them, full stop.</li>
-          <li style="border-color: var(--white);"><b style="color: var(--secondary);">No platform token.</b>Ever. Kommits aren't tradeable. The unit can't be airdrop bait.</li>
-          <li style="border-color: var(--white);"><b style="color: var(--secondary);">Audited yield funds it.</b>Capital sits in Kamino ($3B TVL). Interest covers operations. Same math as PoolTogether.</li>
-        </ul>
+        <div class="label" style="color: var(--primary); margin-bottom: 4px;">Already on the table</div>
+        <div class="tam-big">$2B<span style="color: var(--primary);">/yr</span></div>
+        <div class="tam-big-2">Moving through<br>extraction rails.<br><span style="color: var(--primary);">Every year.</span></div>
       </div>
       <div>
-        <div style="background: var(--white); color: var(--black); border: 3px solid var(--secondary); padding: 28px; box-shadow: 8px 8px 0 0 var(--secondary);">
-          <div class="label" style="color: var(--gray-500);">Legal precedent</div>
-          <h3 class="card-title" style="margin: 12px 0;">Kent v. PoolTogether — dismissed.</h3>
-          <p class="card-body" style="color: var(--gray-700);">
-            Principal-protected pooled-yield products are not securities under U.S. law. The legal path is cleared. We sit on the right side of the precedent.
-          </p>
-          <p class="card-body" style="color: var(--gray-700); margin-top: 12px; font-style: italic;">
-            Mainnet ships post-audit + Squads multisig governance.
-          </p>
+        <div class="tam-derivation">
+          <div class="tam-line">
+            <span class="tam-line-label">US Reg CF (2025)</span>
+            <span class="tam-line-val">$378M</span>
+          </div>
+          <div class="tam-line">
+            <span class="tam-line-label">UK Crowdcube (annual)</span>
+            <span class="tam-line-val">£1.5B+</span>
+          </div>
+          <div class="tam-line">
+            <span class="tam-line-label">EU (Seedrs / Republic Europe)</span>
+            <span class="tam-line-val">€350M+</span>
+          </div>
+        </div>
+        <div class="tam-arrow">→ US + UK + EU equity crowdfunding alone. We redirect it. We don't manufacture it.</div>
+        <div class="tam-y3" style="margin-top: 16px;">
+          <div class="tam-y3-label">Y3 base case</div>
+          <div class="tam-y3-val">$50M AUM × 4.4% APY = $2.2M ARR</div>
+          <div class="tam-y3-foot">Yield line alone. Before success fees. Before cohort intelligence.</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SLIDE 7 — OPEN PRIMITIVE -->
+<!-- ════════════════════════════════════════
+     SLIDE 7 — HOW IT MAKES MONEY
+     ════════════════════════════════════════ -->
 <section class="slide" data-slide="7">
   <div class="strip">
-    <div class="strip-left"><span class="wordmark">kommit</span><span class="label" style="color: var(--gray-500);">Open primitive · public reads</span></div>
-    <div class="strip-right"><span class="slide-num">07 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
   <div class="inner">
-    <h2 class="subhead" style="margin-bottom: 32px;">An open primitive.<br>Public reads.<br><span style="color: var(--primary);">Composable signal.</span></h2>
-    <div class="grid-2">
-      <div class="brutal-box" style="padding: 32px;">
-        <div class="label" style="color: var(--gray-500); margin-bottom: 12px;">The moat is the cohort</div>
-        <p class="lede" style="font-style: normal;">
-          Code and manifesto are open. Anyone can read kommit balances and gate features on them. We compete on cohort quality and integration depth — not on lock-in.
-        </p>
+    <h2 class="subhead" style="margin-bottom: 24px;">Neither side pays.<br><span style="color: var(--primary);">We make money four other ways.</span></h2>
+    <div class="rev-grid">
+      <div class="rev-card">
+        <div class="rev-num">01 · Today</div>
+        <div class="rev-title">Yield on AUM.</div>
+        <div class="rev-body">Parked USDC sits in audited lending. Interest funds the platform. Linear with deposits, sustainable from day one.</div>
       </div>
-      <div>
-        <ul class="spec">
-          <li><b>The manifesto</b> 1,800 words of plain prose. The argument: failures, primitive, what's unlocked, where the category fails.</li>
-          <li><b>The vision</b> Strategic anchor. Cross-section table. Three-phase architecture. Honest disclosures.</li>
-          <li><b>The code</b> MIT-licensed Anchor program. Public on GitHub. <span class="mono" style="font-size: 14px;">github.com/lamentierschweinchen/kommit</span></li>
-          <li><b>The SDK</b> <span class="mono" style="font-size: 14px;">@kommitapp/reader</span> on npm. v0.1.0. Any product can read kommit balances.</li>
-        </ul>
+      <div class="rev-card">
+        <div class="rev-num">02 · v1</div>
+        <div class="rev-title">Graduation fees.</div>
+        <div class="rev-body">1% on rounds Kommit channels — paid from the round, not the team's runway. Aligned with success.</div>
       </div>
+      <div class="rev-card">
+        <div class="rev-num">03 · v1.5</div>
+        <div class="rev-title">Cohort intelligence.</div>
+        <div class="rev-body">Capital-weighted soulbound signal, opt-in, sold to allocators. Supply-side scarce — nothing else produces this.</div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-num">04 · v2</div>
+        <div class="rev-title">Rail partnerships.</div>
+        <div class="rev-body">CoinList, Buidlpad, Echo for allocation routing. Visa-direct USDC settlement on Solana for invisible-tech fiat.</div>
+      </div>
+    </div>
+    <div class="rev-zero">Zero fees on backers. Zero fees on founders.<br><span style="color: var(--ink); opacity: 0.78; font-weight: 800;">Both sides keep what they brought.</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 8 — PUNCHLINE
+     ════════════════════════════════════════ -->
+<section class="slide bg-ink" data-slide="8">
+  <div class="strip">
+    <div class="strip-left">
+      <span class="wordmark" style="color: var(--paper);">kommit</span>
+    </div>
+  </div>
+  <div class="inner">
+    <div class="punch-wrap">
+      <div class="punch-line one">Conviction</div>
+      <div class="punch-line two">has a currency.</div>
     </div>
   </div>
 </section>
 
-<!-- SLIDE 8 — CLOSE -->
-<section class="slide bg-primary" data-slide="8">
+<!-- ════════════════════════════════════════
+     SLIDE 9 — CTA / QR
+     ════════════════════════════════════════ -->
+<section class="slide" data-slide="9">
   <div class="strip">
-    <div class="strip-left"></div>
-    <div class="strip-right"><span class="slide-num" style="color: rgba(255,255,255,0.6);">08 / 08</span></div>
+    <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
-  <div class="inner" style="justify-content: center; align-items: center;">
-    <div class="close-wrap">
-      <div class="close-mark">kommit</div>
-      <div class="close-tagline">Real backers. Real teams. Real long-term alignment.</div>
-      <div style="display: flex; gap: 32px; align-items: center; margin-top: 16px;">
-        <span class="close-url">kommit.now</span>
-        <span class="close-url" style="border-color: var(--secondary);">@lukasseel</span>
+  <div class="inner">
+    <div class="cta-wrap">
+      <div class="cta-left">
+        <div class="cta-mark">kommit</div>
+        <div class="cta-tagline-stack">
+          <div class="cta-imperative">Sign up.</div>
+          <div class="cta-imperative">Kommit.</div>
+        </div>
       </div>
-      <div class="label" style="color: rgba(255,255,255,0.7); margin-top: 24px;">Solana Frontier · May 2026</div>
+      <div class="qr-frame">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges" fill="currentColor"><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="7" y="2" width="1" height="1"/><rect x="8" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="12" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="17" y="2" width="1" height="1"/><rect x="18" y="2" width="1" height="1"/><rect x="20" y="2" width="1" height="1"/><rect x="21" y="2" width="1" height="1"/><rect x="22" y="2" width="1" height="1"/><rect x="23" y="2" width="1" height="1"/><rect x="24" y="2" width="1" height="1"/><rect x="25" y="2" width="1" height="1"/><rect x="26" y="2" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="13" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/><rect x="20" y="3" width="1" height="1"/><rect x="26" y="3" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="20" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="23" y="4" width="1" height="1"/><rect x="24" y="4" width="1" height="1"/><rect x="26" y="4" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="18" y="5" width="1" height="1"/><rect x="20" y="5" width="1" height="1"/><rect x="22" y="5" width="1" height="1"/><rect x="23" y="5" width="1" height="1"/><rect x="24" y="5" width="1" height="1"/><rect x="26" y="5" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="16" y="6" width="1" height="1"/><rect x="17" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="22" y="6" width="1" height="1"/><rect x="23" y="6" width="1" height="1"/><rect x="24" y="6" width="1" height="1"/><rect x="26" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="11" y="7" width="1" height="1"/><rect x="12" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="20" y="7" width="1" height="1"/><rect x="26" y="7" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="21" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="25" y="8" width="1" height="1"/><rect x="26" y="8" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="13" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="16" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="14" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="23" y="10" width="1" height="1"/><rect x="26" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="3" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="6" y="11" width="1" height="1"/><rect x="7" y="11" width="1" height="1"/><rect x="9" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="14" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="18" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="25" y="11" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="23" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="6" y="13" width="1" height="1"/><rect x="7" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/><rect x="13" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="22" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="25" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="7" y="14" width="1" height="1"/><rect x="8" y="14" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="21" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="25" y="14" width="1" height="1"/><rect x="26" y="14" width="1" height="1"/><rect x="2" y="15" width="1" height="1"/><rect x="6" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/><rect x="10" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="16" y="15" width="1" height="1"/><rect x="17" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="25" y="15" width="1" height="1"/><rect x="4" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="7" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="9" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="16" y="16" width="1" height="1"/><rect x="17" y="16" width="1" height="1"/><rect x="18" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="23" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="5" y="17" width="1" height="1"/><rect x="6" y="17" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="16" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="21" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="25" y="17" width="1" height="1"/><rect x="2" y="18" width="1" height="1"/><rect x="3" y="18" width="1" height="1"/><rect x="5" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="7" y="18" width="1" height="1"/><rect x="8" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="18" y="18" width="1" height="1"/><rect x="19" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="21" y="18" width="1" height="1"/><rect x="22" y="18" width="1" height="1"/><rect x="23" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="10" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="16" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="2" y="20" width="1" height="1"/><rect x="3" y="20" width="1" height="1"/><rect x="4" y="20" width="1" height="1"/><rect x="5" y="20" width="1" height="1"/><rect x="6" y="20" width="1" height="1"/><rect x="7" y="20" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="10" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="18" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="2" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="11" y="21" width="1" height="1"/><rect x="13" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="22" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="26" y="21" width="1" height="1"/><rect x="2" y="22" width="1" height="1"/><rect x="4" y="22" width="1" height="1"/><rect x="5" y="22" width="1" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="10" y="22" width="1" height="1"/><rect x="12" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="20" y="22" width="1" height="1"/><rect x="21" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="25" y="22" width="1" height="1"/><rect x="26" y="22" width="1" height="1"/><rect x="2" y="23" width="1" height="1"/><rect x="4" y="23" width="1" height="1"/><rect x="5" y="23" width="1" height="1"/><rect x="6" y="23" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="16" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="20" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="24" y="23" width="1" height="1"/><rect x="25" y="23" width="1" height="1"/><rect x="26" y="23" width="1" height="1"/><rect x="2" y="24" width="1" height="1"/><rect x="4" y="24" width="1" height="1"/><rect x="5" y="24" width="1" height="1"/><rect x="6" y="24" width="1" height="1"/><rect x="8" y="24" width="1" height="1"/><rect x="11" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="19" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="25" y="24" width="1" height="1"/><rect x="2" y="25" width="1" height="1"/><rect x="8" y="25" width="1" height="1"/><rect x="12" y="25" width="1" height="1"/><rect x="14" y="25" width="1" height="1"/><rect x="16" y="25" width="1" height="1"/><rect x="17" y="25" width="1" height="1"/><rect x="20" y="25" width="1" height="1"/><rect x="21" y="25" width="1" height="1"/><rect x="22" y="25" width="1" height="1"/><rect x="23" y="25" width="1" height="1"/><rect x="24" y="25" width="1" height="1"/><rect x="25" y="25" width="1" height="1"/><rect x="2" y="26" width="1" height="1"/><rect x="3" y="26" width="1" height="1"/><rect x="4" y="26" width="1" height="1"/><rect x="5" y="26" width="1" height="1"/><rect x="6" y="26" width="1" height="1"/><rect x="7" y="26" width="1" height="1"/><rect x="8" y="26" width="1" height="1"/><rect x="10" y="26" width="1" height="1"/><rect x="12" y="26" width="1" height="1"/><rect x="13" y="26" width="1" height="1"/><rect x="14" y="26" width="1" height="1"/><rect x="15" y="26" width="1" height="1"/><rect x="16" y="26" width="1" height="1"/><rect x="17" y="26" width="1" height="1"/><rect x="19" y="26" width="1" height="1"/><rect x="20" y="26" width="1" height="1"/><rect x="24" y="26" width="1" height="1"/><rect x="25" y="26" width="1" height="1"/><rect x="26" y="26" width="1" height="1"/></svg>
+        <div class="qr-caption">↗ kommit.now/demo</div>
+      </div>
     </div>
   </div>
 </section>
 
 </div>
 
-<button class="ctrl" id="prev" aria-label="Previous slide">←</button>
+<button class="ctrl" id="prev" aria-label="Previous slide" style="position: fixed; bottom: 18px; right: 64px; z-index: 100;">←</button>
 <div class="controls">
   <button class="ctrl" id="next" aria-label="Next slide">→</button>
 </div>
-<div class="counter"><span id="cur">01</span> / <span id="total">08</span></div>
+<div class="counter"><span id="cur">01</span> / <span id="total">09</span></div>
 
 <script>
 (function(){
@@ -639,24 +1273,30 @@
   const cur = document.getElementById('cur');
   const total = document.getElementById('total');
   total.textContent = String(slides.length).padStart(2, '0');
+
   function show(n) {
     i = (n + slides.length) % slides.length;
-    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    slides.forEach((s, k) => {
+      const wasActive = s.classList.contains('active');
+      s.classList.remove('active');
+      if (k === i) {
+        // force reflow so animations restart on revisit
+        void s.offsetWidth;
+        s.classList.add('active');
+      }
+    });
     cur.textContent = String(i + 1).padStart(2, '0');
   }
+
   document.getElementById('next').addEventListener('click', () => show(i + 1));
   document.getElementById('prev').addEventListener('click', () => show(i - 1));
-  // Position prev button on the left side
-  const prevBtn = document.getElementById('prev');
-  prevBtn.style.position = 'fixed';
-  prevBtn.style.bottom = '24px';
-  prevBtn.style.right = '76px'; // next to the next button
-  prevBtn.style.zIndex = '100';
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(i + 1); }
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
     if (e.key === 'Home') { e.preventDefault(); show(0); }
     if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+    // Number keys jump to slide
+    if (/^[1-9]$/.test(e.key)) { e.preventDefault(); show(parseInt(e.key, 10) - 1); }
   });
   show(0);
 })();
