@@ -32,3 +32,4 @@ keypair.json
 *.swo
 .vercel
 .env*.local
+.claude/
