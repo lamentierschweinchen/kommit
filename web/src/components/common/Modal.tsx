@@ -24,6 +24,11 @@ export type ModalProps = {
   trigger?: ReactNode;
   /** Max-width override; default max-w-md */
   maxWidth?: string;
+  /** Optional non-scrolling footer pinned to the bottom of the modal card.
+   *  Use for primary actions that must stay accessible when the body
+   *  overflows (handoff 78 P0-3 — CommitModal Submit was disappearing
+   *  below the marketing blocks on 375px viewports). */
+  footer?: ReactNode;
 };
 
 export function Modal({
@@ -38,6 +43,7 @@ export function Modal({
   className,
   trigger,
   maxWidth = "max-w-md",
+  footer,
 }: ModalProps) {
   const defaultTapes = (
     <>
@@ -82,31 +88,39 @@ export function Modal({
             {renderedTapes}
             <div
               className={cn(
-                "bg-white border-[3px] border-black p-7 md:p-8",
-                "max-h-[92vh] overflow-y-auto",
+                "bg-white border-[3px] border-black",
+                "max-h-[92vh] flex flex-col",
                 "opacity-100",
                 shadow === "purple" ? "shadow-brutal-purple" : "shadow-brutal-lg",
               )}
             >
               <Dialog.Close
                 aria-label="Close"
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform z-10"
+                className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform z-20"
               >
-                <Icon name="close" size="sm" />
+                <Icon name="close" size="md" />
               </Dialog.Close>
 
-              {titleSrOnly ? (
-                <Dialog.Title className="sr-only">{title}</Dialog.Title>
-              ) : (
-                <Dialog.Title className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter leading-tight pr-10">
-                  {title}
-                </Dialog.Title>
-              )}
-              {description ? (
-                <Dialog.Description className="sr-only">{description}</Dialog.Description>
-              ) : null}
+              <div className="overflow-y-auto p-7 md:p-8 flex-1 min-h-0">
+                {titleSrOnly ? (
+                  <Dialog.Title className="sr-only">{title}</Dialog.Title>
+                ) : (
+                  <Dialog.Title className="font-epilogue font-black uppercase text-2xl md:text-3xl tracking-tighter leading-tight pr-14">
+                    {title}
+                  </Dialog.Title>
+                )}
+                {description ? (
+                  <Dialog.Description className="sr-only">{description}</Dialog.Description>
+                ) : null}
 
-              {children}
+                {children}
+              </div>
+
+              {footer ? (
+                <div className="border-t-[3px] border-black px-7 md:px-8 py-5 md:py-6 shrink-0 bg-white pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+                  {footer}
+                </div>
+              ) : null}
             </div>
           </div>
         </Dialog.Content>

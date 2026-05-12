@@ -78,7 +78,7 @@ export function MobileDrawer({
             <span className="font-epilogue font-black uppercase tracking-tight text-base">Menu</span>
             <Dialog.Close
               aria-label="Close"
-              className="w-10 h-10 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+              className="w-11 h-11 flex items-center justify-center border-[2px] border-black bg-white shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
             >
               <Icon name="close" />
             </Dialog.Close>

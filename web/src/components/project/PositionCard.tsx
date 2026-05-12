@@ -22,6 +22,7 @@ export function PositionCard({
   frozenKommits,
   graduatedRecord,
   onTxSuccess,
+  mobileSticky = false,
 }: {
   project: Project;
   variant: PositionVariant;
@@ -44,6 +45,12 @@ export function PositionCard({
   };
   /** Fires after a successful kommit/withdraw so caller can refresh reads. */
   onTxSuccess?: () => void;
+  /** Handoff 78 P0-1: render a `lg:hidden` sticky bottom Kommit/Withdraw bar
+   *  alongside the card. Opt-in because PositionCard is also rendered on
+   *  surfaces (e.g. /review) where a fixed bottom CTA would be wrong. The
+   *  bar reuses this component's modal state so both surfaces share the
+   *  same open/close lifecycle. */
+  mobileSticky?: boolean;
 }) {
   const { isSignedIn } = useAuth();
   const [commitOpen, setCommitOpen] = useState(false);
@@ -95,6 +102,13 @@ export function PositionCard({
       </div>
     );
   }
+
+  // Sticky bar only renders when there's a meaningful action to offer:
+  // pre-launch projects (no wallet) and graduated rounds collapse the
+  // in-card CTA to a disabled "Launching soon" / "Round closed" pill, so a
+  // duplicated bar at the bottom would just be noise — hide it instead.
+  const showStickyBar =
+    mobileSticky && !!project.recipientWallet && project.state !== "graduated";
 
   return (
     <>
@@ -212,6 +226,51 @@ export function PositionCard({
         onOpenChange={setSignInOpen}
         title={`Sign in to back ${project.name}`}
       />
+
+      {showStickyBar ? (
+        // Handoff 78 P0-1: on /projects/[slug] the kommit button used to live
+        // in the right rail aside — which `grid-cols-1` drops to the end of
+        // the document on mobile, ~9.9 viewport-heights below the fold. This
+        // sticky bar keeps the load-bearing action in thumb-reach at every
+        // scroll position. z-30 sits below the Radix Dialog overlay (z-40)
+        // so any open modal naturally covers it.
+        <div
+          className="fixed bottom-0 inset-x-0 z-30 lg:hidden bg-white border-t-[3px] border-black print:hidden"
+          aria-label="Kommit actions"
+        >
+          <div className="max-w-md mx-auto px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+            {variant === "active" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleKommitClick}
+                  className="bg-primary text-white font-epilogue font-black uppercase tracking-tight text-sm py-3 min-h-[44px] border-[3px] border-black shadow-brutal-sm active:translate-x-[1px] active:translate-y-[1px] flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="add" size="sm" />
+                  Kommit more
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (isSignedIn ? setWithdrawOpen(true) : setSignInOpen(true))}
+                  className="bg-white text-black font-epilogue font-black uppercase tracking-tight text-sm py-3 min-h-[44px] border-[3px] border-black shadow-brutal-sm active:translate-x-[1px] active:translate-y-[1px] flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="remove" size="sm" />
+                  Withdraw
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleKommitClick}
+                className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-3.5 min-h-[44px] border-[3px] border-black shadow-brutal-sm active:translate-x-[1px] active:translate-y-[1px] flex items-center justify-center gap-2"
+              >
+                <Icon name="add" size="sm" />
+                Kommit to {project.name}
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

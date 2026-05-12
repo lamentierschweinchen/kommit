@@ -173,7 +173,7 @@ export default function DashboardPage() {
             anonBody="Your kommitments, kommits, and recent updates from teams you back. Nothing here for visitors."
           >
           <div className="px-6 md:px-12">
-          <section className="mt-12 md:mt-16 flex items-end justify-between flex-wrap gap-4">
+          <section className="mt-8 md:mt-16 flex items-end justify-between flex-wrap gap-4">
             <div>
               <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
                 Dashboard
@@ -191,7 +191,11 @@ export default function DashboardPage() {
             ) : null}
           </section>
 
-          <section className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          {/* Handoff 78 P0-5: force 3-up on mobile so the scoreboard reads as
+              the page's headline at 375. The earlier `grid-cols-1 sm:grid-cols-2`
+              put only "Lifetime kommits" above the fold and pushed the first
+              commitment row ~1100px down. */}
+          <section className="mt-8 grid grid-cols-3 gap-2 md:gap-5">
             <StatCard
               label="Lifetime kommits"
               value={
@@ -399,18 +403,18 @@ function StatCard({
   live?: boolean;
 }) {
   return (
-    <div className="bg-white border-[3px] border-black shadow-brutal p-6">
-      <div className="font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-widest">
+    <div className="bg-white border-[3px] border-black shadow-brutal p-3 md:p-6">
+      <div className="font-epilogue font-bold uppercase text-[9px] md:text-[10px] text-gray-500 tracking-wider md:tracking-widest leading-tight">
         {label}
       </div>
       <div
-        className={`mt-2 font-epilogue font-black text-4xl md:text-5xl tracking-tighter ${accent ? "text-primary" : ""} ${live ? "tabular-nums" : ""}`}
+        className={`mt-1.5 md:mt-2 font-epilogue font-black text-xl md:text-5xl tracking-tighter tabular-nums ${accent ? "text-primary" : ""}`}
         aria-live={live ? "polite" : undefined}
       >
         {value}
       </div>
       {hint ? (
-        <div className="mt-2 font-epilogue font-bold uppercase text-[10px] text-gray-500 tracking-tight">
+        <div className="mt-1.5 md:mt-2 font-epilogue font-bold uppercase text-[9px] md:text-[10px] text-gray-500 tracking-tight leading-tight hidden md:block">
           {hint}
         </div>
       ) : null}

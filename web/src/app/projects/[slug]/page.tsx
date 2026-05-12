@@ -41,7 +41,11 @@ export default async function ProjectDetailPage({
   return (
     <>
       <AuthHeader homeHref="/app" />
-      <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
+      {/* Handoff 78 P0-1: the sticky mobile kommit bar (rendered inside
+          UserPositionCard) is `fixed bottom-0 lg:hidden` ~70px tall. Extra
+          bottom padding on `<lg` keeps the last content from being eaten
+          by the bar; desktop keeps the original spacing. */}
+      <main className="flex-1 px-6 md:px-12 pb-40 lg:pb-24 max-w-7xl mx-auto w-full">
         {project.state === "graduated" ? <GraduatedBanner project={project} /> : null}
 
         <ProjectHero project={project} />
@@ -323,7 +327,7 @@ function ProjectHero({ project }: { project: Project }) {
       </div>
       <div className="relative">
         {/* Audit #15: drop the in-image text on hero. The H1 carries the title; corner accents stay. */}
-        <div className="aspect-square bg-gray-900 border-[3px] border-black shadow-brutal-lg relative overflow-hidden">
+        <div className="aspect-[4/3] lg:aspect-square bg-gray-900 border-[3px] border-black shadow-brutal-lg relative overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={projectImageUrl(`${project.imageSeed}-hero`, 800, 800)}
