@@ -44,7 +44,7 @@ export default function StatusPage() {
             Kommit is a hackathon/devnet-grade build. There&rsquo;s no production traffic yet, no
             third-party audit, and no SLA — but the deployed Anchor program at
             {" "}
-            <code className="font-mono text-sm bg-gray-100 px-1.5 py-0.5 border-[2px] border-black">
+            <code className="font-mono text-sm bg-gray-100 px-1.5 py-0.5 border-[2px] border-black break-all">
               GxM3sxMp4FyrkHK4g1DaDrmwYLrwd2BJKxqKZqvGgkc3
             </code>
             {" "}is live on Solana devnet, the Vercel deploy serves the surfaces you see here,

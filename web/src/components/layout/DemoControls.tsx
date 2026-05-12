@@ -36,8 +36,13 @@ export function DemoControls() {
   const naturalSurfaceFor = (u: User): string =>
     u.role === "founder" && u.ownsProject ? `/founder/${u.ownsProject}` : "/dashboard";
 
+  // Handoff 78 P0-2: chip sat at `bottom-4 left-4 z-[90]` and overlapped
+  // modal CTAs / toasts / form fields / the iOS home-indicator zone. Now
+  // at z-30 so the Radix Dialog overlay (z-40) covers it when a modal is
+  // open; lifted to `bottom-24` on `<lg` so it clears the sticky kommit
+  // bar on /projects/[slug] (which is `bottom-0 lg:hidden`, ~85px tall).
   return (
-    <div className="fixed bottom-4 left-4 z-[90] print:hidden">
+    <div className="fixed bottom-24 lg:bottom-4 left-4 z-30 print:hidden pb-[env(safe-area-inset-bottom)]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

@@ -84,7 +84,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <RadixToast.Viewport
           className={cn(
             "fixed z-[100] outline-none",
-            "bottom-4 left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0",
+            // On <sm, anchor the toast to the top so confirmations don't land
+            // over the next row's tap targets (audit handoff 78 P0-4). Desktop
+            // keeps the bottom-right slot, where it has plenty of breathing room.
+            "top-[calc(env(safe-area-inset-top)+1rem)] left-1/2 -translate-x-1/2",
+            "sm:top-auto sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0",
             "flex flex-col gap-3 max-w-[calc(100vw-2rem)] sm:max-w-md",
           )}
         />

@@ -261,8 +261,42 @@ export function CommitModal({
 
   const founder = project.founders[0];
 
+  // Handoff 78 P0-3: the Submit button was sitting below ~600px of marketing
+  // copy (the "What this does" / "Withdraw anytime" / "Where your money goes"
+  // blocks), so at 375×812 the user typed an amount and saw no "go" CTA. The
+  // keyboard made it worse. Lift Submit + help into the Modal footer slot so
+  // it stays pinned to the bottom of the modal while the marketing copy
+  // scrolls behind it.
+  const footer = (
+    <>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitDisabled}
+        className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
+      >
+        {submitting ? (
+          <>
+            Signing…
+            <Icon name="progress_activity" className="font-bold animate-spin" />
+          </>
+        ) : (
+          <>
+            Kommit {formatUSD(displayUSD)}
+            <Icon name="arrow_forward" className="font-bold" />
+          </>
+        )}
+      </button>
+      {submitHelp ? (
+        <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest text-center">
+          {submitHelp}
+        </p>
+      ) : null}
+    </>
+  );
+
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title={`Kommit to ${project.name}`}>
+    <Modal open={open} onOpenChange={onOpenChange} title={`Kommit to ${project.name}`} footer={footer}>
       <div className="mt-3 inline-flex items-center gap-2.5 bg-gray-100 px-3 py-1.5 border-[2px] border-black shadow-brutal-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -310,7 +344,7 @@ export function CommitModal({
                 onClick={() => setRaw(String(a))}
                 disabled={submitting}
                 className={cn(
-                  "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
+                  "font-epilogue font-black uppercase tracking-tight text-xs px-4 py-3 min-h-[44px] border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",
                   isActive ? "bg-primary text-white" : "bg-white text-black",
                 )}
               >
@@ -397,32 +431,6 @@ export function CommitModal({
           </a>
           .
         </p>
-      </div>
-
-      <div className="mt-5">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitDisabled}
-          className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
-        >
-          {submitting ? (
-            <>
-              Signing…
-              <Icon name="progress_activity" className="font-bold animate-spin" />
-            </>
-          ) : (
-            <>
-              Kommit {formatUSD(displayUSD)}
-              <Icon name="arrow_forward" className="font-bold" />
-            </>
-          )}
-        </button>
-        {submitHelp ? (
-          <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest text-center">
-            {submitHelp}
-          </p>
-        ) : null}
       </div>
     </Modal>
   );

@@ -90,6 +90,7 @@ export function UserPositionCard({ project }: { project: Project }) {
       frozenKommits={frozenKommits}
       graduatedRecord={graduatedRecord}
       onTxSuccess={refresh}
+      mobileSticky
     />
   );
 }
