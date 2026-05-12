@@ -1,5 +1,4 @@
 <!doctype html>
-<!-- redeploy-marker 1 — force Vercel rebuild after #66 edge-cache miss -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -64,6 +63,65 @@
   .slide.active { display: flex; }
   .slide.bg-ink { background: var(--ink); color: var(--paper); }
   .slide.bg-caution { background: var(--caution); color: var(--ink); }
+  .slide.bg-primary { background: var(--primary); color: var(--paper); }
+  .slide.bg-primary .counter { background: var(--paper); }
+
+  /* ====== SLIDE 5 — CAPITAL × TIME (the new primitive) ====== */
+  .primitive-eyebrow {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.78);
+    margin-bottom: 16px;
+    opacity: 0;
+  }
+  .slide.active .primitive-eyebrow { animation: fade 500ms ease-out 100ms forwards; }
+
+  .primitive-headline {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.04em;
+    font-size: clamp(70px, 10.5vw, 168px);
+    line-height: 0.9;
+    color: var(--paper);
+    margin: 0;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .slide.active .primitive-headline { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 300ms forwards; }
+
+  .primitive-box {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 36px;
+    margin-top: 36px;
+    border: 3px solid var(--ink);
+    box-shadow: 10px 10px 0 0 var(--paper);
+    max-width: 1100px;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .slide.active .primitive-box { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 750ms forwards; }
+  .primitive-box-label {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 13px;
+    color: var(--secondary);
+    margin-bottom: 16px;
+  }
+  .primitive-box-body {
+    font-family: "Public Sans", sans-serif;
+    font-weight: 500;
+    font-size: clamp(18px, 1.9vw, 26px);
+    line-height: 1.5;
+    margin: 0;
+    color: var(--paper);
+  }
 
   .inner {
     width: 100%;
@@ -1087,9 +1145,28 @@
 </section>
 
 <!-- ════════════════════════════════════════
-     SLIDE 4 — QUADRANT (SIGNAL × STAKE)
+     SLIDE 4 — CAPITAL × TIME (THE NEW PRIMITIVE)
      ════════════════════════════════════════ -->
-<section class="slide" data-slide="4">
+<section class="slide bg-primary" data-slide="4">
+  <div class="strip">
+    <div class="strip-left"><span class="wordmark" style="color: var(--paper);">kommit</span></div>
+  </div>
+  <div class="inner">
+    <div class="primitive-eyebrow">The new primitive</div>
+    <h1 class="primitive-headline">Capital × Time.</h1>
+    <div class="primitive-box">
+      <div class="primitive-box-label">One kommit per dollar-hour. No exceptions.</div>
+      <p class="primitive-box-body">
+        Backers commit real money into audited yield. They keep custody. Kommits accrue every second they stay. Soulbound, public, composable. Conviction made measurable — and convertible.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 5 — QUADRANT (SIGNAL × STAKE)
+     ════════════════════════════════════════ -->
+<section class="slide" data-slide="5">
   <div class="strip">
     <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
@@ -1133,9 +1210,9 @@
 </section>
 
 <!-- ════════════════════════════════════════
-     SLIDE 5 — TAM
+     SLIDE 6 — TAM
      ════════════════════════════════════════ -->
-<section class="slide" data-slide="5">
+<section class="slide" data-slide="6">
   <div class="strip">
     <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
@@ -1173,9 +1250,9 @@
 </section>
 
 <!-- ════════════════════════════════════════
-     SLIDE 6 — HOW IT MAKES MONEY
+     SLIDE 7 — HOW IT MAKES MONEY
      ════════════════════════════════════════ -->
-<section class="slide" data-slide="6">
+<section class="slide" data-slide="7">
   <div class="strip">
     <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
@@ -1208,9 +1285,9 @@
 </section>
 
 <!-- ════════════════════════════════════════
-     SLIDE 7 — PUNCHLINE
+     SLIDE 8 — PUNCHLINE
      ════════════════════════════════════════ -->
-<section class="slide bg-ink" data-slide="7">
+<section class="slide bg-ink" data-slide="8">
   <div class="strip">
     <div class="strip-left">
       <span class="wordmark" style="color: var(--paper);">kommit</span>
@@ -1225,9 +1302,9 @@
 </section>
 
 <!-- ════════════════════════════════════════
-     SLIDE 8 — CTA / QR
+     SLIDE 9 — CTA / QR
      ════════════════════════════════════════ -->
-<section class="slide" data-slide="8">
+<section class="slide" data-slide="9">
   <div class="strip">
     <div class="strip-left"><span class="wordmark">kommit</span></div>
   </div>
