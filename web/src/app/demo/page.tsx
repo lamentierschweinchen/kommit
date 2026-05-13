@@ -46,7 +46,7 @@ function buildCohortSeed() {
 }
 
 const PERSONA_BLURBS: Record<string, string> = {
-  lukas: "Kommitter with a portfolio across Climate, Bio, and Edu projects.",
+  lukas: "Portfolio across Climate, Bio, and Edu — kommit, withdraw, engage with each cohort.",
   julian: "Founder of CALDERA — geothermal-baseload heat for industry. Post updates, see your cohort.",
   sara: "New visitor — clean dashboard, no commitments yet. The first-time user POV.",
 };
