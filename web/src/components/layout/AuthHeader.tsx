@@ -81,7 +81,7 @@ export function AuthHeader({
 
   return (
     <>
-      <nav className="flex justify-between items-center w-full px-6 h-20 bg-white border-b-[3px] border-black shadow-brutal z-50 sticky top-0">
+      <nav className="flex justify-between items-center w-full px-6 h-16 md:h-20 bg-white border-b-[3px] border-black shadow-brutal z-50 sticky top-0">
         <div className="flex items-center gap-8 min-w-0">
           <Link href={homeHref} className="shrink-0 block" aria-label="kommit, home">
             <Wordmark />
@@ -160,18 +160,25 @@ function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatar
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="hidden md:flex items-center gap-3 bg-white border-[3px] border-black shadow-brutal px-3 py-1.5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform cursor-pointer"
+          aria-label="Account menu"
+          className={cn(
+            "flex items-center bg-white border-[3px] border-black cursor-pointer transition-transform hover:translate-x-[-2px] hover:translate-y-[-2px]",
+            // <md: 44×44 avatar-only chip (handoff 79 P1-5 — signed-in users had no header avatar on mobile)
+            "w-11 h-11 justify-center shadow-brutal-sm",
+            // >=md: full chip with name + chevron
+            "md:w-auto md:h-auto md:justify-start md:gap-3 md:px-3 md:py-1.5 md:shadow-brutal",
+          )}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatarUrl(user.avatarSeed, 80)}
             alt=""
-            className="w-8 h-8 rounded-full border-[2px] border-black object-cover"
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full border-[2px] border-black object-cover"
           />
-          <span className="font-epilogue font-black uppercase text-sm tracking-tight max-w-[140px] truncate">
+          <span className="hidden md:inline font-epilogue font-black uppercase text-sm tracking-tight max-w-[140px] truncate">
             {firstName(user.displayName)}
           </span>
-          <Icon name="expand_more" size="sm" />
+          <Icon name="expand_more" size="sm" className="hidden md:inline-block" />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>

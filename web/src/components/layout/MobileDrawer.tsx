@@ -63,10 +63,11 @@ export function MobileDrawer({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 data-[state=open]:animate-scrim-in" />
+        {/* Handoff 79 P2-10: matches Modal.tsx z-scale (overlay z-70, content z-80) */}
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/50 data-[state=open]:animate-scrim-in" />
         <Dialog.Content
           className={cn(
-            "fixed top-0 right-0 bottom-0 z-50 w-[88vw] max-w-sm bg-white",
+            "fixed top-0 right-0 bottom-0 z-[80] w-[88vw] max-w-sm bg-white",
             "border-l-[3px] border-black shadow-brutal-lg",
             "flex flex-col",
             "data-[state=open]:animate-drawer-in",
@@ -74,7 +75,7 @@ export function MobileDrawer({
         >
           <Dialog.Title className="sr-only">Navigation</Dialog.Title>
 
-          <div className="flex justify-between items-center h-20 px-5 border-b-[3px] border-black shrink-0">
+          <div className="flex justify-between items-center h-16 md:h-20 px-5 border-b-[3px] border-black shrink-0">
             <span className="font-epilogue font-black uppercase tracking-tight text-base">Menu</span>
             <Dialog.Close
               aria-label="Close"

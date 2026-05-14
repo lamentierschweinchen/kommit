@@ -64,13 +64,15 @@ export function Modal({
             via the explicit opacity-100 override on data-state=open. */}
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-40 bg-black/50 opacity-100",
+            // Handoff 79 P2-10: modal backdrop sits above open dropdowns (z-60)
+            // so a Sort dropdown that didn't auto-close gets covered by the scrim.
+            "fixed inset-0 z-[70] bg-black/50 opacity-100",
             "data-[state=open]:animate-scrim-in",
           )}
         />
         <Dialog.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+            "fixed left-1/2 top-1/2 z-[80] -translate-x-1/2 -translate-y-1/2",
             "w-[calc(100vw-2rem)]",
             maxWidth,
             "focus:outline-none",
