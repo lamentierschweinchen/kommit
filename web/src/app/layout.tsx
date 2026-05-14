@@ -3,7 +3,6 @@ import { bricolage, publicSans, jetbrainsMono } from "@/lib/fonts";
 import { ProvidersMount } from "@/components/providers-mount";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/common/ToastProvider";
-import { DemoControls } from "@/components/layout/DemoControls";
 import "@/styles/globals.css";
 
 /**
@@ -54,12 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col bg-white text-dark antialiased selection:bg-primary selection:text-white">
         <ProvidersMount>
           <AuthProvider>
-            <ToastProvider>
-              {children}
-              {/* Self-gates via useDemoMode — renders only when the demo
-                  env flag or the localStorage flag set by /demo is on. */}
-              <DemoControls />
-            </ToastProvider>
+            <ToastProvider>{children}</ToastProvider>
           </AuthProvider>
         </ProvidersMount>
       </body>
