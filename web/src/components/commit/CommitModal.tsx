@@ -261,12 +261,14 @@ export function CommitModal({
 
   const founder = project.founders[0];
 
-  // Handoff 78 P0-3: the Submit button was sitting below ~600px of marketing
-  // copy (the "What this does" / "Withdraw anytime" / "Where your money goes"
-  // blocks), so at 375×812 the user typed an amount and saw no "go" CTA. The
-  // keyboard made it worse. Lift Submit + help into the Modal footer slot so
-  // it stays pinned to the bottom of the modal while the marketing copy
-  // scrolls behind it.
+  // Handoff 78 P0-3 + handoff 80 P0-3 extension: the Submit button was
+  // sitting below ~600px of marketing copy ("What this does" / "Withdraw
+  // anytime" / "Where your money goes") so at 375×812 the user typed an
+  // amount and saw no "go" CTA. The keyboard made it worse. Wave 1 (PR #69)
+  // lifted Submit + help into the Modal footer slot so it stays pinned to
+  // the bottom; wave 3 then demoted the three marketing blocks below a "How
+  // this works" disclosure with a single load-bearing reassurance line above
+  // it (see body below).
   const footer = (
     <>
       <button
@@ -397,41 +399,58 @@ export function CommitModal({
         />
       </div>
 
-      <div className="mt-5 bg-gray-100 border-[3px] border-black p-4 space-y-2">
-        <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
-          What this does
-        </div>
-        <p className="text-sm font-medium text-gray-800 leading-relaxed">
-          The team sees a real backer. Your kommits build the longer you stay.
-        </p>
-        <p className="text-sm font-medium text-gray-800 leading-relaxed">
-          First access when they raise. Yours, even after you withdraw.
-        </p>
-      </div>
+      {/* Handoff 80 P0-3: marketing-block reshuffle. PR #69 (wave 1) pinned
+          Submit in a sticky footer, but three full marketing blocks ("What
+          this does" / "Withdraw anytime" / "Where your money goes") still
+          sat between the Amount input and the (now-footered) Submit, making
+          the scroll body heavy after the user had already decided to commit.
+          Now: a single short reassurance line stays in the hot path above
+          Submit, and the deeper copy lives inside a "How this works"
+          disclosure below — findable but not blocking the action. */}
+      <p className="mt-5 font-epilogue font-black uppercase text-xs tracking-tight text-center text-gray-700">
+        Withdraw anytime. Principal stays.
+      </p>
 
-      <div className="mt-4 bg-secondary border-[3px] border-black p-4 shadow-brutal">
-        <p className="font-epilogue font-black uppercase text-xs leading-relaxed tracking-tight">
-          Withdraw anytime · No fees · Kommits stay yours
-        </p>
-      </div>
-
-      <div className="mt-4 border-[3px] border-black bg-white p-4">
-        <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-2">
-          Where your money goes
+      <details className="mt-4 bg-white border-[3px] border-black shadow-brutal-sm group">
+        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 font-epilogue font-bold uppercase tracking-widest text-[11px] hover:bg-gray-50">
+          <span>How this works</span>
+          <Icon
+            name="expand_more"
+            size="sm"
+            className="transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <div className="px-4 pb-4 pt-1 space-y-4">
+          <div>
+            <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-1.5">
+              What this does
+            </div>
+            <p className="text-sm font-medium text-gray-800 leading-relaxed">
+              The team sees a real backer. Your kommits build the longer you stay.
+            </p>
+            <p className="mt-1.5 text-sm font-medium text-gray-800 leading-relaxed">
+              First access when they raise. Yours, even after you withdraw.
+            </p>
+          </div>
+          <div className="pt-3 border-t-[2px] border-gray-200">
+            <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest mb-1.5">
+              Where your money goes
+            </div>
+            <p className="text-sm font-medium text-gray-800 leading-relaxed">
+              Deposited into audited yield protocols.{" "}
+              <a
+                href="https://github.com/lamentierschweinchen/kommit/blob/main/RISK.md"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-bold text-primary underline decoration-2 underline-offset-2 hover:bg-primary hover:text-white"
+              >
+                Read how we handle funds and risks
+              </a>
+              .
+            </p>
+          </div>
         </div>
-        <p className="text-sm font-medium text-gray-800 leading-relaxed">
-          Deposited into audited yield protocols.{" "}
-          <a
-            href="https://github.com/lamentierschweinchen/kommit/blob/main/RISK.md"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="font-bold text-primary underline decoration-2 underline-offset-2 hover:bg-primary hover:text-white"
-          >
-            Read how we handle funds and risks
-          </a>
-          .
-        </p>
-      </div>
+      </details>
     </Modal>
   );
 }
