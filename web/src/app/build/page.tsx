@@ -109,7 +109,7 @@ export default function BuildApplicationPage() {
       <AuthHeader />
       <main className="flex-1 px-6 md:px-12 pb-32">
         <section className="max-w-2xl mx-auto pt-16 md:pt-20 pb-10 md:pb-14 relative">
-          <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter leading-[0.95] -rotate-[0.3deg]">
+          <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter leading-[0.95] lg:-rotate-[0.3deg]">
             Apply to launch on Kommit.
           </h1>
           <p className="mt-6 font-epilogue font-bold text-lg md:text-xl text-gray-800 leading-snug border-l-[4px] border-primary pl-5">
