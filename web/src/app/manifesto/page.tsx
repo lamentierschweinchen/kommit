@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The Conviction Primitive",
     description:
-      "Capital × time, committed without extraction, with the record held publicly. A thesis from the Kommit team.",
+      "Three groups want the same thing in early-stage backing. None of them has a tool to get it. A thesis from the Kommit team.",
     type: "article",
   },
   twitter: {
     card: "summary_large_image",
     title: "The Conviction Primitive",
     description:
-      "Capital × time, committed without extraction, with the record held publicly.",
+      "Three groups want the same thing in early-stage backing. None of them has a tool to get it.",
   },
 };
 
@@ -56,286 +56,333 @@ export default function ManifestoPage() {
             </p>
           </header>
 
-          <Section heading="The two failures">
+          <Section heading="The alignment">
             <p>
-              Showing up early to back a team should buy you something. Right
-              now it doesn&apos;t.
+              Three groups want the same thing. None of them has a tool to get
+              it.
             </p>
             <p>
-              There are two ways to support someone&apos;s work before it has
-              revenue. <strong>Signal without stake</strong> — Product Hunt
-              upvotes, Twitter likes, Discord roles, follower counts. Cheap,
-              gameable, and untraceable; founders learn nothing about
-              who&apos;s actually serious.{" "}
-              <strong>Stake without survival</strong> — equity crowdfunding,
-              syndicates, angel rounds. Real money, but the rules of the game
-              are extraction-shaped: the backer routinely loses their
-              principal, and the platform takes a 7-9% cut at the moment a
-              round happens.
+              Backers want to get in early on teams they believe in. The best
+              opportunities are usually locked away by accreditation, by
+              network, by timing, or by simple luck. Once a backer puts money
+              down, they want to know the team is in it for the long run, not
+              for a quick exit.
             </p>
             <p>
-              Neither failure mode is accidental. Each is what falls out when
-              a system optimizes for the wrong thing. Signal-without-stake
-              systems optimize for engagement metrics; what&apos;s measured is
-              volume, and volume is cheap. Stake-without-survival systems
-              optimize for transaction completion; the platform&apos;s revenue
-              comes from the round closing, not from the backer being right.
-              Both ship a product where the user is the byproduct of someone
-              else&apos;s incentive structure.
+              Founders want a real signal on whether their direction, their
+              ideas, and their product are working. Not upvotes. Not follower
+              counts. Evidence from people who put money down and stayed when
+              things got hard.
             </p>
             <p>
-              The structural mistake is older than crypto. It&apos;s older than
-              venture capital. It&apos;s the consequence of mixing two things
-              — <em>who showed up</em> and <em>how the platform makes money</em>{" "}
-              — that should be cleanly separated.
+              Investors want real data on whether the market actually wants the
+              product, and they want founders who can do more than sell a deck.
             </p>
-            <p>This is what we propose to separate.</p>
+            <p>
+              These three wants line up. The question a backer is asking
+              (&ldquo;is this team serious?&rdquo;) is the mirror of the
+              question the founder is asking (&ldquo;are these backers
+              serious?&rdquo;). Both have the same answer, sitting in the same
+              place. The investor reading that same data months later gets the
+              answer to a third question: is this round real?
+            </p>
+            <p>
+              No existing tool produces that data. Each group has been served
+              separately, badly, by platforms that mostly optimize for closing
+              transactions instead of for the alignment that would have served
+              all three.
+            </p>
+            <p>
+              The conviction primitive is what one tool looks like when
+              it&apos;s built to serve all three at once.
+            </p>
           </Section>
 
           <Section heading="The unit">
             <p>
-              We claim a new unit of measurement should exist for early-stage
-              backing:{" "}
+              Early-stage backing needs a unit of measurement. The right one is{" "}
               <strong>
-                capital × time, committed without extraction, with the record
-                of that commitment held publicly.
+                capital × time, committed without anyone taking a cut, with a
+                public record.
               </strong>
             </p>
             <p>
-              <strong>Capital.</strong> Money the backer could have parked
-              anywhere else, doing anything else. It&apos;s the &ldquo;I could
-              have earned 5% in a yield account&rdquo; cost, paid voluntarily.
-              That cost is what makes the signal hard to fake. It&apos;s not
-              opinion volume; it&apos;s opportunity cost.
+              Capital, because the backer could have put that money anywhere
+              else. They picked your team. That choice has a real cost: the 5%
+              they could have earned in a yield account, the things they could
+              have bought, the other founder they could have backed instead.
+              That cost is what makes the signal hard to fake. It&apos;s
+              opportunity cost, not opinion volume.
             </p>
             <p>
-              <strong>× Time.</strong> Conviction that survives a week is
-              different from conviction that survives a year. Survival through
-              a pivot is a stronger signal than reaction to a launch.
-              Multiplying by time means the signal compounds along the
-              dimension that actually predicts something: did this person stay
-              when the team&apos;s pitch deck changed? When the founder&apos;s
-              title changed from &ldquo;CEO&rdquo; to &ldquo;we&apos;re not
-              sure&rdquo;? When the market rotated? In practice: one kommit
-              accrues per dollar-hour committed — a backer who parks $100 for
-              100 hours earns 10,000 kommits. Hour-level granularity that
-              visibly ticks for a kommitter watching their dashboard.
+              Time, because conviction that survives a week is different from
+              conviction that survives a year. Staying through a pivot says
+              more than showing up for a launch. The unit measures that
+              survival. Did this person hold when the team&apos;s plan changed?
+              When the title slide went from &ldquo;CEO&rdquo; to
+              &ldquo;co-CEO&rdquo;? When the market turned? One kommit accrues
+              for every dollar-hour committed. Park $100 for 100 hours and
+              you&apos;ve earned 10,000 kommits.
             </p>
             <p>
-              <strong>Committed without extraction.</strong> The backer&apos;s
-              principal is preserved by the architecture. Yield earned on the
-              parked money funds the platform. No fee at the listing step. No
-              fee at the round step. Both sides — the team being backed, the
-              person doing the backing — get a fair deal. This is the part
-              that feels too good and isn&apos;t: it works because audited
-              yield protocols on certain blockchains are now boring enough to
-              function as the operational base layer. The platform doesn&apos;t
-              need to extract because the substrate already pays it.
+              No cut, because the principal stays whole. Yield on the parked
+              money funds the platform. There&apos;s no fee for the founder, no
+              fee for the backer, and no fee at the round. The economics work
+              because audited lending protocols on Solana are mature enough to
+              act as the operating layer underneath. The platform doesn&apos;t
+              have to charge a fee. The substrate already pays it.
             </p>
             <p>
-              <strong>Record held publicly.</strong> Every backer&apos;s
-              history is onchain, soulbound (cannot be transferred away from
-              the wallet that earned it), readable by anyone with an internet
-              connection. This is the part most readers don&apos;t immediately
-              see the importance of. It&apos;s where the second-order effects
-              compound.
+              Public record, because every backer&apos;s history sits on-chain,
+              soulbound to the wallet that earned it. Anyone with a browser can
+              read it. That public record is where the three groups all get
+              what they came for, and where the effects compound.
             </p>
             <p>
-              We call this unit a <strong>kommit</strong>. The platform
-              we&apos;re building to mint them is <em>Kommit</em>. The
-              primitive is bigger than the platform; the platform is bigger
-              than us; this thesis is meant to outlast all of it.
+              We call this unit a <strong>kommit</strong>. The platform that
+              mints them is <em>Kommit</em>. The unit is bigger than the
+              platform. The platform is bigger than us.
             </p>
           </Section>
 
-          <Section heading="What the unit unlocks">
+          <Section heading="What it unlocks">
             <p>
-              A primitive earns its name by what other things become possible
-              because it exists. The kommit unit unlocks three:
+              Founders get an honest signal. The unit doesn&apos;t reward spam,
+              because the input is real money sitting still through real time.
+              Bots can&apos;t manufacture cohort membership, because the cost
+              is real opportunity cost paid in real currency. A founder reading
+              their dashboard can trust what it says. Someone who committed
+              $500 to the team for eighteen months is a different category of
+              person than someone who left a Twitter comment. The question
+              &ldquo;is anyone actually serious about this?&rdquo; finally has
+              an answer that&apos;s a number.
             </p>
             <p>
-              <strong>Honest signal.</strong> Backers cannot wash-trade
-              conviction by spamming small commitments because the input is
-              patient capital sitting through real time. Bots cannot manufacture
-              cohort membership because the cost is real opportunity cost paid
-              in real currency. Founders, for the first time, can read a number
-              and trust it. <em>This person committed money to my team for 18
-              months. That is a different kind of person than someone who left
-              a comment.</em>
+              For backers, patience earns a right, not a reward. When the team
+              raises a real round, the kommitters with the most accumulated
+              standing get first dibs to invest at round price. That&apos;s the
+              right: it&apos;s economic, it&apos;s specific, and it&apos;s
+              downstream of patience the kommitter actually demonstrated. The
+              backer who committed at month one isn&apos;t the same kind of
+              investor as the angel who shows up at the priced round. A system
+              that treats them the same is a system that hasn&apos;t priced
+              patience.
             </p>
             <p>
-              <strong>Convertible standing.</strong> Showing up early earns
-              rights, not rewards. When the team raises a real round, kommitters
-              with earned standing get first dibs to invest at round price. Not
-              a free token, not a vesting schedule, not a discount on something
-              useless. A right. Concrete, economic, downstream of demonstrated
-              patience. The backer who showed up at month one is a different
-              category of person from the angel who shows up at the priced
-              round, and a system that confuses the two is a system that
-              mispriced patience.
-            </p>
-            <p>
-              <strong>Public legibility.</strong> Every wallet&apos;s kommit
-              history is readable by humans without permission. A founder
-              writing a cap-table-adjacent pitch can claim{" "}
-              <em>
-                &ldquo;backed by 50 kommitters with $200K committed across 18
-                months&rdquo;
-              </em>{" "}
-              and the claim is verifiable in seconds. A hiring manager can read
-              a candidate&apos;s kommit history and learn something true about
-              how they think — what they backed, when, and through which
-              pivots. A journalist can trace a project&apos;s traction without
-              a press release. Downstream products can read kommit balances and
-              gate features on them — partner discounts, allocation priority,
-              beta access, recruitment funnels — without anyone asking
-              permission. Each integration makes a kommit more valuable to the
-              kommitter, which makes more capital flow in, which makes the
-              cohort signal richer for the next founder. The flywheel turns at
-              scale; pre-scale you bootstrap each loop manually.
+              For investors and everyone else downstream, the unit produces a
+              public record they can actually read. Anyone can pull a
+              wallet&apos;s kommit history without asking permission. An
+              investor doing diligence on a round can see who stayed, when,
+              through which pivots, with how much money on the line. A hiring
+              manager can read what a candidate has backed and learn something
+              real about how they think. A journalist can trace traction
+              without needing a press release. Other products can use kommit
+              balances to gate features (partner discounts, allocation
+              priority, beta access, hiring filters) without having to ask us
+              first. Each integration makes a kommit more useful to the person
+              holding it, which pulls in more capital, which makes the signal
+              richer for the next founder. At scale, the flywheel turns on its
+              own. Before scale, you push it manually.
             </p>
           </Section>
 
           <Section heading="A worked example">
             <p>
-              Anna parks $500 on Kommit and allocates it across three teams she
-              found on Twitter. Six months in, one team pivots; she stays.
-              Eighteen months in, that team announces a public round. Her
-              kommit balance on that team alone — capital × time at one kommit
-              per dollar-hour, ticking visibly upward every second she remains
-              kommitted — earns her first dibs at round price. Her standing,
-              accrued by her own patience, is now public, soulbound, and
-              readable by every product downstream of Kommit. She paid no fee.
-              She kept her $500.
+              Anna puts $500 on Kommit and splits it across three teams she
+              found on Twitter. Six months in, one of the teams pivots. She
+              stays. The founder, watching his dashboard, sees that most of his
+              cohort stayed through the pivot. That tells him something
+              specific about whether the new direction is landing where it has
+              to land.
             </p>
-            <p>That&apos;s the unit.</p>
+            <p>
+              Eighteen months in, the team raises a public round. An investor
+              doing diligence reads the cohort history. They can see who
+              stayed, when, through which pivots, with how much money on the
+              line. Anna&apos;s kommit balance on that team has been ticking up
+              by one kommit per dollar-hour for those eighteen months. It earns
+              her first dibs to invest at round price.
+            </p>
+            <p>
+              Anna paid no fee. She got her $500 back when she withdrew. The
+              founder raised against real traction instead of a pitch deck. The
+              investor wrote the check on a signal they could trust.
+            </p>
+            <p>One unit. Three groups. The same evidence.</p>
+          </Section>
+
+          <Section heading="Why this hasn't been built before">
+            <p>
+              The existing tools serve one group at a time, at best.
+            </p>
+            <p>
+              <strong>Signal without stake</strong> (Product Hunt, Twitter,
+              Discord, Reddit) gives founders a number that doesn&apos;t mean
+              much. It&apos;s cheap, gameable, and impossible to trace.
+            </p>
+            <p>
+              <strong>Stake without survival</strong> (Wefunder, Republic,
+              Crowdcube) gives backers a way to put money down, but with 7-9%
+              fees and a real chance of losing the principal. The
+              platform&apos;s revenue comes from closing the round, not from
+              the backer picking right.
+            </p>
+            <p>
+              <strong>Stake without signal</strong> (token launches) rewards
+              being early only because someone else got there later and bought
+              your bag. The structure rewards information asymmetry, not
+              loyalty.
+            </p>
+            <p>
+              No existing tool serves all three groups. The primitive was
+              sitting on the table, waiting for someone to pick it up.
+            </p>
           </Section>
 
           <Section heading="Why now">
             <p>
-              Three substrate shifts make the primitive available today that
-              weren&apos;t five years ago.
+              Three things changed in the last few years that make this
+              possible now.
             </p>
             <p>
-              <strong>Audited yield protocols at retail-accessible scale.</strong>{" "}
-              Lending markets on certain blockchains now hold billions of
-              dollars of stable capital and survive multiple market cycles
-              without losing principal. They are boring enough — in the
-              engineering sense, the most important sense — to function as the
-              operational base layer for a non-extractive primitive. Without
-              this, the architecture is aspirational; with it, the architecture
-              pays for itself.
+              Lending protocols on Solana hold billions of dollars in stable
+              capital and have survived multiple market cycles without losing
+              principal. They&apos;re boring in the way that good
+              infrastructure is boring. That&apos;s what we needed: a base
+              layer the platform can sit on without charging the user. Without
+              those protocols, the architecture is a wish list. With them, the
+              math works.
             </p>
             <p>
-              <strong>Walletless onboarding.</strong> The crypto-fluency tax —
-              seed phrases, hardware wallets, &ldquo;approve transaction&rdquo;s
-              — has been substantially eliminated by email and passkey login. A
-              retail kommitter signs in with their email, sees a kommit balance,
-              never thinks about the chain. The backstop that used to keep this
-              primitive crypto-only no longer holds; it&apos;s a retail product
-              that happens to settle on a chain.
+              Walletless sign-in is real. A backer logs in with their email or
+              a passkey. They don&apos;t see a seed phrase, they don&apos;t see
+              a wallet, they don&apos;t have to learn anything about crypto.
+              The thing that used to keep all of this crypto-native is gone.
+              Kommit is a retail product that happens to settle on a chain.
             </p>
             <p>
-              <strong>Legal precedent on principal-protected yield.</strong> The
-              architectural pattern — backers park capital, yield routes
-              elsewhere, principal stays redeemable — has been tested in U.S.
-              court (<em>Kent v. PoolTogether</em>, dismissed in 2023 for lack
-              of standing; the court didn&apos;t reach the merits, but Judge
-              Block named withdraw-anytime + no defendant-imposed fees as why
-              the plaintiff had no concrete harm — both baked into Kommit) and
-              reads under EU MiCA framing as a non-financial-instrument
-              membership record. The legal frontier was uncertain in 2021. It
-              is narrower in 2026 — not resolved.
+              The legal landscape got narrower, which is enough to operate. The
+              pattern Kommit uses (park money, yield routes elsewhere,
+              principal stays redeemable) has been tested in U.S. court.{" "}
+              <em>Kent v. PoolTogether</em> was dismissed in 2023 on standing,
+              not on the merits. The judge specifically named withdraw-anytime
+              and no platform-imposed fees as why the plaintiff had no concrete
+              harm. Both of those are how Kommit works. Under EU MiCA, the
+              kommit reads as a non-financial membership record. The ground was
+              uncertain in 2021. It isn&apos;t uncertain in 2026, even if it
+              isn&apos;t fully resolved.
             </p>
             <p>
-              The primitive sat on the table waiting for these three to show up
-              together. They did.
+              There&apos;s a quieter shift underneath all three. Blockchain
+              technology is infrastructure, not a product. It gets interesting
+              when it disappears behind something useful, the same way TCP/IP
+              gets interesting only because nobody has to think about it when
+              they send an email. The chain is the substrate. The product is
+              what people actually use. This whole thing only works because
+              somebody finally decided to use the substrate for something other
+              than another tokenization play.
             </p>
           </Section>
 
           <Section heading="What this is not">
+            <p>The unit is easy to misread.</p>
             <p>
-              The primitive is easy to misread. It is not a launchpad —
-              launchpads run rounds; the primitive sits upstream. It is not a
-              token — there is no platform token, ever; kommits are records,
-              not securities. It is not equity crowdfunding — no offering at
-              the kommit step, equity rights conditional and disclosed. It is
-              not a casino — patient capital × time is the inverse of what
-              casinos optimize for. The misreadings are familiar; the unit
-              isn&apos;t.
+              It is not a launchpad. Launchpads run rounds. Kommit sits
+              upstream of that. The handoff happens when a team graduates.
+            </p>
+            <p>
+              It is not a token. There is no platform token. There never will
+              be. Kommits are records, not securities, and they can&apos;t be
+              transferred.
+            </p>
+            <p>
+              It is not equity crowdfunding. There is no offering at the kommit
+              step. Equity rights are conditional and disclosed up front.
+            </p>
+            <p>
+              It is not a casino. Patient capital across long timescales is the
+              inverse of what a casino is built to reward.
+            </p>
+            <p>The misreadings are familiar. The unit isn&apos;t.</p>
+          </Section>
+
+          <Section heading="Where it can fail">
+            <p>
+              A thesis that won&apos;t name its weaknesses reads as a sales
+              pitch. So here are ours.
+            </p>
+            <p>
+              The unit weights capital. A backer with $10,000 accrues ten times
+              the standing of a backer with $1,000 over the same window.
+              That&apos;s intentional, because the thing we set out to measure
+              is capital-at-risk-over-time. The harshest version of this
+              critique is mitigated by how access is granted. Teams set a
+              floor. Above the floor, the $50 kommitter and the $50,000
+              kommitter have the same first-dibs claim. The weighting still
+              survives in two places: allocation size at the round itself
+              (pro-rata by default) and any downstream product that reads
+              continuous balances. We accept that. If you think every voice
+              should count the same regardless of capital, this isn&apos;t your
+              unit. If you think capital-at-risk-over-time is the cleanest
+              available signal of seriousness, this is what it looks like when
+              you measure that honestly.
+            </p>
+            <p>
+              Curation is not solved. Today, a Kommit operator decides which
+              projects can list. That&apos;s one person&apos;s bias and a
+              structural bottleneck on growth. The less-centralized
+              alternatives (DAO curation, staked-reputation, on-chain
+              reputation primitives) are research, not shipped product.
+              We&apos;re committed to walking the path. We don&apos;t claim to
+              have walked it.
+            </p>
+            <p>
+              The founder-side cold start is not solved. Getting the first
+              fifteen good teams onto Kommit is a supply problem we&apos;re
+              working through one team at a time. The unit&apos;s value depends
+              on cohort quality. Cohort quality depends on which teams list.
+              Which teams list depends on a bootstrap we haven&apos;t yet made
+              structural. This is the failure mode most likely to kill an early
+              version of the primitive, whether ours or anyone else&apos;s.
+            </p>
+            <p>
+              We&apos;re shipping it anyway. The alternatives don&apos;t serve
+              any of the three groups together, and we&apos;d rather try.
             </p>
           </Section>
 
-          <Section heading="Where the primitive can fail">
-            <p>A thesis that won&apos;t name its weak spots gets read as a sales pitch. So:</p>
+          <Section heading="We are not the only possible builder">
             <p>
-              The unit is{" "}
-              <strong>proportional to patient capital by design.</strong> A
-              backer with $10,000 accrues ten times the standing of a backer
-              with $1,000 over the same window — intentional, since
-              capital-at-risk-over-time is what we set out to measure. The
-              harshest read is mitigated by access being threshold-gated rather
-              than weight-gated: teams set a floor, and above the floor, the
-              $50 kommitter and the $50,000 kommitter have the same first-dibs
-              claim on access.
-            </p>
-            <p>
-              The dollar-weighting still survives in two places — allocation
-              size at a round (pro-rata by default) and any downstream product
-              that reads continuous balances. We accept that. If you believe
-              every conviction-having voice should count equally regardless of
-              capital, this is not your primitive. If you believe
-              capital-at-risk-over-time is the cleanest available signal of
-              seriousness, this is what it looks like measured honestly.
-            </p>
-            <p>
-              <strong>Curation is not solved.</strong> For now, an admin
-              curates which projects can list. That&apos;s a single point of
-              bias and a structural bottleneck. Less-centralized paths — DAO
-              curation, staked-reputation, onchain reputation primitives — are
-              research questions, not shipped product. We commit to walking the
-              path; we do not claim to have walked it.
-            </p>
-            <p>
-              <strong>Founder-side cold start is not solved.</strong> Getting
-              the first fifteen teams of the right shape onto the platform is
-              an unsolved supply problem we are working through hand-to-hand.
-              The primitive&apos;s value depends on cohort quality; cohort
-              quality depends on which teams listed; which teams listed depends
-              on a bootstrap we have not yet made structural. This is the
-              failure mode most likely to kill an early version of the
-              primitive — ours, or anyone else&apos;s.
-            </p>
-            <p>
-              We think the primitive is worth shipping anyway, because the
-              alternatives fail in larger and less honest ways.
-            </p>
-          </Section>
-
-          <Section heading="We are not the primitive's only possible builder">
-            <p>
-              We are building one implementation. It is at{" "}
-              <Link href="/" className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black">
+              We&apos;re building one version of this. It lives at{" "}
+              <Link
+                href="/"
+                className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black"
+              >
                 kommit.now
               </Link>
-              . The primitive does not depend on us shipping it correctly.
+              . If we ship it badly, the primitive doesn&apos;t go away.
             </p>
             <p>
-              If a better team builds a better version, the category does not
-              depend on us. We hope someone does. The unit is bigger than the
-              platform. Use it, fork it, refuse to credit us — the primitive
-              is the point.
+              If somebody else builds a better version, that&apos;s a good
+              outcome. We hope they do. The unit is bigger than the platform.
+              Use it, fork it, build something else on top of it, don&apos;t
+              credit us. The primitive is the point.
             </p>
             <p>
-              The mistake we&apos;re trying to avoid is the one made every
-              cycle: take a real human behavior — wanting to back things early —
-              and ship a system that converts that behavior into extraction.
-              The primitive is what it looks like when we don&apos;t.
+              The mistake every cycle gets wrong is the same one. Take a real
+              human behavior, like three groups wanting to find each other
+              early, and ship a system that converts the alignment into
+              extraction. The primitive is what it looks like when we
+              don&apos;t.
             </p>
             <p>
-              Showing up early should buy you something. The architecture
-              exists now. Build it with us, build it differently, build it
-              better — but build it.
+              Patience should be measurable. Conviction should be portable.
+              None of the three groups should pay for the privilege of caring
+              early.
+            </p>
+            <p>
+              The architecture exists. Build it with us, build it differently,
+              build it better. Just build it.
             </p>
           </Section>
 
@@ -344,9 +391,8 @@ export default function ManifestoPage() {
           <footer className="mt-20 pt-8 border-t-[3px] border-black">
             <p className="text-sm md:text-base italic text-gray-700 leading-relaxed">
               Written by the Kommit team during the Solana Frontier hackathon,
-              May 2026. The primitive — capital × time, committed without
-              extraction, soulbound and publicly readable — is dedicated to the
-              public domain via{" "}
+              May 2026. The primitive (capital × time, committed without
+              extraction, held publicly) is in the public domain via{" "}
               <a
                 href="https://creativecommons.org/publicdomain/zero/1.0/"
                 target="_blank"
@@ -356,10 +402,13 @@ export default function ManifestoPage() {
                 CC0
               </a>
               . The platform is at{" "}
-              <Link href="/" className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black">
+              <Link
+                href="/"
+                className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black"
+              >
                 kommit.now
               </Link>
-              ; the open-source SDK is at{" "}
+              . The open-source SDK is at{" "}
               <a
                 href="https://www.npmjs.com/package/@kommitapp/reader"
                 target="_blank"
@@ -368,7 +417,7 @@ export default function ManifestoPage() {
               >
                 <code className="font-mono text-[0.95em]">@kommitapp/reader</code>
               </a>
-              . Critique welcome; forking encouraged.
+              . Critique welcome. Forking encouraged.
             </p>
           </footer>
         </article>
