@@ -5,7 +5,7 @@
  *
  *   demo mode (env NEXT_PUBLIC_KOMMIT_DEMO=1 or localStorage:kommit:demo=1)
  *                              → MockAuthProvider (USERS-keyed, ?as= query,
- *                                DemoControls switchUser actually mutates state)
+ *                                AuthHeader's demo dropdown wires switchUser)
  *   else (production default)  → RealAuthProvider (Privy embedded Solana wallet)
  *
  * Both implementations expose the same `AuthState` API (`{ user, role,
@@ -212,7 +212,9 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
   }, [logout]);
 
   const switchRole = useCallback((role: Role) => setActiveRole(role), []);
-  // No-op in real mode. DemoControls is gated behind NODE_ENV !== "production".
+  // No-op in real mode — there's no persona concept on real Privy auth, so
+  // the AuthHeader demo dropdown's persona switcher is gated by useDemoMode()
+  // upstream and never lands here.
   const switchUser = useCallback((_userId: string) => {
     void _userId;
   }, []);
@@ -250,7 +252,10 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// Mock provider — USERS-keyed, ?as= query, DemoControls fully wired.
+// Mock provider — USERS-keyed, ?as= query, AuthHeader's demo dropdown wires
+// persona switching via switchUser (handoff 80 P0-2 — the floating DemoControls
+// chip was folded into the avatar dropdown to free the iOS home-indicator zone
+// and stop overlapping modal CTAs).
 // ---------------------------------------------------------------------------
 
 const DEFAULT_MOCK_USER_ID = "lukas";
@@ -259,7 +264,7 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
   // Read persona from localStorage synchronously in the useState initializer
   // so the FIRST render is correct (handoff 58 #2). The previous shape —
   // initialise to lukas, then re-set in a useEffect — left every fresh mount
-  // (e.g. when DemoControls switches persona and routes to /founder/<slug>,
+  // (e.g. when the demo-mode persona switcher routes to /founder/<slug>,
   // re-mounting the AuthProvider tree under a new layout) flashing the
   // default persona before the effect fired. Result: "Lukas appeared first"
   // even after clicking Julian. Reading from storage in the initializer

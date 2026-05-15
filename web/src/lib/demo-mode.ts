@@ -33,6 +33,15 @@ const PERSONA_KEY = "kommit:demo:persona";
 const FROZEN_KEY = "kommit:demo:frozen";
 
 /**
+ * Canonical demo personas — the three POVs surfaced on `/demo` and inside the
+ * AuthHeader dropdown's persona switcher (handoff 80 P0-2). `users.ts` carries
+ * a wider USERS dictionary so clickable names across the app resolve to real
+ * /profile pages, but only these three are valid demo entry points.
+ */
+export const DEMO_PERSONA_IDS = ["lukas", "julian", "sara"] as const;
+export type DemoPersonaId = (typeof DEMO_PERSONA_IDS)[number];
+
+/**
  * Synchronous demo-mode check usable from any context. On the server, only
  * the build-time env flag counts; on the client, also reads localStorage.
  *
@@ -109,7 +118,8 @@ export function getStoredPersonaId(): string | null {
   }
 }
 
-/** Update the stored persona ID (called by DemoControls on switch). */
+/** Update the stored persona ID (called by MockAuthProvider's switchUser
+ *  whenever the AuthHeader demo dropdown picks a different persona). */
 export function setStoredPersonaId(id: string | null) {
   if (typeof window === "undefined") return;
   try {
