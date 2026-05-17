@@ -5,11 +5,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { isDemoMode, useDemoMode } from "@/lib/demo-mode";
+import {
+  deactivateDemoMode,
+  DEMO_PERSONA_IDS,
+  freezeDemoState,
+  isDemoMode,
+  unfreezeDemoState,
+  useDemoFrozen,
+  useDemoMode,
+} from "@/lib/demo-mode";
 import { useToast } from "@/components/common/ToastProvider";
 import { SignInModal } from "@/components/auth/SignInModal";
 import { MobileDrawer } from "./MobileDrawer";
-import { avatarUrl } from "@/lib/data/users";
+import { USERS, avatarUrl, type User } from "@/lib/data/users";
 import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "@/components/common/Icon";
 
@@ -40,7 +48,7 @@ export function AuthHeader({
 } = {}) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  const { user, isSignedIn, signOut } = useAuth();
+  const { user, isSignedIn, signOut, switchUser } = useAuth();
   // Hook subscription keeps the header reactive to demo-mode toggles; the
   // actual sign-out branch reads isDemoMode() at click-time (handoff 69 B7).
   void useDemoMode();
@@ -119,7 +127,26 @@ export function AuthHeader({
               Sign in
             </button>
           ) : (
-            <UserDropdown user={user!} onSignOut={handleSignOut} />
+            <UserDropdown
+              user={user!}
+              onSignOut={handleSignOut}
+              onSwitchUser={(id) => {
+                // Mirror /demo's enterAs routing — switching to a founder
+                // lands on their /founder/<slug>, switching to a kommitter
+                // lands on /dashboard. Without this, switching to Julian from
+                // /dashboard would render Julian's wallet on the kommitter
+                // dashboard (empty), which reads as "broken". Lifted from
+                // the (now-removed) DemoControls in handoff 80 P0-2.
+                const target = USERS[id];
+                if (!target) return;
+                switchUser(id);
+                const next =
+                  target.role === "founder" && target.ownsProject
+                    ? `/founder/${target.ownsProject}`
+                    : "/dashboard";
+                router.push(next);
+              }}
+            />
           )}
 
           <button
@@ -154,7 +181,34 @@ function firstName(displayName: string): string {
   return first ?? parts[0] ?? displayName;
 }
 
-function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatarSeed: number; ownsProject?: string }; onSignOut: () => void }) {
+/** Lightweight subset of the full User type — keeps UserDropdown decoupled
+ *  from the rest of the auth state shape. The full `User` from data/users.ts
+ *  is a superset and assigns into this without a cast. */
+type DropdownUser = {
+  id: string;
+  displayName: string;
+  avatarSeed: number;
+  ownsProject?: string;
+};
+
+function UserDropdown({
+  user,
+  onSignOut,
+  onSwitchUser,
+}: {
+  user: DropdownUser;
+  onSignOut: () => void;
+  /** Demo-mode persona switch — only invoked from the demo branch below. */
+  onSwitchUser: (id: string) => void;
+}) {
+  // Handoff 80 P0-2: the avatar chip's dropdown is now context-aware. Demo
+  // mode surfaces the persona switcher + exit-demo (folded in from the
+  // deleted DemoControls). Real-auth mode keeps the original Dashboard /
+  // Founder / Account / Sign out items. Same trigger, same component shell;
+  // the branching lives in the `Content` body so AuthHeader doesn't have to
+  // know which menu to render.
+  const isDemo = useDemoMode();
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -185,31 +239,166 @@ function UserDropdown({ user, onSignOut }: { user: { displayName: string; avatar
         <DropdownMenu.Content
           align="end"
           sideOffset={8}
-          className="bg-white border-[3px] border-black shadow-brutal min-w-[220px] p-2 z-[60] data-[state=open]:animate-modal-in"
+          className="bg-white border-[3px] border-black shadow-brutal min-w-[240px] p-2 z-[60] data-[state=open]:animate-modal-in"
         >
-          <UserMenuLink href="/dashboard" icon="grid_view" label="Dashboard" />
-          {user.ownsProject ? (
-            <UserMenuLink
-              href={`/founder/${user.ownsProject}`}
-              icon="business_center"
-              label="Founder dashboard"
-            />
-          ) : null}
-          <UserMenuLink href="/account" icon="settings" label="Account" />
-          <DropdownMenu.Separator className="h-[2px] bg-black my-2" />
-          <DropdownMenu.Item asChild>
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight text-black hover:bg-gray-100 cursor-pointer outline-none"
-            >
-              <Icon name="logout" size="sm" />
-              Sign out
-            </button>
-          </DropdownMenu.Item>
+          {isDemo ? (
+            <DemoMenuBody user={user} onSwitchUser={onSwitchUser} onSignOut={onSignOut} />
+          ) : (
+            <RealAuthMenuBody user={user} onSignOut={onSignOut} />
+          )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+  );
+}
+
+/** Real-auth dropdown body — unchanged from pre-handoff-80 behavior. */
+function RealAuthMenuBody({
+  user,
+  onSignOut,
+}: {
+  user: DropdownUser;
+  onSignOut: () => void;
+}) {
+  return (
+    <>
+      <UserMenuLink href="/dashboard" icon="grid_view" label="Dashboard" />
+      {user.ownsProject ? (
+        <UserMenuLink
+          href={`/founder/${user.ownsProject}`}
+          icon="business_center"
+          label="Founder dashboard"
+        />
+      ) : null}
+      <UserMenuLink href="/account" icon="settings" label="Account" />
+      <DropdownMenu.Separator className="h-[2px] bg-black my-2" />
+      <DropdownMenu.Item asChild>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight text-black hover:bg-gray-100 cursor-pointer outline-none"
+        >
+          <Icon name="logout" size="sm" />
+          Sign out
+        </button>
+      </DropdownMenu.Item>
+    </>
+  );
+}
+
+/** Demo-mode dropdown body — persona switcher + exit-demo + the recording
+ *  freeze-state toggle. Folded in from the deleted DemoControls floating
+ *  chip (handoff 80 P0-2). The chip overlapped modal CTAs, sat in the iOS
+ *  home-indicator gesture zone, and competed for visual hierarchy with
+ *  content on every demo page. Living inside the avatar dropdown means
+ *  zero new chrome and a thumb-friendly tap target. */
+function DemoMenuBody({
+  user,
+  onSwitchUser,
+  onSignOut,
+}: {
+  user: DropdownUser;
+  onSwitchUser: (id: string) => void;
+  onSignOut: () => void;
+}) {
+  const isFrozen = useDemoFrozen();
+  return (
+    <>
+      <div className="px-3 pt-2 pb-1 font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
+        Demo persona
+      </div>
+      {DEMO_PERSONA_IDS.map((id) => USERS[id]).filter((u): u is User => !!u).map((u) => {
+        const active = user.id === u.id;
+        return (
+          <DropdownMenu.Item key={u.id} asChild>
+            <button
+              type="button"
+              onClick={() => onSwitchUser(u.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 border-[2px] cursor-pointer outline-none transition-transform mb-1 last:mb-0",
+                active
+                  ? "bg-primary text-white border-black"
+                  : "bg-white text-black border-transparent hover:bg-gray-100 hover:border-black",
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl(u.avatarSeed, 60)}
+                alt=""
+                className="w-7 h-7 rounded-full border-[2px] border-black object-cover grayscale shrink-0"
+              />
+              <span className="font-epilogue font-bold tracking-tight text-sm truncate flex-1 text-left">
+                {u.displayName}
+              </span>
+              <span
+                className={cn(
+                  "font-epilogue font-bold uppercase text-[9px] tracking-widest",
+                  active ? "text-white/80" : "text-gray-500",
+                )}
+              >
+                {u.role === "founder" ? "FNDR" : "KMTR"}
+              </span>
+            </button>
+          </DropdownMenu.Item>
+        );
+      })}
+      <DropdownMenu.Separator className="h-[2px] bg-black my-2" />
+      <UserMenuLink href="/demo" icon="info" label="About this demo" />
+      <DropdownMenu.Item asChild>
+        <button
+          type="button"
+          onClick={() => {
+            deactivateDemoMode();
+            // Hard navigation so the AuthProvider tree re-mounts as the real
+            // Privy branch — a soft router.push leaves MockAuthProvider live
+            // for the rest of the SPA session.
+            if (typeof window !== "undefined") window.location.assign("/");
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-sm tracking-tight text-black hover:bg-gray-100 cursor-pointer outline-none"
+        >
+          <Icon name="logout" size="sm" />
+          Exit demo
+        </button>
+      </DropdownMenu.Item>
+      <DropdownMenu.Item asChild>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-xs tracking-tight text-gray-500 hover:bg-gray-100 cursor-pointer outline-none"
+        >
+          <Icon name="visibility" size="sm" />
+          Sign out (anon viewer)
+        </button>
+      </DropdownMenu.Item>
+      <DropdownMenu.Separator className="h-[2px] bg-black my-2" />
+      <div className="px-3 pt-1 pb-1 font-epilogue font-bold uppercase text-[10px] tracking-widest text-gray-500">
+        Recording
+      </div>
+      {/* Recording-tool — Lukas's freeze-state toggle stays accessible so
+          re-takes during demo videos start from the same seeded state.
+          Wrapped in onSelect={preventDefault} so toggling the checkbox
+          doesn't close the dropdown. */}
+      <DropdownMenu.Item
+        asChild
+        onSelect={(e) => e.preventDefault()}
+      >
+        <label className="w-full flex items-center gap-3 px-3 py-2 font-epilogue font-bold uppercase text-xs tracking-tight text-gray-700 hover:bg-gray-100 cursor-pointer outline-none">
+          <input
+            type="checkbox"
+            checked={isFrozen}
+            onChange={(e) => {
+              if (e.target.checked) freezeDemoState();
+              else unfreezeDemoState();
+            }}
+            className="w-4 h-4 accent-primary"
+          />
+          <span className="flex-1">Freeze state</span>
+          <span className="font-epilogue text-[9px] tracking-widest text-gray-500">
+            {isFrozen ? "ON" : "OFF"}
+          </span>
+        </label>
+      </DropdownMenu.Item>
+    </>
   );
 }
 

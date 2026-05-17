@@ -8,6 +8,7 @@ import { useLogin, usePrivy } from "@privy-io/react-auth";
 import {
   activateDemoMode,
   deactivateDemoMode,
+  DEMO_PERSONA_IDS,
   useDemoMode,
 } from "@/lib/demo-mode";
 import { clearDemoEngagement, seedDemoCohort } from "@/lib/demo-engagement";
@@ -51,14 +52,9 @@ const PERSONA_BLURBS: Record<string, string> = {
   sara: "New visitor — clean dashboard, no commitments yet. The first-time user POV.",
 };
 
-/**
- * Demo-entry personas — only these three render as persona cards on /demo.
- * `users.ts` now contains a wider USERS dictionary (founders + seed kommitters
- * for /profile/[slug] resolution per PR #53), but those are NOT demo entry
- * points — they exist so clickable names on project pages resolve. The /demo
- * persona-pick stays at the three intended demo POVs.
- */
-const DEMO_PERSONA_IDS = ["lukas", "julian", "sara"] as const;
+// Demo-entry personas live in lib/demo-mode.ts so the AuthHeader dropdown's
+// persona switcher (handoff 80 P0-2) and /demo's persona-pick render the same
+// three POVs.
 
 type AirdropResponse =
   | {
