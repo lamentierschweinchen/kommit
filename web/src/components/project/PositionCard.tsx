@@ -218,6 +218,7 @@ export function PositionCard({
           recipientWallet={project.recipientWallet}
           sinceISO={sinceISO}
           sinceMs={sinceMs}
+          frozenKommits={frozenKommits}
           onSuccess={onTxSuccess}
         />
       ) : null}

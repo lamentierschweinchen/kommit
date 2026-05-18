@@ -264,6 +264,7 @@ export function CommitmentRow({
         recipientWallet={project.recipientWallet}
         sinceISO={commitment.sinceISO}
         sinceMs={commitment.sinceMs}
+        frozenKommits={commitment.frozenKommits}
         onSuccess={onWithdrawSuccess}
       />
       <ClaimBenefitsModal
