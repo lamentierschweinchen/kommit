@@ -460,8 +460,11 @@ function FounderSocials({
     });
   }
   if (entries.length === 0) return null;
+  // Handoff 78 P1-1 / wave 6: founder social icons were 32×32 squares — well
+  // below the 44pt iOS minimum and sitting 8px apart from each other. Bump to
+  // 44×44 with `gap-3` so adjacent icons don't fat-finger.
   return (
-    <div className="pt-2 flex items-center gap-2">
+    <div className="pt-2 flex items-center gap-3">
       {entries.map((e) => (
         <Link
           key={e.key}
@@ -469,7 +472,7 @@ function FounderSocials({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${name} on ${e.label}`}
-          className="w-8 h-8 border-[2px] border-black bg-white shadow-brutal-sm flex items-center justify-center hover:bg-secondary hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+          className="w-11 h-11 border-[2px] border-black bg-white shadow-brutal-sm flex items-center justify-center hover:bg-secondary hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
         >
           {e.svg}
         </Link>

@@ -49,6 +49,10 @@ export default function AboutPage() {
                 actually means. */}
             <div className="mt-10 md:mt-12">
               <div className="bg-secondary border-[3px] border-black shadow-brutal-lg p-6 md:p-10">
+                {/* Handoff 78 P0-7 / wave 6: brutalist h1 stacks overflowed by
+                    153px at 200% iOS font scaling. `min-w-0` + `break-words` on
+                    the text node lets the flex child shrink + wrap when scaled
+                    text exceeds the column. WCAG 1.4.4 / 1.4.10. */}
                 <div className="flex items-baseline gap-5 md:gap-7">
                   <span
                     aria-hidden
@@ -56,7 +60,7 @@ export default function AboutPage() {
                   >
                     04
                   </span>
-                  <p className="font-epilogue font-black uppercase text-2xl md:text-4xl lg:text-5xl tracking-tighter leading-tight">
+                  <p className="font-epilogue font-black uppercase text-2xl md:text-4xl lg:text-5xl tracking-tighter leading-tight min-w-0 break-words">
                     Kommit:
                     <br />
                     turn conviction into currency.
@@ -140,7 +144,10 @@ function StruckOption({
       >
         {num}
       </span>
-      <s className="font-epilogue font-black uppercase text-2xl md:text-4xl lg:text-5xl tracking-tighter leading-tight [text-decoration:none]">
+      {/* Handoff 78 P0-7 / wave 6: `min-w-0` + `break-words` so 200% font
+          scaling can wrap into the available column instead of forcing the
+          flex parent to grow past the viewport. */}
+      <s className="font-epilogue font-black uppercase text-2xl md:text-4xl lg:text-5xl tracking-tighter leading-tight [text-decoration:none] min-w-0 break-words">
         <span className="[-webkit-box-decoration-break:clone] [box-decoration-break:clone] [background-image:linear-gradient(to_bottom,transparent_calc(50%-2.5px),#9945FF_calc(50%-2.5px),#9945FF_calc(50%+2.5px),transparent_calc(50%+2.5px))] md:[background-image:linear-gradient(to_bottom,transparent_calc(50%-3.5px),#9945FF_calc(50%-3.5px),#9945FF_calc(50%+3.5px),transparent_calc(50%+3.5px))]">
           {children}
         </span>

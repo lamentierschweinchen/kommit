@@ -44,7 +44,10 @@ export default function ManifestoPage() {
               the CC0 subhead. Read time signals essay length up front so
               readers self-select past the door. */}
           <header className="mb-12 md:mb-16">
-            <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter leading-[0.95]">
+            {/* Handoff 78 P0-7 / wave 6: 200% iOS font scaling overflowed the
+                viewport by ~89px. Drop the mobile size and add `break-words`
+                so the h1 wraps inside the reading column. WCAG 1.4.4. */}
+            <h1 className="font-epilogue font-black uppercase text-3xl sm:text-4xl md:text-5xl tracking-tighter leading-[0.95] break-words">
               The Conviction Primitive
             </h1>
             <p className="mt-6 text-base md:text-lg italic text-gray-700 leading-relaxed">

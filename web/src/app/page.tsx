@@ -46,7 +46,12 @@ export default function ComingSoonPage() {
               <div className="inline-block font-epilogue font-bold uppercase text-[11px] tracking-widest px-3 py-1 border-[2px] border-black bg-secondary shadow-brutal-sm">
                 The conviction primitive
               </div>
-              <h1 className="font-epilogue font-black uppercase leading-[1.05] tracking-tighter text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+              {/* Handoff 78 P0-7 / wave 6: caps the h1 mobile size so 200%
+                  iOS font scaling no longer overflows the viewport by ~179px.
+                  Old: text-4xl … lg:text-7xl. New: text-3xl … lg:text-6xl
+                  plus `break-words` for safety when scaled text overflows
+                  the longest line ("committed without"). WCAG 1.4.4. */}
+              <h1 className="font-epilogue font-black uppercase leading-[1.05] tracking-tighter text-3xl sm:text-4xl md:text-5xl lg:text-6xl break-words">
                 Capital × time,
                 <br />
                 committed without
@@ -61,17 +66,23 @@ export default function ComingSoonPage() {
                 One kommit accrues per dollar-hour committed. Your money
                 stays yours. No fees, ever.
               </p>
+              {/* Handoff 78 P1-1 / wave 6: marketing CTAs sat at 38pt and
+                  27pt respectively — well below the 44pt iOS minimum and
+                  among the highest-traffic surfaces on the product. Bump
+                  both to `min-h-[44px]` + `py-3` without touching their
+                  brutalist visual treatment (one filled chip, one inline
+                  underline). */}
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/demo"
-                  className="inline-flex items-center gap-2 bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform px-3 py-2"
+                  className="inline-flex items-center gap-2 min-h-[44px] bg-primary text-white font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-[3px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform px-4 py-3"
                 >
                   Try our demo
                   <span aria-hidden>→</span>
                 </Link>
                 <Link
                   href="/manifesto"
-                  className="inline-flex items-center gap-2 font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-b-[3px] border-black hover:bg-secondary px-2 py-1 transition-colors"
+                  className="inline-flex items-center gap-2 min-h-[44px] font-epilogue font-black uppercase tracking-tight text-xs md:text-sm border-b-[3px] border-black hover:bg-secondary px-3 py-3 transition-colors"
                 >
                   Read the manifesto
                   <span aria-hidden>→</span>

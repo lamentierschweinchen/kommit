@@ -172,7 +172,11 @@ export function UpdateReactions({
 
   return (
     <>
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Handoff 78 P1-1 / wave 6: reaction buttons cleared the 44pt mobile
+          tap target — `min-h-[44px]` + `py-2.5` brings them above the iOS
+          minimum without distorting the brutalist chip shape. `gap-2.5`
+          widens inter-button spacing so adjacent reactions don't fat-finger. */}
+      <div className="flex items-center gap-2.5 flex-wrap">
         {REACTION_TOKENS.map((token) => {
           const active = mine.has(token);
           const count = counts[token] ?? 0;
@@ -184,7 +188,7 @@ export function UpdateReactions({
               title={visuallyDisabled ? disabledReason : undefined}
               onClick={() => toggle(token)}
               className={cn(
-                "relative inline-flex items-center gap-2 px-3 py-2 border-[3px] border-black font-epilogue font-black uppercase text-[11px] tracking-widest transition-transform select-none",
+                "relative inline-flex items-center gap-2 min-h-[44px] px-3 py-2.5 border-[3px] border-black font-epilogue font-black uppercase text-[11px] tracking-widest transition-transform select-none",
                 active
                   ? "bg-black text-white shadow-brutal-sm"
                   : "bg-white text-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px]",
