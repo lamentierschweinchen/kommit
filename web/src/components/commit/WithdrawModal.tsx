@@ -19,6 +19,7 @@ import { getSandboxMintOrNull } from "@/lib/sandbox-mint";
 import { getSandboxProjects } from "@/lib/sandbox-projects";
 import { computeFrozenKommits, recordWithdrawn } from "@/lib/withdrawn-overlay";
 import { getProject } from "@/lib/data/projects";
+import { useLiveKommits, formatLiveKommits } from "@/lib/hooks/useLiveKommits";
 
 // USDC has 6 decimals on Solana.
 const USDC_DECIMALS = 6;
@@ -36,6 +37,18 @@ const PERCENT_PRESETS: { num: bigint; den: bigint; label: string }[] = [
  * Audit fix #13: [25%] [50%] [75%] [Max] preset chips + custom amount input.
  * Pass 2: wired to on-chain `withdrawFromProject`. Escrow-only path; klend
  * redeem graph stays v1.5 scope.
+ *
+ * Handoff 81 (wave 4): three-change UX restructure on top of the v0.5 modal —
+ *   1. dual-action sticky footer (Cancel beside Withdraw) so the only escape
+ *      isn't the close-X (32×32, sub-44pt; wave 2 widened it on the Modal
+ *      shell but Cancel-as-button is the canonical brutalist affordance);
+ *   2. "After this withdraw" split block — shows principal-back-to-wallet and
+ *      kommits-stay-on-record at a glance, updating per keystroke so the
+ *      withdraw amount's downstream effects are visible without scrolling;
+ *   3. "Your position" block — surfaces the live kommit count and, when
+ *      relevant, a separate frozen-segment line so kommitters who landed
+ *      here post-rekommit (additive accrual, PR #62) can tell active vs.
+ *      frozen apart.
  */
 export function WithdrawModal({
   open,
@@ -46,6 +59,7 @@ export function WithdrawModal({
   recipientWallet,
   sinceISO,
   sinceMs,
+  frozenKommits,
   onSuccess,
 }: {
   open: boolean;
@@ -62,6 +76,11 @@ export function WithdrawModal({
   /** Millisecond-precision commit timestamp. Same purpose as sinceISO; more
    *  accurate when present. */
   sinceMs?: number;
+  /** Lifetime accumulator from prior withdraw cycles. Additive with the live
+   *  ticker (see useLiveKommits). Wave 4 surfaces this as a separate line in
+   *  the "Your position" block when > 0 so a re-kommitted user can see what's
+   *  active (still accruing) vs. frozen (last withdraw snapshot). */
+  frozenKommits?: number;
   onSuccess?: () => void;
 }) {
   // The committed amount arrives as a JS number (queries.ts converts it for
@@ -118,6 +137,48 @@ export function WithdrawModal({
 
   // Display-only values; never feed into TX construction or boundary checks.
   const displayUSD = parseFloat(raw) || 0;
+  const remainingUSD = Math.max(0, committedUSD - displayUSD);
+  const isFullWithdraw =
+    parsedBaseUnits > 0n && parsedBaseUnits === committedBaseUnits;
+  const hasValidAmount =
+    parsedBaseUnits > 0n && !overMax && !validationError;
+
+  // Live kommit ticker for the "Your position" block. Cap accrual at
+  // graduation if applicable — mirrors CommitmentRow's freezeAtMs derivation
+  // so the number in the modal matches what the user just saw on the
+  // dashboard tile. Frozen segment is additive (see useLiveKommits) — when
+  // committedUSD == 0 the formula returns just `frozenKommits`, so a
+  // post-full-withdraw position with the modal opened from /dashboard's
+  // WITHDRAWN row would already read correctly. (That row hides the
+  // Withdraw CTA today; this guard future-proofs the block.)
+  const project = projectSlug ? getProject(projectSlug) : undefined;
+  const graduatedAtMs = project?.graduatedAtISO
+    ? new Date(`${project.graduatedAtISO}T00:00:00Z`).getTime()
+    : undefined;
+  // Hooks must run unconditionally — pass a fallback ISO that's a no-op
+  // when `sinceISO` is absent (a defensive case; both production callers pass
+  // it). `sinceMs ?? Date.now()` short-circuits the parse-from-string path in
+  // the hook, and an `usdAmount=0` block (below) prevents NaN bleed into the
+  // display when committed is zero AND frozen is absent.
+  const liveKommits = useLiveKommits(
+    committedUSD,
+    sinceISO ?? "2026-01-01",
+    sinceMs,
+    graduatedAtMs,
+    frozenKommits,
+  );
+  // Active (still-accruing) portion = total − frozen. With committedUSD=0
+  // the live formula returns frozen only, so active = 0 ✓.
+  const activeKommits = Math.max(0, liveKommits - (frozenKommits ?? 0));
+  const hasFrozenSegment = (frozenKommits ?? 0) > 0;
+
+  // Projected kommits after this withdraw. Partial withdraws keep accruing on
+  // the remaining principal — so the *count* doesn't drop instantly; what
+  // drops is the accrual rate. Full withdraws freeze the count at its current
+  // value. Either way the displayed kommit-count for "stays on your record"
+  // is the current live total — the truthful number, not a guess at the
+  // future. Copy clarifies whether it keeps moving or stops here.
+  const kommitsStayDisplay = liveKommits > 0 ? formatLiveKommits(liveKommits) : "0";
 
   const isOnChain = !!recipientWallet || !!sandboxProject;
   const walletReady = isDemo ? !!user?.wallet : !!client;
@@ -179,7 +240,6 @@ export function WithdrawModal({
     // frozen-kommit snapshot from the position metadata BEFORE the tx
     // fires; persist it to localStorage so queries.ts can surface it after
     // the close. Cap accrual at graduation if applicable.
-    const isFullWithdraw = parsedBaseUnits === committedBaseUnits;
     if (
       isFullWithdraw &&
       user?.wallet &&
@@ -188,7 +248,7 @@ export function WithdrawModal({
       sinceISO
     ) {
       const proj = getProject(projectSlug);
-      const frozenKommits = computeFrozenKommits({
+      const snapshotFrozen = computeFrozenKommits({
         committedUSD,
         sinceMs,
         graduatedAtISO: proj?.graduatedAtISO,
@@ -196,7 +256,7 @@ export function WithdrawModal({
       recordWithdrawn(user.wallet, projectSlug, {
         sinceISO,
         sinceMs,
-        frozenKommits,
+        frozenKommits: snapshotFrozen,
         withdrawnAtMs: Date.now(),
       });
     }
@@ -232,20 +292,111 @@ export function WithdrawModal({
     }
   };
 
+  // Wave 4 — dual-action footer. Mirrors CommitModal's wave-1 sticky-footer
+  // pattern (Modal.tsx `footer` slot) so the action stays in thumb-reach
+  // when the mobile keyboard is open. Equal-width 50/50 split, both ≥44pt:
+  //   - Cancel (outline white/black) — explicit escape, replaces a sole
+  //     reliance on the 44×44 close-X (wave 2 widened it but a labelled
+  //     button is the canonical affordance).
+  //   - Withdraw (filled black w/ green-shadow accent) — primary, keeps the
+  //     destructive-action visual treatment from BrutalButton/destructive
+  //     plus the existing rotated `arrow_forward` glyph.
+  // Both buttons skip the standard hover-lift so the two-button row doesn't
+  // shift sideways on hover; the active-press translate stays as the
+  // tactile cue.
+  const footer = (
+    <div className="grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        onClick={() => onOpenChange(false)}
+        disabled={submitting}
+        className="w-full min-h-[44px] bg-white text-black font-epilogue font-black uppercase tracking-tight text-base md:text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:bg-gray-50 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitDisabled}
+        className="w-full min-h-[44px] bg-black text-white font-epilogue font-black uppercase tracking-tight text-base md:text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(20,241,149,1)] flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+      >
+        {submitting ? (
+          <>
+            <Icon name="progress_activity" className="font-bold animate-spin" />
+            Signing…
+          </>
+        ) : (
+          <>
+            <Icon name="arrow_forward" className="font-bold rotate-180" />
+            Withdraw {formatUSD(displayUSD)}
+          </>
+        )}
+      </button>
+      {submitHelp ? (
+        <p className="col-span-2 mt-1 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest text-center">
+          {submitHelp}
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
       title={`Withdraw from ${projectName}`}
       shadow="default"
+      footer={footer}
     >
+      {/* "Your position" — replaces the v0.5 single-stat "Currently committed"
+          block. Two states:
+            - active + (optional) frozen segment, when committedUSD > 0
+            - frozen-only fallback, when committedUSD == 0 and frozen > 0
+              (defensive: this surface is reachable only from the
+              still-accruing rows today; the WITHDRAWN row hides the CTA.) */}
       <div className="mt-6 bg-gray-100 border-[3px] border-black p-4">
         <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
-          Currently committed
+          Your position
         </div>
-        <div className="mt-1 font-epilogue font-black text-4xl md:text-5xl tracking-tighter">
-          {formatUSD(committedUSD)}
-        </div>
+        {committedUSD > 0 ? (
+          <>
+            <div className="mt-1 flex items-baseline gap-3 flex-wrap">
+              <div className="font-epilogue font-black text-4xl md:text-5xl tracking-tighter tabular-nums">
+                {formatUSD(committedUSD)}
+              </div>
+              <div className="font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
+                active ·{" "}
+                <span className="text-primary tabular-nums">
+                  {activeKommits > 0 ? formatLiveKommits(activeKommits) : "0"}
+                </span>{" "}
+                kommits accruing
+              </div>
+            </div>
+            {hasFrozenSegment ? (
+              <div className="mt-2 pt-2 border-t-[2px] border-gray-300 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
+                +{" "}
+                <span className="text-black tabular-nums">
+                  {formatLiveKommits(frozenKommits ?? 0)}
+                </span>{" "}
+                kommits frozen from earlier commits
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <div className="mt-1 font-epilogue font-black text-2xl md:text-3xl tracking-tighter">
+              Position closed
+            </div>
+            {hasFrozenSegment ? (
+              <div className="mt-2 font-epilogue font-bold uppercase text-[11px] text-gray-600 tracking-widest">
+                <span className="text-black tabular-nums">
+                  {formatLiveKommits(frozenKommits ?? 0)}
+                </span>{" "}
+                kommits frozen on your record
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div className="mt-6">
@@ -297,36 +448,49 @@ export function WithdrawModal({
         ) : null}
       </div>
 
+      {/* "After this withdraw" — the consequence block. Three states:
+           - hasValidAmount + isFullWithdraw  → kommits stay frozen
+           - hasValidAmount + partial         → kommits keep accruing on remaining
+           - !hasValidAmount                  → muted placeholder
+         Visually distinct from the input section (purple-shadow shows action
+         in progress; this is decoration-light + monospace numerals so the
+         eye reads it as "this is the consequence, not what you're entering"). */}
+      <div className="mt-5 border-[3px] border-black bg-white p-4">
+        <div className="font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest">
+          After this withdraw
+        </div>
+        {hasValidAmount ? (
+          <div className="mt-3 grid grid-cols-2 gap-3 divide-x-[2px] divide-gray-300">
+            <div className="pr-3">
+              <div className="font-epilogue font-black text-2xl md:text-3xl tracking-tighter tabular-nums">
+                {formatUSD(displayUSD)}
+              </div>
+              <div className="mt-1 font-epilogue font-bold uppercase text-[10px] text-gray-600 tracking-widest leading-snug">
+                returns to your wallet
+              </div>
+            </div>
+            <div className="pl-3">
+              <div className="font-epilogue font-black text-2xl md:text-3xl tracking-tighter tabular-nums text-primary">
+                {kommitsStayDisplay}
+              </div>
+              <div className="mt-1 font-epilogue font-bold uppercase text-[10px] text-gray-600 tracking-widest leading-snug">
+                {isFullWithdraw
+                  ? "kommits stay frozen on your record"
+                  : `kommits keep accruing on ${formatUSD(remainingUSD)}`}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2 font-epilogue font-medium text-sm text-gray-500 leading-snug">
+            Enter an amount above to preview what moves where.
+          </p>
+        )}
+      </div>
+
       <div className="mt-5 bg-secondary border-[3px] border-black p-4 shadow-brutal">
         <p className="font-epilogue font-black uppercase text-xs leading-relaxed tracking-tight">
           Your lifetime kommits stay · Withdraw without penalty
         </p>
-      </div>
-
-      <div className="mt-5">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitDisabled}
-          className="w-full bg-black text-white font-epilogue font-black uppercase tracking-tight text-lg py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(20,241,149,1)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
-        >
-          {submitting ? (
-            <>
-              <Icon name="progress_activity" className="font-bold animate-spin" />
-              Signing…
-            </>
-          ) : (
-            <>
-              <Icon name="arrow_forward" className="font-bold rotate-180" />
-              Withdraw {formatUSD(displayUSD)}
-            </>
-          )}
-        </button>
-        {submitHelp ? (
-          <p className="mt-3 font-epilogue font-bold uppercase text-[11px] text-gray-500 tracking-widest text-center">
-            {submitHelp}
-          </p>
-        ) : null}
       </div>
     </Modal>
   );
