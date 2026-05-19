@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="'Bricolage Grotesque', 'Inter', system-ui, sans-serif">
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#FFFCF5"/>
+
+  <!-- Title block -->
+  <g transform="translate(60, 70)">
+    <text x="0" y="0" font-size="44" font-weight="900" letter-spacing="-0.025em" fill="#0A0A0A">THE CONVICTION PRIMITIVE, DECOMPOSED</text>
+    <text x="0" y="34" font-size="17" font-weight="400" fill="#555">Two instruments serving opposing functions. Composing them is cleaner than collapsing them.</text>
+    <line x1="0" y1="56" x2="1080" y2="56" stroke="#0A0A0A" stroke-width="3"/>
+  </g>
+
+  <!-- INSTRUMENT 1 — Soulbound -->
+  <g transform="translate(60, 180)">
+    <rect x="6" y="6" width="510" height="220" fill="#0A0A0A"/>
+    <rect x="0" y="0" width="510" height="220" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="24" y="36" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#9945FF">INSTRUMENT 1</text>
+    <text x="24" y="80" font-size="30" font-weight="900" letter-spacing="-0.02em" fill="#0A0A0A">Soulbound conviction</text>
+    <text x="24" y="112" font-size="30" font-weight="900" letter-spacing="-0.02em" fill="#0A0A0A">record</text>
+    <line x1="24" y1="130" x2="80" y2="130" stroke="#9945FF" stroke-width="3"/>
+    <text x="24" y="156" font-size="15" font-weight="500" fill="#333">non-transferable · persistent · publicly readable</text>
+    <text x="24" y="200" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#555">SERVES — REPUTATION</text>
+  </g>
+
+  <!-- INSTRUMENT 2 — Convertible (inverted) -->
+  <g transform="translate(630, 180)">
+    <rect x="6" y="6" width="510" height="220" fill="#9945FF"/>
+    <rect x="0" y="0" width="510" height="220" fill="#0A0A0A" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="24" y="36" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#14F195">INSTRUMENT 2</text>
+    <text x="24" y="80" font-size="30" font-weight="900" letter-spacing="-0.02em" fill="#FFFFFF">Convertible</text>
+    <text x="24" y="112" font-size="30" font-weight="900" letter-spacing="-0.02em" fill="#FFFFFF">participation share</text>
+    <line x1="24" y1="130" x2="80" y2="130" stroke="#14F195" stroke-width="3"/>
+    <text x="24" y="156" font-size="15" font-weight="500" fill="#CCCCCC">transferable · convertible at graduation · market-priceable</text>
+    <text x="24" y="200" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#AAAAAA">SERVES — OWNERSHIP</text>
+  </g>
+
+  <!-- EARNED BY pill -->
+  <g transform="translate(530, 444)">
+    <rect x="0" y="0" width="140" height="36" fill="#FFE000" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="70" y="24" text-anchor="middle" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#0A0A0A">EARNED BY</text>
+  </g>
+
+  <!-- Connector lines from instruments down to actor rows -->
+  <line x1="315" y1="400" x2="315" y2="510" stroke="#0A0A0A" stroke-width="2" stroke-dasharray="4 4"/>
+  <line x1="885" y1="400" x2="885" y2="510" stroke="#0A0A0A" stroke-width="2" stroke-dasharray="4 4"/>
+
+  <!-- Actor rows header -->
+  <g transform="translate(60, 510)">
+    <text x="0" y="0" font-size="11" font-weight="900" letter-spacing="0.22em" fill="#555">ACTOR</text>
+    <text x="280" y="0" font-size="11" font-weight="900" letter-spacing="0.22em" fill="#555">INPUT</text>
+    <text x="540" y="0" font-size="11" font-weight="900" letter-spacing="0.22em" fill="#555">SOULBOUND</text>
+    <text x="780" y="0" font-size="11" font-weight="900" letter-spacing="0.22em" fill="#555">PARTICIPATION SHARE</text>
+  </g>
+
+  <!-- BACKER row -->
+  <g transform="translate(60, 530)">
+    <rect x="0" y="0" width="1080" height="70" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="24" y="32" font-size="22" font-weight="900" letter-spacing="-0.01em" fill="#0A0A0A">BACKER</text>
+    <text x="24" y="54" font-size="12" font-weight="500" fill="#666">parks capital, holds through time</text>
+    <text x="280" y="42" font-size="14" font-weight="500" fill="#333">capital × time</text>
+    <circle cx="565" cy="38" r="11" fill="#9945FF" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="585" y="42" font-size="13" font-weight="500" fill="#333">earns (live in Kommit v0.5)</text>
+    <circle cx="805" cy="38" r="11" fill="#14F195" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="825" y="42" font-size="13" font-weight="500" fill="#333">earns (added in CM module)</text>
+  </g>
+
+  <!-- BUILDER row -->
+  <g transform="translate(60, 610)">
+    <rect x="0" y="0" width="1080" height="70" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="24" y="32" font-size="22" font-weight="900" letter-spacing="-0.01em" fill="#0A0A0A">BUILDER</text>
+    <text x="24" y="54" font-size="12" font-weight="500" fill="#666">ships against attested milestones</text>
+    <text x="280" y="42" font-size="14" font-weight="500" fill="#333">work × delivery</text>
+    <text x="554" y="44" font-size="22" font-weight="900" fill="#AAA" text-anchor="middle">○</text>
+    <text x="582" y="42" font-size="13" font-weight="500" fill="#999">open design space</text>
+    <circle cx="805" cy="38" r="11" fill="#14F195" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="825" y="42" font-size="13" font-weight="500" fill="#333">earns (weighted by delivery)</text>
+  </g>
+
+  <!-- VERIFIER row -->
+  <g transform="translate(60, 690)">
+    <rect x="0" y="0" width="1080" height="70" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="24" y="32" font-size="22" font-weight="900" letter-spacing="-0.01em" fill="#0A0A0A">VERIFIER</text>
+    <text x="24" y="54" font-size="12" font-weight="500" fill="#666">stakes against attestations made</text>
+    <text x="280" y="42" font-size="14" font-weight="500" fill="#333">stake × attestation</text>
+    <text x="554" y="44" font-size="22" font-weight="900" fill="#CCC" text-anchor="middle">—</text>
+    <text x="582" y="42" font-size="13" font-weight="500" fill="#BBB">n/a</text>
+    <circle cx="805" cy="38" r="11" fill="#14F195" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="825" y="42" font-size="13" font-weight="500" fill="#333">earns (stake slashed on wrong attest.)</text>
+  </g>
+
+  <!-- Footer -->
+  <g transform="translate(60, 800)">
+    <line x1="0" y1="0" x2="1080" y2="0" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="0" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#0A0A0A">A BACKER EARNS BOTH. A BUILDER EARNS THE SHARE. A VERIFIER EARNS THE SHARE WITH STAKE AT RISK.</text>
+    <text x="0" y="52" font-size="12" font-weight="400" fill="#555">Kommit v0.5 ships only the backer-side soulbound record. The proposed CM module adds the share, the contributor surface, and the verifier surface.</text>
+  </g>
+</svg>

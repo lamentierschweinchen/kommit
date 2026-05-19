@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="'Bricolage Grotesque', 'Inter', system-ui, sans-serif">
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#FFFCF5"/>
+
+  <!-- Title -->
+  <g transform="translate(60, 70)">
+    <text x="0" y="0" font-size="44" font-weight="900" letter-spacing="-0.025em" fill="#0A0A0A">TWO SCALES, ONE PRIMITIVE</text>
+    <text x="0" y="34" font-size="17" font-weight="400" fill="#555">Same architecture. Different yield destination. The Verifier layer is the structural bridge.</text>
+    <line x1="0" y1="56" x2="1080" y2="56" stroke="#0A0A0A" stroke-width="3"/>
+  </g>
+
+  <!-- LAYER 1 — Retail (left column) -->
+  <g transform="translate(60, 180)">
+    <!-- header strip -->
+    <rect x="0" y="0" width="440" height="50" fill="#0A0A0A"/>
+    <text x="20" y="32" font-size="14" font-weight="900" letter-spacing="0.22em" fill="#FFE000">LAYER 1 — RETAIL</text>
+    <text x="320" y="32" font-size="12" font-weight="500" fill="#CCCCCC">live in Kommit v0.5</text>
+
+    <!-- body -->
+    <rect x="6" y="56" width="440" height="540" fill="#0A0A0A"/>
+    <rect x="0" y="50" width="440" height="540" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+
+    <!-- Sponsor box -->
+    <g transform="translate(30, 90)">
+      <rect x="0" y="0" width="380" height="80" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#555">SPONSOR</text>
+      <text x="18" y="58" font-size="18" font-weight="700" fill="#0A0A0A">parks $50–$5K USDC</text>
+    </g>
+
+    <!-- Arrow down -->
+    <g transform="translate(220, 185)">
+      <line x1="0" y1="0" x2="0" y2="22" stroke="#0A0A0A" stroke-width="3"/>
+      <polygon points="-6,22 6,22 0,32" fill="#0A0A0A"/>
+    </g>
+
+    <!-- Yield routing -->
+    <g transform="translate(30, 220)">
+      <rect x="0" y="0" width="380" height="80" fill="#FFE000" stroke="#0A0A0A" stroke-width="3"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#0A0A0A">YIELD ROUTES TO</text>
+      <text x="18" y="58" font-size="20" font-weight="900" letter-spacing="-0.01em" fill="#0A0A0A">→ Platform operations</text>
+    </g>
+
+    <!-- Outcome -->
+    <g transform="translate(30, 320)">
+      <rect x="0" y="0" width="380" height="220" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3" stroke-dasharray="6 4"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#555">WHAT EXISTS</text>
+      <text x="18" y="62" font-size="16" font-weight="700" fill="#0A0A0A">Soulbound kommit record</text>
+      <text x="18" y="80" font-size="12" font-weight="400" fill="#555">capital × time, on-chain, public</text>
+      <line x1="18" y1="95" x2="80" y2="95" stroke="#9945FF" stroke-width="2"/>
+      <text x="18" y="120" font-size="13" font-weight="500" fill="#333">First-dibs at round price</text>
+      <text x="18" y="140" font-size="13" font-weight="500" fill="#333">PMF signal for founders</text>
+      <text x="18" y="160" font-size="13" font-weight="500" fill="#333">No participation share yet</text>
+      <text x="18" y="180" font-size="13" font-weight="500" fill="#333">No contributor weighting</text>
+      <text x="18" y="200" font-size="13" font-weight="500" fill="#333">No verifier</text>
+    </g>
+  </g>
+
+  <!-- VERIFIER BRIDGE (middle) -->
+  <g transform="translate(520, 180)">
+    <rect x="6" y="6" width="160" height="540" fill="#9945FF"/>
+    <rect x="0" y="0" width="160" height="540" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+    <text x="80" y="40" text-anchor="middle" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#555">BRIDGE</text>
+    <text x="80" y="90" text-anchor="middle" font-size="22" font-weight="900" letter-spacing="-0.02em" fill="#0A0A0A">VERIFIER</text>
+    <text x="80" y="116" text-anchor="middle" font-size="22" font-weight="900" letter-spacing="-0.02em" fill="#0A0A0A">LAYER</text>
+    <line x1="40" y1="135" x2="120" y2="135" stroke="#9945FF" stroke-width="3"/>
+    <text x="80" y="170" text-anchor="middle" font-size="12" font-weight="500" fill="#555">adds:</text>
+    <text x="80" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">milestone</text>
+    <text x="80" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">attestation</text>
+    <text x="80" y="262" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">contributor</text>
+    <text x="80" y="280" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">weighting</text>
+    <text x="80" y="324" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">participation</text>
+    <text x="80" y="342" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">share earn</text>
+    <text x="80" y="386" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">stake-slash</text>
+    <text x="80" y="404" text-anchor="middle" font-size="13" font-weight="700" fill="#0A0A0A">mechanic</text>
+    <text x="80" y="460" text-anchor="middle" font-size="11" font-weight="900" letter-spacing="0.18em" fill="#9945FF">UNLOCKS</text>
+    <text x="80" y="488" text-anchor="middle" font-size="11" font-weight="900" letter-spacing="0.18em" fill="#9945FF">LAYER 2</text>
+
+    <!-- arrows pointing left and right -->
+    <g transform="translate(-30, 270)">
+      <polygon points="0,0 14,8 14,-8" fill="#9945FF"/>
+    </g>
+    <g transform="translate(190, 270)">
+      <polygon points="0,0 -14,8 -14,-8" fill="#9945FF"/>
+    </g>
+  </g>
+
+  <!-- LAYER 2 — Institutional (right column) -->
+  <g transform="translate(700, 180)">
+    <!-- header strip -->
+    <rect x="0" y="0" width="440" height="50" fill="#9945FF"/>
+    <text x="20" y="32" font-size="14" font-weight="900" letter-spacing="0.22em" fill="#FFFFFF">LAYER 2 — INSTITUTIONAL</text>
+    <text x="320" y="32" font-size="12" font-weight="500" fill="#E0CFFF">proposed module</text>
+
+    <!-- body -->
+    <rect x="6" y="56" width="440" height="540" fill="#0A0A0A"/>
+    <rect x="0" y="50" width="440" height="540" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+
+    <!-- Sponsor box -->
+    <g transform="translate(30, 90)">
+      <rect x="0" y="0" width="380" height="80" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#555">SPONSOR</text>
+      <text x="18" y="58" font-size="18" font-weight="700" fill="#0A0A0A">VC / family office / treasury — $1M+</text>
+    </g>
+
+    <!-- Arrow down -->
+    <g transform="translate(220, 185)">
+      <line x1="0" y1="0" x2="0" y2="22" stroke="#0A0A0A" stroke-width="3"/>
+      <polygon points="-6,22 6,22 0,32" fill="#0A0A0A"/>
+    </g>
+
+    <!-- Yield routing -->
+    <g transform="translate(30, 220)">
+      <rect x="0" y="0" width="380" height="80" fill="#14F195" stroke="#0A0A0A" stroke-width="3"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#0A0A0A">YIELD ROUTES TO</text>
+      <text x="18" y="58" font-size="20" font-weight="900" letter-spacing="-0.01em" fill="#0A0A0A">→ Team runway</text>
+    </g>
+
+    <!-- Outcome -->
+    <g transform="translate(30, 320)">
+      <rect x="0" y="0" width="380" height="220" fill="#FFFCF5" stroke="#0A0A0A" stroke-width="3"/>
+      <text x="18" y="28" font-size="13" font-weight="900" letter-spacing="0.18em" fill="#555">WHAT BECOMES POSSIBLE</text>
+      <text x="18" y="62" font-size="16" font-weight="700" fill="#0A0A0A">$5M × 4% APY = $200K/yr</text>
+      <text x="18" y="80" font-size="12" font-weight="400" fill="#555">real working capital for the team</text>
+      <line x1="18" y1="95" x2="80" y2="95" stroke="#14F195" stroke-width="2"/>
+      <text x="18" y="120" font-size="13" font-weight="500" fill="#333">Soulbound record + part. share</text>
+      <text x="18" y="140" font-size="13" font-weight="500" fill="#333">Builder earns share on delivery</text>
+      <text x="18" y="160" font-size="13" font-weight="500" fill="#333">Principal stays on sponsor balance</text>
+      <text x="18" y="180" font-size="13" font-weight="500" fill="#333">Verifier attests milestones</text>
+      <text x="18" y="200" font-size="13" font-weight="500" fill="#333">Routes to priced round at graduation</text>
+    </g>
+  </g>
+
+  <!-- Bottom: graduation outcome -->
+  <g transform="translate(60, 750)">
+    <rect x="0" y="0" width="1080" height="80" fill="#0A0A0A"/>
+    <text x="24" y="32" font-size="12" font-weight="900" letter-spacing="0.22em" fill="#FFE000">GRADUATION</text>
+    <text x="24" y="62" font-size="18" font-weight="700" fill="#FFFFFF">Participation share converts → equity · revenue share · tokens (default set by Curator at problem-stack creation)</text>
+  </g>
+
+  <!-- Footer note -->
+  <g transform="translate(60, 855)">
+    <text x="0" y="0" font-size="12" font-weight="400" fill="#555">The Sponsor never locked principal in the team. The team raised 18 months of runway without dilution. The cohort signal at graduation is verifiable inside data.</text>
+  </g>
+</svg>
