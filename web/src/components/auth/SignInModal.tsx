@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { Modal } from "@/components/common/Modal";
@@ -9,6 +9,7 @@ import { Icon } from "@/components/common/Icon";
 import { GoogleGlyph } from "@/components/common/GoogleGlyph";
 import { useDemoMode } from "@/lib/demo-mode";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { cn } from "@/lib/cn";
 
 /**
  * Pass 2: each method button delegates to Privy. Privy's `login({ loginMethods })`
@@ -49,8 +50,16 @@ export function SignInModal({
   const { signIn: demoSignIn } = useAuth();
   const { authenticated } = usePrivy();
   const { confirm, error } = useToast();
+  // Handoff 78 P2-10 / wave 6: Privy renders its bottom-sheet inside the
+  // viewport while our SignInModal stays visible behind it — two stacked
+  // modals confuse first-time users. We track a local "handed off to Privy"
+  // flag from the moment a method button fires until Privy resolves
+  // (onComplete / onError), and fade our modal to ~5% opacity during that
+  // window so Privy's sheet is the only thing the eye reads.
+  const [privyOpen, setPrivyOpen] = useState(false);
   const { login } = useLogin({
     onComplete: ({ isNewUser }) => {
+      setPrivyOpen(false);
       onOpenChange(false);
       // Sandbox flow owns its own post-signin sequencing (Lane B steps 2+3).
       // Outside sandbox, /dashboard is the canonical landing.
@@ -67,6 +76,7 @@ export function SignInModal({
       );
     },
     onError: (err) => {
+      setPrivyOpen(false);
       // Privy's "exited_auth_flow" fires when the user closes the modal — not an error.
       if (err === "exited_auth_flow") return;
       error("Sign-in didn't work.", "Try again, or use a different method.", {
@@ -82,9 +92,22 @@ export function SignInModal({
     if (open && authenticated) onOpenChange(false);
   }, [open, authenticated, onOpenChange]);
 
+  // Reset the Privy hand-off flag any time the Kommit modal closes/reopens.
+  useEffect(() => {
+    if (!open) setPrivyOpen(false);
+  }, [open]);
+
   const startLogin = (method: "email" | "google" | "passkey") => {
+    setPrivyOpen(true);
     login({ loginMethods: [method] });
   };
+
+  // When Privy's bottom-sheet is up, fade our modal so the user reads only
+  // the Privy surface. Pointer-events-none keeps an accidental tap on our
+  // (now-invisible) card from interrupting their input on Privy.
+  const fadeClass = privyOpen
+    ? "opacity-5 pointer-events-none transition-opacity duration-200"
+    : "transition-opacity duration-200";
 
   if (isDemo) {
     return (
@@ -123,37 +146,39 @@ export function SignInModal({
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={title}>
-      <div className="mt-8 space-y-4">
-        <button
-          type="button"
-          onClick={() => startLogin("email")}
-          className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
-        >
-          <Icon name="mail" />
-          Continue with Email
-        </button>
-        <button
-          type="button"
-          onClick={() => startLogin("google")}
-          className="w-full bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:bg-gray-100 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
-        >
-          <GoogleGlyph className="w-5 h-5" />
-          Continue with Google
-        </button>
-        <button
-          type="button"
-          onClick={() => startLogin("passkey")}
-          className="w-full bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:bg-gray-100 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
-        >
-          <Icon name="fingerprint" />
-          Continue with Passkey
-        </button>
-      </div>
+      <div className={cn(fadeClass)}>
+        <div className="mt-8 space-y-4">
+          <button
+            type="button"
+            onClick={() => startLogin("email")}
+            className="w-full bg-primary text-white font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
+          >
+            <Icon name="mail" />
+            Continue with Email
+          </button>
+          <button
+            type="button"
+            onClick={() => startLogin("google")}
+            className="w-full bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:bg-gray-100 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
+          >
+            <GoogleGlyph className="w-5 h-5" />
+            Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={() => startLogin("passkey")}
+            className="w-full bg-white text-black font-epilogue font-black uppercase tracking-tight text-base py-4 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform active:translate-x-[2px] active:translate-y-[2px] hover:bg-gray-100 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
+          >
+            <Icon name="fingerprint" />
+            Continue with Passkey
+          </button>
+        </div>
 
-      <div className="mt-8 pt-6 border-t-[3px] border-black">
-        <p className="text-sm text-gray-500 leading-relaxed">
-          We&rsquo;ll create a Solana wallet for you. Your money stays yours.
-        </p>
+        <div className="mt-8 pt-6 border-t-[3px] border-black">
+          <p className="text-sm text-gray-500 leading-relaxed">
+            We&rsquo;ll create a Solana wallet for you. Your money stays yours.
+          </p>
+        </div>
       </div>
     </Modal>
   );

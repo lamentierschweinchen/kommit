@@ -97,6 +97,11 @@ export function WithdrawModal({
   const presetDecimals = presetBaseUnits.map((b) => formatTokenAmount(b, USDC_DECIMALS));
 
   const [raw, setRaw] = useState(presetDecimals[0] ?? "0");
+  // Handoff 78 P2-2 / wave 6: which preset chip was tapped most recently. We
+  // highlight by user intent, not by bigint equality, so typing $125.5 doesn't
+  // make the 25% chip "feel arbitrary." Cleared on any manual edit; reset to
+  // the 25% chip on modal open below.
+  const [pickedPresetIdx, setPickedPresetIdx] = useState<number | null>(0);
   const [submitting, setSubmitting] = useState(false);
   const { confirm, error: toastError } = useToast();
   const client = useKommitProgram();
@@ -119,7 +124,12 @@ export function WithdrawModal({
   }, [isDemo, projectSlug, sandboxMint]);
 
   useEffect(() => {
-    if (open) setRaw(presetDecimals[0] ?? "0");
+    if (open) {
+      setRaw(presetDecimals[0] ?? "0");
+      // Reset picked-preset to the default (25%) on each open so the chip
+      // active state matches the input value at modal mount.
+      setPickedPresetIdx(0);
+    }
     // presetDecimals derives from committedUSD; depend on that primitive.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, committedUSD]);
@@ -411,7 +421,12 @@ export function WithdrawModal({
             type="text"
             inputMode="decimal"
             value={raw}
-            onChange={(e) => setRaw(e.target.value.replace(/[^0-9.]/g, ""))}
+            onChange={(e) => {
+              setRaw(e.target.value.replace(/[^0-9.]/g, ""));
+              // Manual edit clears the picked-preset state so the chip
+              // doesn't claim ownership of an amount the user typed by hand.
+              setPickedPresetIdx(null);
+            }}
             className="flex-1 px-2 py-3 font-epilogue font-black text-3xl bg-transparent outline-none min-w-0 tracking-tight w-full"
             aria-label="Withdraw amount"
             disabled={submitting}
@@ -420,12 +435,19 @@ export function WithdrawModal({
         <div className="mt-3 flex gap-2 flex-wrap">
           {PERCENT_PRESETS.map((p, i) => {
             const isMax = p.num === p.den;
-            const isActive = parsedBaseUnits === presetBaseUnits[i];
+            // Handoff 78 P2-2 / wave 6: chip-active state tracks what the user
+            // tapped, not bigint-equality on parsed input. Typing $125.5
+            // doesn't make a chip light up; tapping a chip activates that
+            // chip and overwrites the input.
+            const isActive = pickedPresetIdx === i;
             return (
               <button
                 key={p.label}
                 type="button"
-                onClick={() => setRaw(presetDecimals[i])}
+                onClick={() => {
+                  setRaw(presetDecimals[i]);
+                  setPickedPresetIdx(i);
+                }}
                 disabled={submitting}
                 className={cn(
                   "font-epilogue font-black uppercase tracking-tight text-xs px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform disabled:opacity-50 disabled:pointer-events-none",

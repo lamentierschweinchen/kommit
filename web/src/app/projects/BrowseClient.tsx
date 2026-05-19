@@ -109,8 +109,12 @@ export function BrowseClient() {
       <AuthHeader homeHref="/app" />
       <main className="flex-1 px-6 md:px-12 pb-24 max-w-7xl mx-auto w-full">
         <section className="mt-12 md:mt-16">
-          <div className="flex items-end justify-between flex-wrap gap-4">
-            <h1 className="font-epilogue font-black uppercase text-4xl md:text-6xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit">
+          <div className="flex items-end justify-between flex-wrap gap-4 min-w-0">
+            {/* Handoff 78 P0-7 / wave 6: capped h1 size on mobile so 200%
+                iOS font scaling no longer overflows the viewport by ~121px.
+                Old: text-4xl md:text-6xl. New: text-3xl sm:text-4xl md:text-5xl
+                plus `break-words`. WCAG 1.4.4. */}
+            <h1 className="font-epilogue font-black uppercase text-3xl sm:text-4xl md:text-5xl tracking-tighter border-b-[4px] border-black pb-2 inline-flex max-w-fit break-words">
               Active projects
             </h1>
             <div className="font-epilogue font-bold uppercase text-sm text-gray-500 tracking-widest">

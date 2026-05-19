@@ -132,7 +132,7 @@ export function BrowseToolbar({
           onClick={() =>
             onChange({ sectors: [], stages: [], query: "", sort: filters.sort })
           }
-          className="bg-white text-black font-epilogue font-black uppercase text-xs tracking-tight px-3 py-2 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform flex items-center gap-1.5"
+          className="bg-white text-black font-epilogue font-black uppercase text-xs tracking-tight min-h-[44px] px-3 py-3 border-[2px] border-black shadow-brutal-sm hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform flex items-center gap-1.5"
         >
           <Icon name="close" size="sm" />
           Clear
@@ -148,7 +148,7 @@ export function BrowseToolbar({
             value={filters.query}
             onChange={(e) => update({ query: e.target.value })}
             placeholder="SEARCH PROJECTS..."
-            className="pl-10 pr-4 py-2 border-[3px] border-black focus:outline-none focus:ring-0 focus:border-primary font-epilogue font-bold text-sm shadow-brutal w-56 sm:w-64 bg-white placeholder-black transition-all focus:translate-x-[-2px] focus:translate-y-[-2px] focus:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] uppercase tracking-tight"
+            className="pl-10 pr-4 py-3 min-h-[44px] border-[3px] border-black focus:outline-none focus:ring-0 focus:border-primary font-epilogue font-bold text-sm shadow-brutal w-56 sm:w-64 bg-white placeholder-black transition-all focus:translate-x-[-2px] focus:translate-y-[-2px] focus:shadow-[6px_6px_0px_0px_rgba(153,69,255,1)] uppercase tracking-tight"
           />
         </div>
         <DropdownMenu.Root>
@@ -158,7 +158,7 @@ export function BrowseToolbar({
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
-              className="bg-white text-black font-epilogue font-black uppercase text-sm tracking-tight px-4 py-2 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
+              className="bg-white text-black font-epilogue font-black uppercase text-sm tracking-tight min-h-[44px] px-4 py-3 border-[3px] border-black shadow-brutal hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2"
             >
               <span className="font-epilogue font-bold text-gray-500 text-xs">Sort by</span>
               <span>{SORT_LABELS[filters.sort]}</span>
@@ -208,7 +208,7 @@ function FilterDropdown({
         <button
           type="button"
           className={cn(
-            "font-epilogue font-black uppercase text-sm tracking-tight px-4 py-2 border-[3px] border-black shadow-brutal",
+            "font-epilogue font-black uppercase text-sm tracking-tight min-h-[44px] px-4 py-3 border-[3px] border-black shadow-brutal",
             "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex items-center gap-2",
             active ? "bg-primary text-white" : "bg-white text-black",
           )}

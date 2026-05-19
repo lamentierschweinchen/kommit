@@ -19,16 +19,23 @@ export function Footer({ withSidebarOffset = false }: { withSidebarOffset?: bool
         )}
       >
         <div className="text-black">© 2026 KOMMIT · Open source · Built on Solana</div>
+        {/* Handoff 78 P1-1 / wave 6: GitHub/Status were 43×16 inline text
+            links — far below the 44pt iOS minimum. `min-h-[44px] py-3`
+            promotes them to real tap targets without changing the brutalist
+            inline-link look. */}
         <div className="flex gap-6 font-bold">
           <Link
             href="https://github.com/lamentierschweinchen/kommit"
             target="_blank"
             rel="noreferrer noopener"
-            className="text-black hover:underline"
+            className="text-black hover:underline inline-flex items-center min-h-[44px] py-3"
           >
             GitHub
           </Link>
-          <Link href="/status" className="text-black hover:underline">
+          <Link
+            href="/status"
+            className="text-black hover:underline inline-flex items-center min-h-[44px] py-3"
+          >
             Status
           </Link>
         </div>

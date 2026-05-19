@@ -132,18 +132,29 @@ export function UpdateComments({
   }
 
   const count = comments.length;
+  // Handoff 78 P2-4 / wave 6: pre-load placeholder. Before the eager fetch
+  // resolves we showed "Add a comment" which then flipped to "View N
+  // comments" once the count loaded — visible label thrash on slow
+  // connections. A neutral "View comments…" placeholder reads as a state,
+  // not a CTA, until we have a real count.
   const label = open
     ? `Hide comments${count ? ` (${count})` : ""}`
-    : count
-      ? `View ${count} comment${count === 1 ? "" : "s"}`
-      : "Add a comment";
+    : !loaded && loading
+      ? "View comments…"
+      : count
+        ? `View ${count} comment${count === 1 ? "" : "s"}`
+        : "Add a comment";
 
   return (
     <div className="mt-4">
+      {/* Handoff 78 P1-1 / wave 6: the comments toggle was a 132×17 inline
+          text element — comically below the 44pt iOS minimum. `min-h-[44px]
+          py-3` makes it a real tap target without changing the brutalist
+          inline-affordance feel. */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 font-epilogue font-bold uppercase text-[11px] tracking-widest text-gray-700 hover:text-black"
+        className="inline-flex items-center gap-2 min-h-[44px] py-3 font-epilogue font-bold uppercase text-[11px] tracking-widest text-gray-700 hover:text-black"
       >
         <Icon name="expand_more" size="sm" className={open ? "rotate-180 transition-transform" : "transition-transform"} />
         {label}
