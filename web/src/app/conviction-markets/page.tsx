@@ -6,41 +6,40 @@ import { Footer } from "@/components/layout/Footer";
 /**
  * /ov — Kommit / Conviction Markets framework artifact, hosted on kommit.now.
  *
- * Long-form intellectual contribution for Outlier Ventures (Raf at OV), in the
- * Early Collaborator register. Two SVG diagrams embedded inline. Same typography
- * pattern as /manifesto: brutalist chrome, essay body, generous leading.
+ * Long-form intellectual contribution to the Conviction Markets thesis. Two SVG
+ * diagrams embedded inline. Same typography pattern as /manifesto: brutalist
+ * chrome, essay body, generous leading.
  *
- * `noindex,nofollow` — this is a one-link artifact for OV, not a public marketing
- * surface. Lukas shares the URL directly with Raf; no search-engine surface area.
+ * `noindex,nofollow` — direct-link artifact, not a public marketing surface.
+ * Shared by URL; no search-engine surface area.
  */
 
 export const metadata: Metadata = {
   title: "Kommit ↔ Conviction Markets — a framework",
   description:
-    "Inside-witness data from a working pre-funding conviction signal, a proposed decomposition for OV's Conviction Markets architecture, and the design questions that surface when the primitive is built.",
+    "Field notes from a working pre-funding conviction signal, a proposed decomposition for the Conviction Markets architecture, and the design questions that surface when the primitive is built.",
   robots: { index: false, follow: false },
   openGraph: {
     title: "Kommit ↔ Conviction Markets — a framework",
     description:
-      "Two instruments, two scales, one primitive. A framework from the Kommit build to OV's Conviction Markets architecture.",
+      "Two instruments, two scales, one primitive. A framework mapping a working implementation onto the Conviction Markets architecture.",
     type: "article",
   },
   twitter: {
     card: "summary_large_image",
     title: "Kommit ↔ Conviction Markets — a framework",
     description:
-      "Two instruments, two scales, one primitive. A framework from the Kommit build to OV's Conviction Markets architecture.",
+      "Two instruments, two scales, one primitive. A framework mapping a working implementation onto the Conviction Markets architecture.",
   },
 };
 
-export default function OVFrameworkPage() {
+export default function ConvictionMarketsPage() {
   return (
     <>
       <AuthHeader />
       <main className="flex-1 bg-[#FFFCF5] px-6 md:px-12 py-12 md:py-20">
         <article className="max-w-[72ch] mx-auto">
-          {/* Title block. Slightly more compressed than /manifesto so the
-              "for OV" framing reads first. */}
+          {/* Title block. Slightly more compressed than /manifesto. */}
           <header className="mb-12 md:mb-16">
             <p className="font-epilogue font-bold uppercase text-[11px] tracking-widest text-gray-500 mb-3">
               A contribution to Conviction Markets
@@ -49,7 +48,7 @@ export default function OVFrameworkPage() {
               Kommit ↔ Conviction Markets
             </h1>
             <p className="mt-6 text-base md:text-lg italic text-gray-700 leading-relaxed">
-              Inside-witness data from a working pre-funding conviction signal, a
+              Field notes from a working pre-funding conviction signal, a
               proposed decomposition for the open module calls, and the design
               questions that surface when the primitive is built at the smallest
               viable scale.
@@ -61,17 +60,15 @@ export default function OVFrameworkPage() {
 
           <Section heading="Preface">
             <p>
-              This is the longer artifact promised on the 19 May call. It maps
-              Kommit, as built and shipped at Build Station Berlin, onto the
-              Conviction Markets architecture, names where the fit is exact and
-              where it isn&apos;t, and proposes what version of the primitive
-              becomes possible at institutional scale.
+              This maps Kommit, a working pre-funding conviction signal, onto
+              the Conviction Markets architecture. It names where the fit is
+              exact and where it isn&apos;t, and proposes what version of the
+              primitive becomes possible at institutional scale.
             </p>
             <p>
-              It&apos;s intended as an Early Collaborator contribution, not a
-              product pitch. The point is to make the design space underneath
-              the CM thesis more legible by walking one working implementation
-              through it and naming what gets exposed.
+              The aim is to make the design space underneath the thesis more
+              legible by walking one working implementation through it and
+              naming what gets exposed.
             </p>
           </Section>
 
@@ -130,11 +127,10 @@ export default function OVFrameworkPage() {
               in v0.5 as a quality gate, not a structural commitment) and{" "}
               <strong>Verifier</strong> absent. The conviction signal sits between
               an upvote (signal without stake) and equity crowdfunding (stake
-              without survival of principal). I built it solo in a week and have
-              been honest with OV that I&apos;m not sure I want to take it to
-              product. What the build produces is inside-witness data: a working
-              primitive at the smallest viable scale, useful as a stress-test
-              artifact for the paper&apos;s open design space.
+              without survival of principal). It was built solo in a week, which
+              sets the right expectation for what follows: a working primitive at
+              the smallest viable scale, useful as a stress-test for the thesis
+              rather than a finished module.
             </p>
           </Section>
 
@@ -459,10 +455,11 @@ export default function OVFrameworkPage() {
               An agentic verifier inherits the gameability the protocol is
               trying to solve (an LLM can be jailbroken; a curated panel can be
               bribed; both can be Sybil-attacked at scale). Worth being explicit
-              that this is a research thread, not a settled answer. (Adjacent
-              work I have queued — a 2026 update to my 2023 thesis on blockchain
-              as a provenance layer for testimony — would find its natural
-              reader here. Happy to bring it in if useful.)
+              that this is a research thread, not a settled answer. The
+              provenance of testimony — treating an attestation as a traceable
+              chain of who vouched for what, and at what stake — is the relevant
+              lens here, and it is underexplored in the agentic-verification
+              context.
             </p>
             <p>
               <strong>3. Stake against attestation.</strong> A Verifier with
@@ -532,7 +529,7 @@ export default function OVFrameworkPage() {
             </ol>
             <p>
               These are the questions where Kommit-as-built has nothing more to
-              contribute. They mark where the Early Collaborator contribution
+              contribute. They mark where what a working implementation can say
               thins out and the mechanism-design work begins. The framework
               above is what Kommit can credibly say; everything in this list is
               what comes after.
@@ -541,9 +538,9 @@ export default function OVFrameworkPage() {
 
           <Section heading="The Hello World question">
             <p>
-              My read on the 19 May call: Kommit IS the Hello World — smallest
-              viable CM at single-project scale, single-curator, single-sponsor
-              pool, no Verifier yet.
+              One reading: Kommit is the Hello World — the smallest viable CM at
+              single-project scale, single-curator, single-sponsor pool, no
+              Verifier yet.
             </p>
             <p>
               Refinement after walking the design space above: Kommit is{" "}
@@ -606,26 +603,16 @@ export default function OVFrameworkPage() {
               </li>
             </ol>
             <p>
-              Happy to go deeper on any of these and to send Kommit source,
-              engagement-loop telemetry, or SDK adoption data if the technical
-              surface is useful alongside the conceptual.
+              The framework above is what a working implementation can credibly
+              contribute to the thesis. The six questions are where the
+              mechanism-design work begins.
             </p>
-            <p className="text-right italic text-gray-700 mt-8">— Lukas</p>
           </Section>
 
           {/* Footer matches the manifesto's italic colophon pattern. */}
           <footer className="mt-20 pt-8 border-t-[3px] border-black">
             <p className="text-sm md:text-base italic text-gray-700 leading-relaxed">
-              Written for{" "}
-              <a
-                href="https://outlierventures.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-primary decoration-2 underline-offset-2 hover:text-black"
-              >
-                Outlier Ventures
-              </a>{" "}
-              as a contribution to the{" "}
+              A contribution to the{" "}
               <a
                 href="https://convictionmarkets.io"
                 target="_blank"
