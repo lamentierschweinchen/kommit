@@ -382,7 +382,7 @@ export default function ConvictionMarketsPage() {
                 <strong>Yield-as-runway becomes meaningful.</strong> Teams get
                 real working capital from yield on locked-but-not-spent sponsor
                 capital. No dilution, no priced round, no token launch required
-                to fund the first 18 months.
+                to fund the early build phase.
               </li>
               <li>
                 <strong>Capital efficiency for the institutional sponsor.</strong>{" "}
@@ -391,27 +391,29 @@ export default function ConvictionMarketsPage() {
                 check locked in the team; they wrote a check locked in audited
                 yield infrastructure, generating runway as a side effect. When
                 the window closes or the team graduates, principal returns. The
-                sponsor has bought 18 months of signal, relationship, and
-                observation without putting principal at risk.
+                sponsor has bought a full exploratory period of signal,
+                relationship, and observation without putting principal at risk.
               </li>
               <li>
                 <strong>
                   Graduation routes back into traditional capital allocation.
                 </strong>{" "}
                 At the priced round (or its equivalent), institutional sponsors
-                who streamed yield convert to equity buyers with 18 months of
-                inside data: who stayed, who delivered, what the cohort signal
-                looks like, what the founder&apos;s track record over a long
-                window actually is. The CM module doesn&apos;t replace VC.
-                It&apos;s the funnel that produces deals VC currently
-                can&apos;t see clearly.
+                who streamed yield convert to equity buyers holding inside data
+                a cold pitch can&apos;t provide: who stayed, who delivered, what
+                the cohort signal looks like, what the founder&apos;s track
+                record across the whole period actually is. The CM module
+                doesn&apos;t replace VC. It&apos;s the funnel that produces deals
+                VC currently can&apos;t see clearly.
               </li>
             </ol>
             <p>
-              Closing claim: CM-shaped capital allocation, at institutional
-              scale, addresses a real pain VC has — the cost of locking
-              principal on insufficient information. Layer 2 Kommit doesn&apos;t
-              make that pain go away, but it routes around it.
+              The mechanism underneath all three answers a question the thesis
+              leaves open: how do contributors benefit from solving a problem
+              collaboratively? They earn a revenue stream. Yield on the capital
+              allocated to their problem streams to them as they build —
+              non-dilutive income, paid out of money that stays whole for the
+              sponsor. That is the part Kommit can speak to from having built it.
             </p>
 
             {/* Figure 2 — two scales architecture */}
@@ -527,25 +529,14 @@ export default function ConvictionMarketsPage() {
                 separate signal). Real design space.
               </li>
             </ol>
-            <p>
-              These are the questions where Kommit-as-built has nothing more to
-              contribute. They mark where what a working implementation can say
-              thins out and the mechanism-design work begins. The framework
-              above is what Kommit can credibly say; everything in this list is
-              what comes after.
-            </p>
           </Section>
 
           <Section heading="The Hello World question">
             <p>
-              One reading: Kommit is the Hello World — the smallest viable CM at
-              single-project scale, single-curator, single-sponsor pool, no
-              Verifier yet.
-            </p>
-            <p>
-              Refinement after walking the design space above: Kommit is{" "}
-              <em>almost</em> the Hello World. Three additions make it the
-              actual Hello World for the full CM primitive:
+              Kommit is almost the smallest viable Conviction Market — single
+              project, single curator, single sponsor pool, no Verifier yet.
+              Three additions make it the actual Hello World for the full
+              primitive:
             </p>
             <ol className="list-decimal pl-6 space-y-2">
               <li>
@@ -564,20 +555,22 @@ export default function ConvictionMarketsPage() {
               </li>
             </ol>
             <p>
-              With all three, Kommit becomes a deployable Hello World for the
-              full primitive. Without them, it&apos;s a Layer 1 retail-shaped
-              sub-primitive that demonstrates the Sponsor mechanic in isolation.
-              Either reading is honest. The second is more useful as a roadmap.
+              With all three, Kommit is a deployable Hello World for the full
+              primitive. Without them, it demonstrates the Sponsor mechanic in
+              isolation.
             </p>
           </Section>
 
-          <Section heading="What this contribution is, and isn't">
-            <p>
-              This framework&apos;s job is to make the design space underneath
-              the CM thesis more legible, not to propose Kommit-as-built as the
-              deployable answer. Restated:
-            </p>
+          <Section heading="Kommit's contribution to Conviction Markets">
+            <p>Four things, gathered:</p>
             <ol className="list-decimal pl-6 space-y-3">
+              <li>
+                A revenue stream for contributors: yield on the capital
+                allocated to their problem streams to them as they build. A
+                concrete answer to how contributors benefit from collaborative
+                problem-solving, non-dilutively, without the sponsor losing
+                principal.
+              </li>
               <li>
                 Decompose the Participation Token into two instruments
                 (soulbound reputation + convertible participation share) to
