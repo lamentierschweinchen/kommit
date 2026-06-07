@@ -6,6 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 import { CommitModal } from "@/components/commit/CommitModal";
 import { WithdrawModal } from "@/components/commit/WithdrawModal";
 import { ClaimBenefitsModal } from "@/components/dashboard/ClaimBenefitsModal";
+import { CommitmentEngagementPanel } from "@/components/dashboard/CommitmentEngagementPanel";
 import { BrutalButton } from "@/components/common/BrutalButton";
 import { kommitsFor, formatNumber, formatUSD } from "@/lib/kommit-math";
 import { shortDate } from "@/lib/date-utils";
@@ -22,16 +23,26 @@ export function CommitmentRow({
   commitment,
   project,
   onWithdrawSuccess,
+  expanded = false,
+  onToggleExpand,
 }: {
   commitment: Commitment;
   project: Project;
   /** Fires after a successful withdraw OR top-up so callers can refresh. */
   onWithdrawSuccess?: () => void;
+  /** Handoff 82 wave 5: controlled inline-engagement expansion. The parent
+   *  owns the open row (one-open-at-a-time accordion) so opening a second row
+   *  collapses the first — keeps a 375px viewport from filling with stacked
+   *  expanded panels. */
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }) {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [commitOpen, setCommitOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
   const [newCount, setNewCount] = useState(0);
+  const [updateCount, setUpdateCount] = useState<number | null>(null);
+  const [projectPda, setProjectPda] = useState<string | null>(null);
   const isPivot = !!commitment.pivotedAtISO;
   const isGraduated = project.state === "graduated";
   // Handoff 65 B2: a full withdraw zeroes principal but keeps the row with
@@ -49,11 +60,21 @@ export function CommitmentRow({
     } catch {
       return;
     }
+    setProjectPda(pda);
     const lastSeen = localStorage.getItem(`kommit:lastSeen:${pda}`);
     authedFetch(`/api/projects/${pda}/updates`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fetch failed"))))
       .then((j: { updates: RemoteUpdate[] }) => {
         if (cancelled) return;
+        // Total updates count for the "Updates (N)" affordance. Merge remote
+        // dates with the static catalog fallback (the engagement panel renders
+        // the same union) so the badge count matches what expanding reveals.
+        const dates = new Set<string>(project.updates.map((u) => u.atISO));
+        for (const u of j.updates) {
+          const d = u.posted_at?.slice(0, 10);
+          if (d) dates.add(d);
+        }
+        setUpdateCount(dates.size);
         if (!lastSeen) {
           // First-time visitor — count nothing as "new" so we don't blanket-pill
           // every commitment after a P1.4 deploy. The pill becomes meaningful
@@ -65,12 +86,16 @@ export function CommitmentRow({
         setNewCount(n);
       })
       .catch(() => {
-        if (!cancelled) setNewCount(0);
+        if (cancelled) return;
+        setNewCount(0);
+        // API unreachable — still surface the static catalog count so the
+        // engagement affordance works offline / pre-indexer.
+        setUpdateCount(project.updates.length);
       });
     return () => {
       cancelled = true;
     };
-  }, [project.recipientWallet]);
+  }, [project.recipientWallet, project.updates]);
   // Accrual freezes at the earliest of (now, graduation, withdrawal).
   // Handoff 65 B2: "kommits should stop accumulating when graduation date is
   // reached, AND the kommits should still be visible — they're soulbound."
@@ -99,16 +124,17 @@ export function CommitmentRow({
     <>
       <article
         className={cn(
-          // Pass-3 layout fix (Option A): two-zone single-row.
-          // Image (shrink-0) | info zone (flex-1 min-w-0, name/pitch/meta) |
-          // right zone (shrink-0, stat above actions, items-end).
-          // Stacks vertically at narrow widths.
           "bg-white border-[3px] border-black p-5 relative",
-          "flex flex-col md:flex-row md:items-center gap-4 md:gap-6",
           isGraduated || isPivot ? "shadow-brutal-purple mt-3" : "shadow-brutal",
           isWithdrawn && "bg-gray-50 opacity-95",
         )}
       >
+        {/* Pass-3 layout fix (Option A): two-zone single-row.
+            Image (shrink-0) | info zone (flex-1 min-w-0, name/pitch/meta) |
+            right zone (shrink-0, stat above actions, items-end).
+            Stacks vertically at narrow widths. Wave 5 lifts this into an inner
+            div so the inline engagement panel can sit full-width below it. */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
         {isGraduated ? (
           <div className="absolute -top-3 left-6 z-10">
             <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
@@ -185,12 +211,33 @@ export function CommitmentRow({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-2 md:justify-end">
             {newCount > 0 ? (
               <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
                 {newCount} new
               </span>
             ) : null}
+            {/* Handoff 82 wave 5: the third action — inline engagement. Expands
+                the row into the founder-updates + reactions + comments loop
+                (audit P1-2 / Option A) so the dashboard is the engagement
+                surface, not a list of links to /projects/[slug]. */}
+            <BrutalButton
+              size="xs"
+              variant={expanded ? "primary" : "outline"}
+              aria-expanded={expanded}
+              aria-controls={`engagement-${commitment.projectSlug}`}
+              iconLeft={<Icon name="groups" size="xs" />}
+              iconRight={
+                <Icon
+                  name="expand_more"
+                  size="xs"
+                  className={cn("transition-transform", expanded && "rotate-180")}
+                />
+              }
+              onClick={() => onToggleExpand?.()}
+            >
+              {updateCount != null ? `Updates (${updateCount})` : "Updates"}
+            </BrutalButton>
             {isWithdrawn ? (
               <>
                 <span className="inline-block bg-black text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
@@ -246,6 +293,32 @@ export function CommitmentRow({
                 </BrutalButton>
               </>
             )}
+          </div>
+        </div>
+        </div>
+
+        {/* Inline engagement (wave 5). Grid-rows height transition keeps the
+            expand/collapse smooth without framer-motion (not a dep here) and
+            without the layout thrash of animating `height: auto`. The panel
+            only mounts while open, so collapsed rows never fetch updates and
+            the dashboard's first paint stays cheap. */}
+        <div
+          id={`engagement-${commitment.projectSlug}`}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-300 ease-out",
+            expanded ? "grid-rows-[1fr] mt-5" : "grid-rows-[0fr]",
+          )}
+        >
+          <div className="overflow-hidden min-h-0">
+            <div className="border-t-[2px] border-black pt-5">
+              {expanded ? (
+                <CommitmentEngagementPanel
+                  projectPda={projectPda}
+                  projectSlug={project.slug}
+                  fallbackUpdates={project.updates}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       </article>

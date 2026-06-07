@@ -40,6 +40,15 @@ export default function DashboardPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [depositOpen, setDepositOpen] = useState(false);
   const [sortKey, setSortKey] = useState<DashboardSortKey>(DASHBOARD_DEFAULT_SORT);
+  // Handoff 82 wave 5: one-open-at-a-time inline engagement. The dashboard owns
+  // the expanded row (by slug) so opening a second commitment's updates panel
+  // collapses the first — on a 375x812 viewport an expanded panel eats most of
+  // the fold, so stacking several would bury the rest of the portfolio.
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const toggleExpanded = useCallback(
+    (slug: string) => setExpandedSlug((cur) => (cur === slug ? null : slug)),
+    [],
+  );
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -256,6 +265,8 @@ export default function DashboardPage() {
                           commitment={c}
                           project={project}
                           onWithdrawSuccess={refresh}
+                          expanded={expandedSlug === c.projectSlug}
+                          onToggleExpand={() => toggleExpanded(c.projectSlug)}
                         />
                       );
                     })}
