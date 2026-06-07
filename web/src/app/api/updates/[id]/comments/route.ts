@@ -18,14 +18,27 @@ import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
 import { hasOnChainCommitment } from "@/lib/server/lazy-sybil";
+import { consumeRateLimit } from "@/lib/server/supabase-rate-limit";
 
 export const runtime = "nodejs";
+
+const COMMENT_RATE_LIMIT = {
+  limit: 10,
+  windowSeconds: 10 * 60,
+} as const;
 
 const COMMENT_BODY = z.object({
   body: z.string().min(1).max(2000),
 });
 
 const UPDATE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function rateLimitExceededResponse(): NextResponse {
+  return NextResponse.json(
+    { ok: false, error: "rate-limit" },
+    { status: 429 },
+  );
+}
 
 export async function POST(
   req: NextRequest,
@@ -51,6 +64,22 @@ export async function POST(
   }
 
   const sb = getSupabaseAdminClient();
+
+  const rateLimit = await consumeRateLimit(sb, {
+    identifier: `update-comments:wallet:${callerWallet}`,
+    limit: COMMENT_RATE_LIMIT.limit,
+    windowSeconds: COMMENT_RATE_LIMIT.windowSeconds,
+  });
+  if (!rateLimit.ok) {
+    if (rateLimit.error === "rate-limit") return rateLimitExceededResponse();
+    return NextResponse.json(
+      {
+        error: "rate-limit-check-failed",
+        detail: rateLimit.detail ?? "unknown",
+      },
+      { status: 500 },
+    );
+  }
 
   // 1. Parent update lookup → project_pda for the sybil gate.
   const { data: existing, error: updateErr } = await sb
