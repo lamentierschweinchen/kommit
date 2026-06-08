@@ -9,7 +9,7 @@
  * apply-time. Trust posture mirrors /api/waitlist:
  *   - Zod-validated body (server is authoritative; client zod is a
  *     convenience, never the gate).
- *   - Per-IP rate limit via `takeRateLimit` (60s window). Sandbox-grade.
+ *   - Durable Supabase-backed rate limits: 3/email/24h and 10/IP/24h.
  *   - IP HMAC'd before storage with WAITLIST_IP_HASH_KEY (same key as
  *     /api/waitlist — both are HMAC fingerprints; one secret keeps the
  *     surface area small).
@@ -25,13 +25,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createHmac } from "node:crypto";
 import { z } from "zod";
 
-import { takeRateLimit } from "@/lib/sandbox-rate-limit";
+import { consumeRateLimit } from "@/lib/server/supabase-rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { readSecret } from "@/lib/server-env";
 
 export const runtime = "nodejs";
 
-const RATE_LIMIT_MS = 60_000; // 1 application per IP per 60s
+const DAY_SECONDS = 24 * 60 * 60;
+const EMAIL_RATE_LIMIT = { limit: 3, windowSeconds: DAY_SECONDS } as const;
+const IP_RATE_LIMIT = { limit: 10, windowSeconds: DAY_SECONDS } as const;
 
 // Match the zod schema in web/src/app/build/page.tsx exactly. Field set
 // is locked by handoff 73 — don't extend without updating both sides.
@@ -71,8 +73,32 @@ function callerIP(req: NextRequest): string {
   return "unknown";
 }
 
+function hmacSHA256(value: string, key: string): string {
+  return createHmac("sha256", key).update(value).digest("hex");
+}
+
 function hashIP(ip: string, key: string): string {
-  return createHmac("sha256", key).update(ip).digest("hex");
+  return hmacSHA256(ip, key);
+}
+
+async function enforceRateLimit(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  identifier: string,
+  options: { limit: number; windowSeconds: number },
+): Promise<NextResponse<Response> | null> {
+  const decision = await consumeRateLimit(supabase, {
+    identifier,
+    limit: options.limit,
+    windowSeconds: options.windowSeconds,
+  });
+  if (decision.ok) return null;
+  if (decision.error === "rate-limit") return jsonError("rate-limit", 429);
+
+  console.warn(
+    "[founder-application] rate-limit check failed:",
+    decision.detail ?? "unknown",
+  );
+  return jsonError("server-error", 500);
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<Response>> {
@@ -84,13 +110,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<Response>> {
     return jsonError("invalid-input", 400);
   }
 
-  // 2. Per-IP rate-limit.
-  const ip = callerIP(req);
-  if (!takeRateLimit(`founder-app:${ip}`, RATE_LIMIT_MS)) {
-    return jsonError("rate-limit", 429);
-  }
-
-  // 3. Config — fail closed on missing secrets.
+  // 2. Config — fail closed on missing secrets.
   const ipHashKey = readSecret("WAITLIST_IP_HASH_KEY");
   if (!ipHashKey) return jsonError("config", 500);
 
@@ -100,6 +120,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<Response>> {
   } catch {
     return jsonError("config", 500);
   }
+
+  // 3. Durable per-email and per-IP rate limits. Use HMAC digests in the
+  //    counter table so it doesn't collect raw email/IP identifiers.
+  const normalizedEmail = body.email.trim().toLowerCase();
+  const ip = callerIP(req);
+  const emailLimit = await enforceRateLimit(
+    supabase,
+    `founder-application:email:${hmacSHA256(normalizedEmail, ipHashKey)}`,
+    EMAIL_RATE_LIMIT,
+  );
+  if (emailLimit) return emailLimit;
+
+  const ipLimit = await enforceRateLimit(
+    supabase,
+    `founder-application:ip:${hashIP(ip, ipHashKey)}`,
+    IP_RATE_LIMIT,
+  );
+  if (ipLimit) return ipLimit;
 
   // 4. Insert. Column names map 1:1 to the form fields via the small
   //    adaptor below — keeps the human-readable form names in the UI and

@@ -18,8 +18,14 @@ import { requireCallerWallet } from "@/lib/auth-server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { lazyUpsertStaticUpdate } from "@/lib/server/lazy-update-upsert";
 import { hasOnChainCommitment } from "@/lib/server/lazy-sybil";
+import { consumeRateLimit } from "@/lib/server/supabase-rate-limit";
 
 export const runtime = "nodejs";
+
+const REACTION_RATE_LIMIT = {
+  limit: 30,
+  windowSeconds: 10 * 60,
+} as const;
 
 // Single-grapheme emoji guard. We don't try to be perfect with Unicode
 // segmentation in the migration; instead the API layer caps total length
@@ -30,6 +36,13 @@ const REACTION_BODY = z.object({
 });
 
 const UPDATE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function rateLimitExceededResponse(): NextResponse {
+  return NextResponse.json(
+    { ok: false, error: "rate-limit" },
+    { status: 429 },
+  );
+}
 
 async function authorizeReact(
   req: NextRequest,
@@ -50,6 +63,27 @@ async function authorizeReact(
   const callerWallet = authed.wallet;
 
   const sb = getSupabaseAdminClient();
+
+  const rateLimit = await consumeRateLimit(sb, {
+    identifier: `update-reactions:wallet:${callerWallet}`,
+    limit: REACTION_RATE_LIMIT.limit,
+    windowSeconds: REACTION_RATE_LIMIT.windowSeconds,
+  });
+  if (!rateLimit.ok) {
+    return {
+      ok: false,
+      res:
+        rateLimit.error === "rate-limit"
+          ? rateLimitExceededResponse()
+          : NextResponse.json(
+              {
+                error: "rate-limit-check-failed",
+                detail: rateLimit.detail ?? "unknown",
+              },
+              { status: 500 },
+            ),
+    };
+  }
 
   // 1. Fetch parent update → project_pda. Same lazy-upsert as the comments
   // route (handoff 65 B1): static catalog updates aren't in Supabase until
