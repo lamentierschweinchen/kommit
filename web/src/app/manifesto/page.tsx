@@ -132,8 +132,8 @@ export default function ManifestoPage() {
               money funds the platform. There&apos;s no fee for the founder, no
               fee for the backer, and no fee at the round. The economics work
               because audited lending protocols on Solana are mature enough to
-              act as the operating layer underneath. The platform doesn&apos;t
-              have to charge a fee. The substrate already pays it.
+              act as the operating layer underneath, and their yield covers the
+              platform&apos;s costs.
             </p>
             <p>
               Public record, because every backer&apos;s history sits on-chain,
@@ -167,9 +167,7 @@ export default function ManifestoPage() {
               right: it&apos;s economic, it&apos;s specific, and it&apos;s
               downstream of patience the kommitter actually demonstrated. The
               backer who committed at month one isn&apos;t the same kind of
-              investor as the angel who shows up at the priced round. A system
-              that treats them the same is a system that hasn&apos;t priced
-              patience.
+              investor as the angel who shows up at the priced round.
             </p>
             <p>
               For investors and everyone else downstream, the unit produces a
@@ -180,8 +178,8 @@ export default function ManifestoPage() {
               manager can read what a candidate has backed and learn something
               real about how they think. A journalist can trace traction
               without needing a press release. Other products can use kommit
-              balances to gate features (partner discounts, allocation
-              priority, beta access, hiring filters) without having to ask us
+              balances to gate features — partner discounts, allocation
+              priority, beta access, hiring filters — without having to ask us
               first. Each integration makes a kommit more useful to the person
               holding it, which pulls in more capital, which makes the signal
               richer for the next founder. At scale, the flywheel turns on its
@@ -211,7 +209,6 @@ export default function ManifestoPage() {
               founder raised against real traction instead of a pitch deck. The
               investor wrote the check on a signal they could trust.
             </p>
-            <p>One unit. Three groups. The same evidence.</p>
           </Section>
 
           <Section heading="Why this hasn't been built before">
@@ -267,7 +264,7 @@ export default function ManifestoPage() {
               The legal landscape got narrower, which is enough to operate. The
               pattern Kommit uses (park money, yield routes elsewhere,
               principal stays redeemable) has been tested in U.S. court.{" "}
-              <em>Kent v. PoolTogether</em> was dismissed in 2023 on standing,
+              <em>Kent v. PoolTogether</em> was dismissed in 2023 — on standing,
               not on the merits. The judge specifically named withdraw-anytime
               and no platform-imposed fees as why the plaintiff had no concrete
               harm. Both of those are how Kommit works. Under EU MiCA, the
@@ -306,7 +303,6 @@ export default function ManifestoPage() {
               It is not a casino. Patient capital across long timescales is the
               inverse of what a casino is built to reward.
             </p>
-            <p>The misreadings are familiar. The unit isn&apos;t.</p>
           </Section>
 
           <Section heading="Where it can fail">
@@ -369,7 +365,7 @@ export default function ManifestoPage() {
               If somebody else builds a better version, that&apos;s a good
               outcome. We hope they do. The unit is bigger than the platform.
               Use it, fork it, build something else on top of it, don&apos;t
-              credit us. The primitive is the point.
+              credit us.
             </p>
             <p>
               The mistake every cycle gets wrong is the same one. Take a real
