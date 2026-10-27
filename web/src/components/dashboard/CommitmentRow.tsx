@@ -129,12 +129,13 @@ export function CommitmentRow({
           isWithdrawn && "bg-gray-50 opacity-95",
         )}
       >
-        {/* Pass-3 layout fix (Option A): two-zone single-row.
-            Image (shrink-0) | info zone (flex-1 min-w-0, name/pitch/meta) |
-            right zone (shrink-0, stat above actions, items-end).
-            Stacks vertically at narrow widths. Wave 5 lifts this into an inner
-            div so the inline engagement panel can sit full-width below it. */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+        {/* Two rows: image | info (flex-1 min-w-0) | stat on top, actions on
+            their own full-width row below. Wave 5's third button made a
+            single-row right zone wider than the card in the ~650px dashboard
+            column, collapsing the name and overflowing the border. The top
+            row stacks vertically on narrow viewports. */}
+        <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         {isGraduated ? (
           <div className="absolute -top-3 left-6 z-10">
             <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
@@ -177,7 +178,7 @@ export function CommitmentRow({
           href={`/projects/${project.slug}`}
           className="flex-1 min-w-0 group"
         >
-          <div className="font-epilogue font-black uppercase text-lg tracking-tight truncate group-hover:underline">
+          <div className="font-epilogue font-black uppercase text-lg tracking-tight leading-tight line-clamp-2 break-words group-hover:underline">
             {project.name}
           </div>
           <div className="mt-0.5 text-sm font-medium text-gray-700 line-clamp-1">
@@ -188,10 +189,9 @@ export function CommitmentRow({
           </div>
         </Link>
 
-        {/* RIGHT ZONE — stat above actions, both right-aligned at md+,
-            left-aligned (default flex-col) on narrow viewports. */}
-        <div className="shrink-0 flex flex-col md:items-end gap-3">
-          <div className="text-left md:text-right">
+        {/* STAT — right-aligned at sm+, capped so the subline wraps instead
+            of starving the info zone. */}
+          <div className="shrink-0 text-left sm:text-right sm:max-w-[12rem]">
             <div
               className="font-epilogue font-black text-2xl md:text-3xl tracking-tighter tabular-nums leading-none"
               aria-live="polite"
@@ -210,8 +210,9 @@ export function CommitmentRow({
                   : `kommits · ${moneyLabel} currently kommitted`}
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center flex-wrap gap-2 md:justify-end">
+          <div className="flex items-center flex-wrap gap-2 sm:justify-end">
             {newCount > 0 ? (
               <span className="inline-block bg-primary text-white font-epilogue font-black uppercase text-[10px] tracking-widest px-2 py-1 border-[2px] border-black shadow-brutal-sm">
                 {newCount} new
@@ -294,7 +295,6 @@ export function CommitmentRow({
               </>
             )}
           </div>
-        </div>
         </div>
 
         {/* Inline engagement (wave 5). Grid-rows height transition keeps the
